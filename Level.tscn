@@ -11,8 +11,6 @@ script/script = ExtResource( 1 )
 
 transform/pos = Vector2( 0, 128 )
 parent_block_path = NodePath("../Block2")
-is_player = true
-move_duration = 0.5
 
 [node name="TileMap" parent="Block1"]
 
@@ -22,7 +20,7 @@ tile_data = IntArray( 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 65536, 1, 65537, 1, 65538, 1
 
 transform/pos = Vector2( 512, 0 )
 parent_block_path = NodePath("../Block1")
-move_duration = 0.5
+is_player = true
 
 [node name="TileMap" parent="Block2"]
 
