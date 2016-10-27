@@ -9,6 +9,7 @@ enum TILES {TILE_EMPTY, TILE_WALL}
 
 export(NodePath) var parent_block_path = null
 export(Vector2)  var grid_position_on_parent = Vector2(0, 0)
+onready var original_grid_position_on_parent = self.grid_position_on_parent
 export(bool)     var is_player = false
 
 var parent_block = null
@@ -79,20 +80,19 @@ class BlockPosition:
 	func adjacent(direction):
 		return adjacent_recurse(direction, self.block)
 
-	func adjacent_recurse(direction, original):
-		var newpos = null
-
+	func direction_to_vect(direction):
 		if direction == "left":
-			newpos = Vector2(self.position.x - 1, self.position.y)
+			return Vector2(-1, 0)
 		elif direction == "right":
-			newpos = Vector2(self.position.x + 1, self.position.y)
+			return Vector2(1, 0)
 		elif direction == "up":
-			newpos = Vector2(self.position.x,     self.position.y - 1)
+			return Vector2(0, -1)
 		elif direction == "down":
-			newpos = Vector2(self.position.x,     self.position.y + 1)
+			return Vector2(0, 1)
 
-		var different_block = true
-		var newblock = null
+	func adjacent_recurse(direction, original):
+		var newpos = self.position + self.direction_to_vect(direction)
+
 		if newpos.x < 0:
 			newpos.x = self.block.size - 1
 		elif newpos.x >= self.block.size:
@@ -102,16 +102,10 @@ class BlockPosition:
 		elif newpos.y >= self.block.size:
 			newpos.y = 0
 		else:
-			newblock = self.block
-			different_block = false
+			return get_script().new(self.block, newpos)
 
-		print(newpos)
+		# We left the block
 
-		# We didn't leave the block
-		if different_block == false:
-			return get_script().new(newblock, newpos)
-
-		# We did
 		if self.block.parent_block == original:
 			return null
 
@@ -120,7 +114,7 @@ class BlockPosition:
 		if newsquare == null:
 			return null
 
-		newblock = newsquare.block_at()
+		var newblock = newsquare.block_at()
 
 		if newblock == null:
 			return null
@@ -148,14 +142,47 @@ class BlockPosition:
 func own_position():
 	return BlockPosition.new(parent_block, grid_position_on_parent)
 
+func adjacent_blocks():
+	return adjacent_blocks_with_displacement().keys()
+
+func adjacent_blocks_with_displacement():
+	var adjacents = {}
+	var a = null
+
+	a = self.own_position().adjacent("left")
+	if not a == null:
+		var b = a.block_at()
+		if not b == null:
+			adjacents[b] = Vector2(-1, 0)
+
+	a = self.own_position().adjacent("right")
+	if not a == null:
+		var b = a.block_at()
+		if not b == null:
+			adjacents[b] = Vector2(1, 0)
+
+	a = self.own_position().adjacent("up")
+	if not a == null:
+		var b = a.block_at()
+		if not b == null:
+			adjacents[b] = Vector2(0, -1)
+
+	a = self.own_position().adjacent("down")
+	if not a == null:
+		var b = a.block_at()
+		if not b == null:
+			adjacents[b] = Vector2(0, 1)
+
+	return adjacents
+
 ################################################################################
 ### Drawing
 
 func get_self_rect():
 	var pos = tilemap.get_global_pos()
 	# TODO: scale?
-	var width = self.size * tilemap.get_cell_size().x
-	return Rect2(pos.x, pos.y, width, width)
+	var s = self.size * tilemap.get_cell_size()
+	return Rect2(pos, s)
 
 func _draw():
 	# Draw child blocks
@@ -192,7 +219,8 @@ func _fixed_process(delta):
 			self.is_moving = false
 			self.current_move_time = 0
 			self.previous_grid_position_on_parent = self.grid_position_on_parent
-		parent_block.update()
+
+		self.parent_block.update()
 
 ################################################################################
 ### Movement
@@ -206,22 +234,13 @@ func try_move(direction):
 		return
 
 	if a.is_empty():
-		do_move(direction)
+		do_move(a)
 
-func do_move(direction):
+func do_move(new_square):
 	self.is_moving = true
 
-	if direction == "left":
-		self.grid_position_on_parent.x -= 1
-
-	if direction == "right":
-		self.grid_position_on_parent.x += 1
-
-	if direction == "up":
-		self.grid_position_on_parent.y -= 1
-
-	if direction == "down":
-		self.grid_position_on_parent.y += 1
+	self.parent_block = new_square.block
+	self.grid_position_on_parent = new_square.position
 
 func _input(event):
 	if not self.is_player:
