@@ -54,7 +54,7 @@ func find_children():
 	for b in all_blocks:
 		if b.parent_block == self:
 			child_blocks.append(b)
-			return child_blocks
+	return child_blocks
 
 func set_child_blocks():
 	self.child_blocks = self.find_children()

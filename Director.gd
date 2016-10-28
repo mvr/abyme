@@ -15,10 +15,10 @@ func find_island():
 		for b in to_search:
 			var as = b.adjacent_blocks_with_displacement()
 			for a in as.keys():
-				if not found.has(b):
-					var bpos = to_search[b] + as[a]
-					next_search[b] = bpos
-					found[b] = bpos
+				if not found.has(a):
+					var apos = found[b] + as[a]
+					next_search[a] = apos
+					found[a] = apos
 		to_search = next_search
 
 	self.blocks = found
