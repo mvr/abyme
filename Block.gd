@@ -8,8 +8,7 @@ onready var tilemap   = self.get_node("TileMap")
 enum TILES {TILE_EMPTY, TILE_WALL}
 
 export(NodePath) var parent_block_path = null
-export(Vector2)  var grid_position_on_parent = Vector2(0, 0)
-onready var original_grid_position_on_parent = self.grid_position_on_parent
+export(Vector2)  var position_on_parent = Vector2(0, 0)
 export(bool)     var is_player = false
 
 var parent_block = null
@@ -18,9 +17,11 @@ var child_blocks = []
 # TODO: calculate?
 var size = 5
 
-# Movement
+# Movement animation
 var is_moving = false
-var previous_grid_position_on_parent = grid_position_on_parent
+var move_vector = Vector2(0.0, 0.0)
+var previous_parent = null
+var previous_position_on_parent = self.position_on_parent
 export var move_duration = 0.5
 var current_move_time = 0
 
@@ -61,6 +62,7 @@ func set_child_blocks():
 
 func find_parent_block():
 	self.parent_block = self.get_node(self.parent_block_path)
+	self.previous_parent = self.parent_block
 
 ################################################################################
 ### Block position
@@ -126,7 +128,7 @@ class BlockPosition:
 
 	func block_at():
 		for b in self.block.child_blocks:
-			if b.grid_position_on_parent == self.position:
+			if b.position_on_parent == self.position:
 				return b
 		return null
 
@@ -140,7 +142,7 @@ class BlockPosition:
 		return true
 
 func own_position():
-	return BlockPosition.new(parent_block, grid_position_on_parent)
+	return BlockPosition.new(parent_block, position_on_parent)
 
 func adjacent_blocks():
 	return adjacent_blocks_with_displacement().keys()
@@ -184,26 +186,39 @@ func get_self_rect():
 	var s = self.size * tilemap.get_cell_size()
 	return Rect2(pos, s)
 
+func draw_self_on(block, position):
+	var texture = self.viewport.get_render_target_texture()
+
+	var to_parent_transform = block.get_global_transform() * self.get_global_transform().affine_inverse()
+
+	var tile_size = self.tilemap.get_cell_size() # TODO: self?
+	var drawrect = Rect2(position, tile_size)
+
+	self.draw_set_transform_matrix(to_parent_transform)
+	self.draw_texture_rect(texture, drawrect, false)
+
 func _draw():
-	# Draw child blocks
-	var tile_size = tilemap.get_cell_size()
+	if self.is_moving:
+		var t = easing_function(self.current_move_time / self.move_duration)
 
-	for b in self.child_blocks:
-		var texture = b.viewport.get_render_target_texture()
-		var worldcoords = null
-		if b.is_moving:
-			var fromcoords = tilemap.map_to_world(b.previous_grid_position_on_parent)
-			var tocoords = tilemap.map_to_world(b.grid_position_on_parent)
-			var proportion = easing_function(b.current_move_time/b.move_duration)
+		var newpos = self.parent_block.tilemap.map_to_world(self.position_on_parent)
+		var oldpos = self.parent_block.tilemap.map_to_world(self.position_on_parent - self.move_vector)
 
-			worldcoords = (1-proportion)*fromcoords + proportion*tocoords
-		else:
-			worldcoords = tilemap.map_to_world(b.grid_position_on_parent)
+		var pos = interpolate(t, oldpos, newpos)
+		draw_self_on(self.parent_block, pos)
 
-		var drawrect = Rect2(worldcoords, tile_size)
-		# False for gl tiling
-		self.draw_texture_rect(texture, drawrect, false)
+		if not self.previous_parent == self.parent_block:
+			var newpos = self.previous_parent.tilemap.map_to_world(self.previous_position_on_parent + self.move_vector)
+			var oldpos = self.previous_parent.tilemap.map_to_world(self.previous_position_on_parent)
 
+			var pos = interpolate(t, oldpos, newpos)
+			draw_self_on(self.previous_parent, pos)
+	else:
+		var worldcoords = self.parent_block.tilemap.map_to_world(self.position_on_parent)
+		draw_self_on(self.parent_block, worldcoords)
+
+func interpolate(t, x1, x2):
+	return (1-t)*x1 + t*x2
 
 func easing_function(t):
 	var u0 = 0
@@ -218,9 +233,10 @@ func _fixed_process(delta):
 		if self.current_move_time > self.move_duration:
 			self.is_moving = false
 			self.current_move_time = 0
-			self.previous_grid_position_on_parent = self.grid_position_on_parent
+			self.previous_parent = self.parent_block
+			self.previous_position_on_parent = self.position_on_parent
 
-		self.parent_block.update()
+		self.update()
 
 ################################################################################
 ### Movement
@@ -234,13 +250,17 @@ func try_move(direction):
 		return
 
 	if a.is_empty():
-		do_move(a)
+		do_move(direction, a)
 
-func do_move(new_square):
+func do_move(direction, new_square):
 	self.is_moving = true
 
+	# TODO: silly
+	self.move_vector = self.own_position().direction_to_vect(direction)
+
+	# TODO! Possibly update child blocks
 	self.parent_block = new_square.block
-	self.grid_position_on_parent = new_square.position
+	self.position_on_parent = new_square.position
 
 func _input(event):
 	if not self.is_player:

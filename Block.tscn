@@ -5,9 +5,10 @@
 
 [node name="Block" type="Node2D"]
 
+z/z = -1
 script/script = ExtResource( 1 )
 parent_block_path = null
-grid_position_on_parent = Vector2( 0, 0 )
+position_on_parent = Vector2( 0, 0 )
 is_player = false
 move_duration = 0.5
 
