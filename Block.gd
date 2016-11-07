@@ -233,8 +233,6 @@ func _fixed_process(delta):
 		if self.current_move_time > self.move_duration:
 			self.is_moving = false
 			self.current_move_time = 0
-			self.previous_parent = self.parent_block
-			self.previous_position_on_parent = self.position_on_parent
 
 		self.update()
 
@@ -258,9 +256,15 @@ func do_move(direction, new_square):
 	# TODO: silly
 	self.move_vector = self.own_position().direction_to_vect(direction)
 
-	# TODO! Possibly update child blocks
+	self.previous_parent = self.parent_block
+	self.previous_position_on_parent = self.position_on_parent
+
 	self.parent_block = new_square.block
 	self.position_on_parent = new_square.position
+
+	if not self.parent_block == self.previous_parent:
+		self.previous_parent.child_blocks.erase(self)
+		self.parent_block.children.append(self)
 
 func _input(event):
 	if not self.is_player:
