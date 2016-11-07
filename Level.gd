@@ -21,5 +21,5 @@ func _ready():
 
 func arrange():
 	var director = get_node("Director")
-	director.origin_block = self.player_block.parent_block
+	director.player_block = self.player_block
 	director.arrange()
