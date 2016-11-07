@@ -197,7 +197,7 @@ func draw_self_on(block, position):
 	self.draw_set_transform_matrix(to_parent_transform)
 	self.draw_texture_rect(texture, drawrect, false)
 
-func _draw():
+func _draw(): # TODO: think about clearing the render target every frame
 	if self.is_moving:
 		var t = easing_function(self.current_move_time / self.move_duration)
 
@@ -264,7 +264,7 @@ func do_move(direction, new_square):
 
 	if not self.parent_block == self.previous_parent:
 		self.previous_parent.child_blocks.erase(self)
-		self.parent_block.children.append(self)
+		self.parent_block.child_blocks.append(self)
 
 func _input(event):
 	if not self.is_player:
