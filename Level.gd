@@ -17,9 +17,6 @@ func _ready():
 			self.player_block = b
 			break
 
-	arrange()
-
-func arrange():
 	var director = get_node("Director")
 	director.player_block = self.player_block
-	director.arrange()
+	director.arrange_initial()

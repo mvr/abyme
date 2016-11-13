@@ -14,15 +14,12 @@ export(bool)     var is_player = false
 var parent_block = null
 var child_blocks = []
 
-# TODO: calculate?
-var size = 5
-
 # Movement animation
 var is_moving = false
 var move_vector = Vector2(0.0, 0.0)
 var previous_parent = null
 var previous_position_on_parent = self.position_on_parent
-export var move_duration = 0.5
+
 var current_move_time = 0
 
 # Drawing
@@ -96,12 +93,12 @@ class BlockPosition:
 		var newpos = self.position + self.direction_to_vect(direction)
 
 		if newpos.x < 0:
-			newpos.x = self.block.size - 1
-		elif newpos.x >= self.block.size:
+			newpos.x = Constants.block_size - 1
+		elif newpos.x >= Constants.block_size:
 			newpos.x = 0
 		elif newpos.y < 0:
-			newpos.y = self.block.size - 1
-		elif newpos.y >= self.block.size:
+			newpos.y = Constants.block_size - 1
+		elif newpos.y >= Constants.block_size:
 			newpos.y = 0
 		else:
 			return get_script().new(self.block, newpos)
@@ -183,23 +180,34 @@ func adjacent_blocks_with_displacement():
 func get_self_rect():
 	var pos = tilemap.get_global_pos()
 	# TODO: scale?
-	var s = self.size * tilemap.get_cell_size()
+	var s = Constants.block_size * tilemap.get_cell_size()
 	return Rect2(pos, s)
+
+func world_position_on_parent():
+	return self.parent_block.tilemap.map_to_world(self.position_on_parent)
 
 func draw_self_on(block, position):
 	var texture = self.viewport.get_render_target_texture()
 
 	var to_parent_transform = block.get_global_transform() * self.get_global_transform().affine_inverse()
 
-	var tile_size = self.tilemap.get_cell_size() # TODO: self?
-	var drawrect = Rect2(position, tile_size)
+	var cell_size = self.tilemap.get_cell_size() # TODO: self?
+	var drawrect = Rect2(position, cell_size)
 
 	self.draw_set_transform_matrix(to_parent_transform)
 	self.draw_texture_rect(texture, drawrect, false)
 
 func _draw(): # TODO: think about clearing the render target every frame
+	# Border
+	var s = Constants.block_size * tilemap.get_cell_size().x
+	var grey = Color(0.5, 0.5, 0.5)
+	self.draw_line(Vector2(0, 0), Vector2(0, s), grey, 1)
+	self.draw_line(Vector2(0, s), Vector2(s, s), grey, 1)
+	self.draw_line(Vector2(s, s), Vector2(s, 0), grey, 1)
+	self.draw_line(Vector2(s, 0), Vector2(0, 0), grey, 1)
+
 	if self.is_moving:
-		var t = easing_function(self.current_move_time / self.move_duration)
+		var t = easing_function(self.current_move_time / Constants.move_duration)
 
 		var newpos = self.parent_block.tilemap.map_to_world(self.position_on_parent)
 		var oldpos = self.parent_block.tilemap.map_to_world(self.position_on_parent - self.move_vector)
@@ -214,7 +222,7 @@ func _draw(): # TODO: think about clearing the render target every frame
 			var pos = interpolate(t, oldpos, newpos)
 			draw_self_on(self.previous_parent, pos)
 	else:
-		var worldcoords = self.parent_block.tilemap.map_to_world(self.position_on_parent)
+		var worldcoords = self.world_position_on_parent()
 		draw_self_on(self.parent_block, worldcoords)
 
 func interpolate(t, x1, x2):
@@ -230,7 +238,7 @@ func easing_function(t):
 func _fixed_process(delta):
 	if self.is_moving:
 		self.current_move_time += delta
-		if self.current_move_time > self.move_duration:
+		if self.current_move_time > Constants.move_duration:
 			self.is_moving = false
 			self.current_move_time = 0
 
