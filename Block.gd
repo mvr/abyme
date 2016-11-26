@@ -9,7 +9,7 @@ enum TILES {TILE_EMPTY, TILE_WALL}
 
 export(NodePath) var parent_block_path = null
 export(Vector2)  var position_on_parent = Vector2(0, 0)
-export(bool)     var is_player = false
+export(bool)     var is_player = false # TODO: remove?
 
 var parent_block = null
 var child_blocks = []
@@ -41,7 +41,7 @@ func _ready():
 	viewport.set_canvas_transform(transform)
 
 	self.set_fixed_process(true)
-	self.set_process_input(true) # TODO: do input once in Level
+
 
 ################################################################################
 ### Parents and Siblings
@@ -183,10 +183,15 @@ func get_self_rect():
 	var s = Constants.block_size * tilemap.get_cell_size()
 	return Rect2(pos, s)
 
-func world_position_on_parent():
-	return self.parent_block.tilemap.map_to_world(self.position_on_parent)
+func visual_position_on_parent():
+	if self.is_moving:
+		var t = easing_function(self.current_move_time / Constants.move_duration)
 
-func draw_self_on(block, position):
+		return interpolate(t, self.position_on_parent - self.move_vector, self.position_on_parent)
+	else:
+		return self.position_on_parent
+
+func draw_self_texture_on(block, position):
 	var texture = self.viewport.get_render_target_texture()
 
 	var to_parent_transform = block.get_global_transform() * self.get_global_transform().affine_inverse()
@@ -213,17 +218,17 @@ func _draw(): # TODO: think about clearing the render target every frame
 		var oldpos = self.parent_block.tilemap.map_to_world(self.position_on_parent - self.move_vector)
 
 		var pos = interpolate(t, oldpos, newpos)
-		draw_self_on(self.parent_block, pos)
+		self.draw_self_texture_on(self.parent_block, pos)
 
 		if not self.previous_parent == self.parent_block:
 			var newpos = self.previous_parent.tilemap.map_to_world(self.previous_position_on_parent + self.move_vector)
 			var oldpos = self.previous_parent.tilemap.map_to_world(self.previous_position_on_parent)
 
 			var pos = interpolate(t, oldpos, newpos)
-			draw_self_on(self.previous_parent, pos)
+			self.draw_self_texture_on(self.previous_parent, pos)
 	else:
-		var worldcoords = self.world_position_on_parent()
-		draw_self_on(self.parent_block, worldcoords)
+		var worldcoords = self.parent_block.tilemap.map_to_world(self.position_on_parent)
+		self.draw_self_texture_on(self.parent_block, worldcoords)
 
 func interpolate(t, x1, x2):
 	return (1-t)*x1 + t*x2
@@ -273,19 +278,3 @@ func do_move(direction, new_square):
 	if not self.parent_block == self.previous_parent:
 		self.previous_parent.child_blocks.erase(self)
 		self.parent_block.child_blocks.append(self)
-
-func _input(event):
-	if not self.is_player:
-		return
-
-	if event.is_action_pressed("move_left"):
-		self.try_move("left")
-
-	if event.is_action_pressed("move_right"):
-		self.try_move("right")
-
-	if event.is_action_pressed("move_up"):
-		self.try_move("up")
-
-	if event.is_action_pressed("move_down"):
-		self.try_move("down")
