@@ -76,21 +76,11 @@ class BlockPosition:
 	func get_tile_id():
 		return self.block.tilemap.get_cell(self.position.x, self.position.y)
 
-	func adjacent(direction):
-		return adjacent_recurse(direction, self.block)
+	func adjacent(move_vect):
+		return adjacent_recurse(move_vect, self.block)
 
-	func direction_to_vect(direction):
-		if direction == "left":
-			return Vector2(-1, 0)
-		elif direction == "right":
-			return Vector2(1, 0)
-		elif direction == "up":
-			return Vector2(0, -1)
-		elif direction == "down":
-			return Vector2(0, 1)
-
-	func adjacent_recurse(direction, original):
-		var newpos = self.position + self.direction_to_vect(direction)
+	func adjacent_recurse(move_vect, original):
+		var newpos = self.position + move_vect
 
 		if newpos.x < 0:
 			newpos.x = Constants.block_size - 1
@@ -108,7 +98,7 @@ class BlockPosition:
 		if self.block.parent_block == original:
 			return null
 
-		var newsquare = self.block.own_position().adjacent_recurse(direction, original)
+		var newsquare = self.block.own_position().adjacent_recurse(move_vect, original)
 
 		if newsquare == null:
 			return null
@@ -252,22 +242,22 @@ func _fixed_process(delta):
 ################################################################################
 ### Movement
 
-func try_move(direction):
+func try_move(move_vect):
 	if self.is_moving:
 		return
 
-	var a = self.own_position().adjacent(direction)
+	var a = self.own_position().adjacent(move_vect)
 	if a == null:
 		return
 
 	if a.is_empty():
-		do_move(direction, a)
+		do_move(move_vect, a)
 
-func do_move(direction, new_square):
+func do_move(move_vect, new_square):
 	self.is_moving = true
 
 	# TODO: silly
-	self.move_vector = self.own_position().direction_to_vect(direction)
+	self.move_vector = move_vect
 
 	self.previous_parent = self.parent_block
 	self.previous_position_on_parent = self.position_on_parent
