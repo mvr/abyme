@@ -30,7 +30,7 @@ func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 
 	var faded = null
 	if depth < start_depth:
-		faded = Color(0.5, 0.5, 0.5)
+		faded = Constants.background_fade
 	else:
 		faded = Color(1,1,1)
 
