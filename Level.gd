@@ -22,7 +22,7 @@ func _ready():
 			break
 
 	self.director.player_block = self.player_block
-	self.director.arrange_initial()
+	self.director.setup()
 
 ################################################################################
 ## Zooming

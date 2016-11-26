@@ -1,8 +1,6 @@
 extends Node2D
 
 var player_block = null
-# var background_island = {}
-# var origin_island = {}
 
 # As a world position
 var distant_home = Vector2(-1000000, -1000000)
@@ -13,44 +11,9 @@ func _ready():
 	self.set_pos(self.distant_home)
 	self.set_fixed_process(true)
 
-# func find_island(origin):
-# 	var found = {origin : Vector2(0, 0)}
-# 	var to_search = found
-
-# 	while not to_search.empty():
-# 		var next_search = {}
-# 		for b in to_search:
-# 			var as = b.adjacent_blocks_with_displacement()
-# 			for a in as.keys():
-# 				if not found.has(a):
-# 					var apos = found[b] + as[a]
-# 					next_search[a] = apos
-# 					found[a] = apos
-# 		to_search = next_search
-
-# 	return found
-
-func arrange():
-	# self.origin_island = self.find_island(self.player_block.parent_block)
-	# self.background_island = self.find_island(self.player_block.parent_block.parent_block)
-	self.update()
-
-func arrange_initial():
-	self.arrange()
+func setup():
 	self.find_target()
 	self.camera_pos = self.camera_target
-
-# func draw_island(island, origin, scale):
-# 	for b in island:
-# 		var grid_pos = island[b]
-
-# 		var block_size = Constants.block_size * b.tilemap.get_cell_size() * scale
-
-# 		var pos = origin + grid_pos * block_size
-# 		var drawrect = Rect2(pos, block_size)
-
-# 		var texture = b.viewport.get_render_target_texture()
-# 		self.draw_texture_rect(texture, drawrect, false)
 
 func int_exp(i,e):
 	if e < 0:
@@ -121,7 +84,6 @@ func draw_with_parents(block, pos, depth, max_depth):
 
 func _draw():
 	self.draw_with_parents(self.player_block.parent_block, Vector2(0, 0), 0, 4)
-	# draw_block_manually(self.player_block, Vector2(0, 0), 1, 0, 3)
 
 func _fixed_process(delta):
 	find_target()
@@ -142,7 +104,6 @@ func find_target():
 	var block_center = (block_grid_position + Vector2(0.5, 0.5)) * block_size
 
 	self.camera_target = self.distant_home + block_center
-#	self.camera_target = self.distant_home
 
 func adjust_camera(delta):
 	var diff = self.camera_target - self.camera_pos
