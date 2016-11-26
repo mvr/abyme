@@ -94,6 +94,10 @@ func _fixed_process(delta):
 ################################################################################
 ## Camera
 
+func move_camera(move_vect):
+	var block_size = Constants.block_size * self.player_block.tilemap.get_cell_size()
+	self.camera_pos -= move_vect * block_size
+
 func zoom_camera():
 	self.arrange()
 	# TODO: actually do

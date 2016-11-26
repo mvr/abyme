@@ -50,7 +50,11 @@ func direction_to_vect(direction):
 		return Vector2(0, 1)
 
 func move_player(move_vect):
+	var prev_parent = self.player_block.parent_block
 	self.player_block.try_move(move_vect)
+
+	if not self.player_block.parent_block == prev_parent:
+		self.director.move_camera(move_vect)
 
 func _input(event):
 	if event.is_action_pressed("zoom"):
