@@ -23,19 +23,26 @@ func int_exp(i,e):
 	else:
 		return i * int_exp(i, e-1)
 
-func draw_tilemap_manually(block, pos, scale):
+func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 	var tileset = block.tilemap.get_tileset()
 	var block_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale)
 	var cell_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale - 1)
+
+	var faded = null
+	if depth < start_depth:
+		faded = Color(0.5, 0.5, 0.5)
+	else:
+		faded = Color(1,1,1)
+
 	for i in range(Constants.block_size):
 		for j in range(Constants.block_size):
 			var tile = block.tilemap.get_cell(i, j)
 			var texture = tileset.tile_get_texture(tile)
 			var corner = pos + cell_screen_size * Vector2(i, j)
 			var drawrect = Rect2(corner, cell_screen_size)
-			self.draw_texture_rect(texture, drawrect, false)
+			self.draw_texture_rect(texture, drawrect, false, faded)
 
-func draw_block_manually(block, pos, scale, depth, max_depth):
+func draw_block_manually(block, pos, scale, depth, start_depth, max_depth):
 	if depth > max_depth:
 		# Just use existing texture
 		var block_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale)
@@ -48,16 +55,16 @@ func draw_block_manually(block, pos, scale, depth, max_depth):
 	var cell_screen_size  = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale - 1)
 
 	if depth == 0:
-		self.draw_tilemap_manually(block, pos, scale)
+		self.draw_tilemap_manually(block, pos, scale, depth, start_depth)
 
 	# This ordering is required to stop things drawing over each other
 	for b in block.child_blocks:
 		var child_pos = pos + (b.visual_position_on_parent() * cell_screen_size)
-		self.draw_tilemap_manually(b, child_pos, scale - 1)
+		self.draw_tilemap_manually(b, child_pos, scale - 1, depth + 1, start_depth)
 
 	for b in block.child_blocks:
 		var child_pos = pos + (b.visual_position_on_parent() * cell_screen_size)
-		self.draw_block_manually(b, child_pos, scale - 1, depth + 1, max_depth)
+		self.draw_block_manually(b, child_pos, scale - 1, depth + 1, start_depth, max_depth)
 
 	# for b in block.child_blocks:
 	# 	var child_pos = pos + (b.visual_position_on_parent() * cell_screen_size)
@@ -73,17 +80,17 @@ func draw_block_manually(block, pos, scale, depth, max_depth):
 	# 	self.draw_line(corner3, corner4, grey, 1)
 	# 	self.draw_line(corner4, corner1, grey, 1)
 
-func draw_with_parents(block, pos, depth, max_depth):
-	if depth == max_depth:
-		self.draw_block_manually(block, pos, depth+1, 0, max_depth)
+func draw_with_parents(block, pos, depth, up_depth, down_depth):
+	if depth == up_depth:
+		self.draw_block_manually(block, pos, depth+1, 0, up_depth, up_depth + down_depth)
 		return
 
 	var background_offset = -block.visual_position_on_parent() * block.tilemap.get_cell_size() * int_exp(Constants.block_size, depth + 1)
 
-	self.draw_with_parents(block.parent_block, pos + background_offset, depth + 1, max_depth)
+	self.draw_with_parents(block.parent_block, pos + background_offset, depth + 1, up_depth, down_depth)
 
 func _draw():
-	self.draw_with_parents(self.player_block.parent_block, Vector2(0, 0), 0, 4)
+	self.draw_with_parents(self.player_block.parent_block, Vector2(0, 0), 0, 4, 0)
 
 func _fixed_process(delta):
 	find_target()
@@ -99,7 +106,7 @@ func move_camera(move_vect):
 	self.camera_pos -= move_vect * block_size
 
 func zoom_camera():
-	self.arrange()
+	pass
 	# TODO: actually do
 
 func find_target():

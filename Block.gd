@@ -194,12 +194,12 @@ func draw_self_texture_on(block, position):
 
 func _draw(): # TODO: think about clearing the render target every frame
 	# Border
-	var s = Constants.block_size * tilemap.get_cell_size().x
-	var grey = Color(0.5, 0.5, 0.5)
-	self.draw_line(Vector2(0, 0), Vector2(0, s), grey, 1)
-	self.draw_line(Vector2(0, s), Vector2(s, s), grey, 1)
-	self.draw_line(Vector2(s, s), Vector2(s, 0), grey, 1)
-	self.draw_line(Vector2(s, 0), Vector2(0, 0), grey, 1)
+	# var s = Constants.block_size * tilemap.get_cell_size().x
+	# var grey = Color(0.5, 0.5, 0.5)
+	# self.draw_line(Vector2(0, 0), Vector2(0, s), grey, 1)
+	# self.draw_line(Vector2(0, s), Vector2(s, s), grey, 1)
+	# self.draw_line(Vector2(s, s), Vector2(s, 0), grey, 1)
+	# self.draw_line(Vector2(s, 0), Vector2(0, 0), grey, 1)
 
 	if self.is_moving:
 		var t = easing_function(self.current_move_time / Constants.move_duration)
