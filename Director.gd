@@ -6,6 +6,8 @@ var player_block = null
 var distant_home = Vector2(-1000000, -1000000)
 var camera_target = Vector2(0, 0)
 var camera_pos = Vector2(0, 0)
+var camera_zoom = 1
+var camera_zoom_target = 1
 
 func _ready():
 	self.set_pos(self.distant_home)
@@ -106,8 +108,16 @@ func move_camera(move_vect):
 	self.camera_pos -= move_vect * block_size
 
 func zoom_camera():
-	pass
-	# TODO: actually do
+	var previous_block_size = self.player_block.tilemap.get_cell_size()
+	var block_size = Constants.block_size * self.player_block.tilemap.get_cell_size()
+	var block_center = Vector2(0.5, 0.5) * block_size
+
+	# Currently this works by assuming self.player_block has already been replaced
+	var shift_pos = (self.player_block.visual_position_on_parent() + Vector2(0.5, 0.5)) * previous_block_size
+
+	# TODO: The camera_pos should be adjusted somehow relative to camera_zoom
+	self.camera_pos += - block_center + shift_pos
+	self.camera_zoom *= Constants.block_size
 
 func find_target():
 	var block_size = Constants.block_size * self.player_block.tilemap.get_cell_size()
@@ -120,8 +130,12 @@ func adjust_camera(delta):
 	var diff = self.camera_target - self.camera_pos
 	self.camera_pos += diff * Constants.camera_lerp * delta
 
+	var zoom_diff = self.camera_zoom_target - self.camera_zoom
+	self.camera_zoom += zoom_diff * Constants.camera_zoom_lerp * delta
+
 func set_camera():
 	var screen_center = self.get_viewport().get_rect().size / 2
+	var screen_transform = Matrix32(0, screen_center)
 
-	var transform = Matrix32(0, screen_center - self.camera_pos)
-	self.get_viewport().set_canvas_transform(transform)
+	var camera_transform = Matrix32(0, -self.camera_pos).scaled(Vector2(camera_zoom, camera_zoom))
+	self.get_viewport().set_canvas_transform(screen_transform*camera_transform)
