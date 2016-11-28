@@ -11,5 +11,5 @@ var player_highlight = Color(0.5, 0, 0)
 # Animation
 
 var camera_lerp = 1.5
-var camera_zoom_lerp = 1.5
+var camera_zoom_lerp = 2.0
 var move_duration = 0.5

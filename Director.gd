@@ -154,7 +154,7 @@ func find_target():
 
 func adjust_camera(delta):
 	var diff = self.camera_target - self.camera_pos
-	self.camera_pos += diff * Constants.camera_lerp * delta
+	self.camera_pos += diff * Constants.camera_lerp * delta / self.camera_zoom
 
 	var zoom_diff = self.camera_zoom_target - self.camera_zoom
 	self.camera_zoom += zoom_diff * Constants.camera_zoom_lerp * delta
