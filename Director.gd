@@ -25,6 +25,9 @@ func int_exp(i,e):
 	else:
 		return i * int_exp(i, e-1)
 
+func log_base(x, b):
+	return log(x) / log(b)
+
 ################################################################################
 ## Drawing
 
@@ -44,11 +47,14 @@ func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 	var block_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale)
 	var cell_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale - 1)
 
-	var faded = null
-	if depth < start_depth:
-		faded = Constants.background_fade
+	var fade_colour = null
+	if depth == start_depth :
+		var fade_amount = log_base(self.camera_zoom, Constants.block_size)
+		fade_colour = Color(1,1,1).linear_interpolate(Constants.background_fade, fade_amount)
+	elif depth < start_depth:
+		fade_colour = Constants.background_fade
 	else:
-		faded = Color(1,1,1)
+		fade_colour = Color(1,1,1)
 
 	for i in range(Constants.block_size):
 		for j in range(Constants.block_size):
@@ -56,7 +62,7 @@ func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 			var texture = tileset.tile_get_texture(tile)
 			var corner = pos + cell_screen_size * Vector2(i, j)
 			var drawrect = Rect2(corner, cell_screen_size)
-			self.draw_texture_rect(texture, drawrect, false, faded)
+			self.draw_texture_rect(texture, drawrect, false, fade_colour)
 
 func draw_block_manually(block, pos, scale, depth, start_depth, max_depth):
 	if depth > max_depth:
