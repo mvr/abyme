@@ -25,6 +25,20 @@ func int_exp(i,e):
 	else:
 		return i * int_exp(i, e-1)
 
+################################################################################
+## Drawing
+
+func draw_rect(rect, colour, width):
+	var corner1 = rect.pos
+	var corner2 = rect.pos + Vector2(0, rect.size.y)
+	var corner3 = rect.end
+	var corner4 = rect.pos + Vector2(rect.size.x, 0)
+
+	self.draw_line(corner1, corner2, colour, width)
+	self.draw_line(corner2, corner3, colour, width)
+	self.draw_line(corner3, corner4, colour, width)
+	self.draw_line(corner4, corner1, colour, width)
+
 func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 	var tileset = block.tilemap.get_tileset()
 	var block_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale)
@@ -93,6 +107,12 @@ func draw_with_parents(block, pos, depth, up_depth, down_depth):
 
 func _draw():
 	self.draw_with_parents(self.player_block.parent_block, Vector2(0, 0), 0, 4, 0)
+
+	var parent_rect = Rect2(Vector2(0,0), self.player_block.tilemap.get_cell_size() * Constants.block_size)
+	# self.draw_rect(parent_rect, Constants.player_highlight, 1)
+
+	var self_rect = Rect2(self.player_block.visual_position_on_parent() * self.player_block.tilemap.get_cell_size(), self.player_block.tilemap.get_cell_size())
+	self.draw_rect(self_rect, Constants.player_highlight, 1)
 
 func _fixed_process(delta):
 	find_target()
