@@ -142,8 +142,7 @@ func zoom_camera():
 	# Currently this works by assuming self.player_block has already been replaced
 	var shift_pos = (self.player_block.visual_position_on_parent() + Vector2(0.5, 0.5)) * previous_block_size
 
-	# TODO: The camera_pos should be adjusted somehow relative to camera_zoom
-	self.camera_pos += - block_center + shift_pos
+	self.camera_pos = (self.camera_pos - block_center) / Constants.block_size + shift_pos
 	self.camera_zoom *= Constants.block_size
 
 func find_target():
@@ -151,7 +150,7 @@ func find_target():
 	var block_grid_position = Vector2(0, 0)
 	var block_center = (block_grid_position + Vector2(0.5, 0.5)) * block_size
 
-	self.camera_target = self.distant_home + block_center
+	self.camera_target = block_center
 
 func adjust_camera(delta):
 	var diff = self.camera_target - self.camera_pos
@@ -164,5 +163,5 @@ func set_camera():
 	var screen_center = self.get_viewport().get_rect().size / 2
 	var screen_transform = Matrix32(0, screen_center)
 
-	var camera_transform = Matrix32(0, -self.camera_pos).scaled(Vector2(camera_zoom, camera_zoom))
+	var camera_transform = Matrix32(0, -self.camera_pos - self.distant_home).scaled(Vector2(camera_zoom, camera_zoom))
 	self.get_viewport().set_canvas_transform(screen_transform*camera_transform)
