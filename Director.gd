@@ -10,6 +10,7 @@ var camera_zoom = 1
 var camera_zoom_target = 1
 
 func _ready():
+	VisualServer.set_default_clear_color(Constants.background_fade)
 	self.set_pos(self.distant_home)
 	self.set_fixed_process(true)
 
