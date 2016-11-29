@@ -9,7 +9,6 @@ enum TILES {TILE_EMPTY, TILE_WALL}
 
 export(NodePath) var parent_block_path = null
 export(Vector2)  var position_on_parent = Vector2(0, 0)
-export(bool)     var is_player = false # TODO: remove?
 
 var parent_block = null
 var child_blocks = []
@@ -255,8 +254,6 @@ func try_move(move_vect):
 
 func do_move(move_vect, new_square):
 	self.is_moving = true
-
-	# TODO: silly
 	self.move_vector = move_vect
 
 	self.previous_parent = self.parent_block
