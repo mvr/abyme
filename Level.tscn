@@ -2,7 +2,7 @@
 
 [ext_resource path="res://Level.gd" type="Script" id=1]
 [ext_resource path="res://Director.tscn" type="PackedScene" id=2]
-[ext_resource path="res://Block.tscn" type="PackedScene" id=3]
+[ext_resource path="res://Design.tscn" type="PackedScene" id=3]
 
 [node name="Level" type="Node2D"]
 
@@ -10,37 +10,23 @@ script/script = ExtResource( 1 )
 
 [node name="Director" parent="." instance=ExtResource( 2 )]
 
-[node name="Block1" parent="." instance=ExtResource( 3 )]
+[node name="DesignContainer" type="Viewport" parent="."]
 
-transform/pos = Vector2( 576, 768 )
-parent_block_path = NodePath("../Block2")
-position_on_parent = Vector2( 0, 1 )
+rect = Rect2( 0, 0, 0, 0 )
+own_world = false
+world = null
+transparent_bg = false
+render_target/enabled = false
+render_target/v_flip = false
+render_target/clear_on_new_frame = true
+render_target/filter = false
+render_target/gen_mipmaps = false
+render_target/update_mode = 2
+audio_listener/enable_2d = false
+audio_listener/enable_3d = false
+physics/object_picking = false
+gui/disable_input = false
 
-[node name="TileMap" parent="Block1"]
-
-tile_data = IntArray( 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 65536, 1, 65537, 1, 65538, 1, 65539, 0, 65540, 0, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 0, 196608, 0, 196609, 0, 196610, 1, 196611, 1, 196612, 1, 262144, 0, 262145, 0, 262146, 0, 262147, 0, 262148, 0 )
-
-[node name="Block2" parent="." instance=ExtResource( 3 )]
-
-transform/pos = Vector2( 1152, 256 )
-parent_block_path = NodePath("../Block1")
-is_player = true
-
-[node name="TileMap" parent="Block2"]
-
-tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 0, 65537, 0, 65538, 0, 65539, 0, 65540, 0, 131072, 1, 131073, 1, 131074, 1, 131075, 1, 131076, 1, 196608, 0, 196609, 0, 196610, 0, 196611, 0, 196612, 0, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
-
-[node name="Block3" parent="." instance=ExtResource( 3 )]
-
-transform/pos = Vector2( 1152, 768 )
-parent_block_path = NodePath("../Block2")
-position_on_parent = Vector2( 1, 1 )
-
-[node name="TileMap" parent="Block3"]
-
-tile_data = IntArray( 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 65536, 0, 65537, 1, 65538, 1, 65539, 1, 65540, 0, 131072, 0, 131073, 0, 131074, 0, 131075, 1, 131076, 0, 196608, 0, 196609, 1, 196610, 1, 196611, 1, 196612, 0, 262144, 0, 262145, 0, 262146, 0, 262147, 0, 262148, 0 )
+[node name="Design" parent="DesignContainer" instance=ExtResource( 3 )]
 
 
-[editable path="Block1"]
-[editable path="Block2"]
-[editable path="Block3"]

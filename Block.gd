@@ -37,6 +37,7 @@ func _ready():
 	viewport.set_world_2d(self.get_world_2d())
 	viewport.set_rect(self.self_rect)
 	#viewport.set_size_override(true, self.self_rect.size)
+	#viewport.set_size_override_stretch(true)
 	var transform = Matrix32(0, -self.self_rect.pos)
 	viewport.set_canvas_transform(transform)
 

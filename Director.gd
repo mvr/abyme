@@ -3,7 +3,6 @@ extends Node2D
 var player_block = null
 
 # As a world position
-var distant_home = Vector2(-1000000, -1000000)
 var camera_target = Vector2(0, 0)
 var camera_pos = Vector2(0, 0)
 var camera_zoom = 1
@@ -11,7 +10,6 @@ var camera_zoom_target = 1
 
 func _ready():
 	VisualServer.set_default_clear_color(Constants.background_fade)
-	self.set_pos(self.distant_home)
 	self.set_fixed_process(true)
 
 func setup():
@@ -163,5 +161,5 @@ func set_camera():
 	var screen_center = self.get_viewport().get_rect().size / 2
 	var screen_transform = Matrix32(0, screen_center)
 
-	var camera_transform = Matrix32(0, -self.camera_pos - self.distant_home).scaled(Vector2(camera_zoom, camera_zoom))
+	var camera_transform = Matrix32(0, -self.camera_pos).scaled(Vector2(camera_zoom, camera_zoom))
 	self.get_viewport().set_canvas_transform(screen_transform*camera_transform)
