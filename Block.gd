@@ -9,6 +9,7 @@ enum TILES {TILE_EMPTY, TILE_WALL}
 
 export(NodePath) var parent_block_path = null
 export(Vector2)  var position_on_parent = Vector2(0, 0)
+export(bool)     var is_player = false
 
 var parent_block = null
 var child_blocks = []
