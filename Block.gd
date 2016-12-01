@@ -132,38 +132,38 @@ class BlockPosition:
 func own_position():
 	return BlockPosition.new(parent_block, position_on_parent)
 
-func adjacent_blocks():
-	return adjacent_blocks_with_displacement().keys()
+# func adjacent_blocks():
+# 	return adjacent_blocks_with_displacement().keys()
 
-func adjacent_blocks_with_displacement():
-	var adjacents = {}
-	var a = null
+# func adjacent_blocks_with_displacement():
+# 	var adjacents = {}
+# 	var a = null
 
-	a = self.own_position().adjacent("left")
-	if not a == null:
-		var b = a.block_at()
-		if not b == null:
-			adjacents[b] = Vector2(-1, 0)
+# 	a = self.own_position().adjacent("left")
+# 	if not a == null:
+# 		var b = a.block_at()
+# 		if not b == null:
+# 			adjacents[b] = Vector2(-1, 0)
 
-	a = self.own_position().adjacent("right")
-	if not a == null:
-		var b = a.block_at()
-		if not b == null:
-			adjacents[b] = Vector2(1, 0)
+# 	a = self.own_position().adjacent("right")
+# 	if not a == null:
+# 		var b = a.block_at()
+# 		if not b == null:
+# 			adjacents[b] = Vector2(1, 0)
 
-	a = self.own_position().adjacent("up")
-	if not a == null:
-		var b = a.block_at()
-		if not b == null:
-			adjacents[b] = Vector2(0, -1)
+# 	a = self.own_position().adjacent("up")
+# 	if not a == null:
+# 		var b = a.block_at()
+# 		if not b == null:
+# 			adjacents[b] = Vector2(0, -1)
 
-	a = self.own_position().adjacent("down")
-	if not a == null:
-		var b = a.block_at()
-		if not b == null:
-			adjacents[b] = Vector2(0, 1)
+# 	a = self.own_position().adjacent("down")
+# 	if not a == null:
+# 		var b = a.block_at()
+# 		if not b == null:
+# 			adjacents[b] = Vector2(0, 1)
 
-	return adjacents
+# 	return adjacents
 
 ################################################################################
 ### Drawing
