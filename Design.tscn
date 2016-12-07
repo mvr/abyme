@@ -6,7 +6,8 @@
 
 [node name="StartPlayer" parent="." instance=ExtResource( 1 )]
 
-transform/pos = Vector2( 0, 640 )
+editor/display_folded = true
+transform/pos = Vector2( 0, 832 )
 parent_block_path = NodePath("../StartLeft")
 is_player = true
 
@@ -16,12 +17,13 @@ tile_data = IntArray( 0, 1, 1, 0, 2, 0, 3, 0, 4, 1, 65536, 0, 65537, 1, 65538, 0
 
 [node name="StartLeft" parent="." instance=ExtResource( 1 )]
 
+editor/display_folded = true
 parent_block_path = NodePath("../StartPlayer")
 position_on_parent = Vector2( 3, 2 )
 
 [node name="TileMap" parent="StartLeft"]
 
-tile_data = IntArray( 0, 0, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 0, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 1, 196608, 1, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
+tile_data = IntArray( 0, 0, 1, 1, 2, 0, 3, 0, 4, 0, 65536, 0, 65537, 1, 65538, 1, 65539, 1, 65540, 1, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 0, 196608, 1, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
 
 [node name="StartRight" parent="." instance=ExtResource( 1 )]
 
@@ -31,20 +33,67 @@ position_on_parent = Vector2( 4, 2 )
 
 [node name="TileMap" parent="StartRight"]
 
-tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 0, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 1, 131072, 0, 131073, 1, 131074, 1, 131075, 0, 131076, 1, 196608, 0, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
+tile_data = IntArray( 0, 1, 1, 0, 2, 1, 3, 1, 4, 0, 65536, 1, 65537, 0, 65538, 0, 65539, 1, 65540, 1, 131072, 0, 131073, 1, 131074, 0, 131075, 0, 131076, 1, 196608, 0, 196609, 1, 196610, 1, 196611, 0, 196612, 1, 262144, 0, 262145, 0, 262146, 0, 262147, 0, 262148, 1 )
 
 [node name="Arrow" parent="." instance=ExtResource( 1 )]
 
-transform/pos = Vector2( 448, 640 )
+editor/display_folded = true
+transform/pos = Vector2( 448, 832 )
 parent_block_path = NodePath("../StartRight")
-position_on_parent = Vector2( 3, 0 )
+position_on_parent = Vector2( 1, 0 )
 
 [node name="TileMap" parent="Arrow"]
 
 tile_data = IntArray( 0, 1, 1, 1, 2, 0, 3, 1, 4, 1, 65536, 1, 65537, 0, 65538, 0, 65539, 0, 65540, 1, 131072, 0, 131073, 1, 131074, 0, 131075, 1, 131076, 0, 196608, 1, 196609, 1, 196610, 0, 196611, 1, 196612, 1, 262144, 1, 262145, 1, 262146, 0, 262147, 1, 262148, 1 )
+
+[node name="StartUp" parent="." instance=ExtResource( 1 )]
+
+transform/pos = Vector2( 0, -448 )
+parent_block_path = NodePath("../StartPlayer")
+position_on_parent = Vector2( 2, 0 )
+
+[node name="TileMap" parent="StartUp"]
+
+tile_data = IntArray( 0, 1, 1, 1, 2, 0, 3, 0, 4, 0, 65536, 1, 65537, 1, 65538, 0, 65539, 0, 65540, 0, 131072, 1, 131073, 1, 131074, 1, 131075, 0, 131076, 1, 196608, 1, 196609, 1, 196610, 1, 196611, 0, 196612, 0, 262144, 0, 262145, 0, 262146, 0, 262147, 1, 262148, 0 )
+
+[node name="StartUpPocketTop" parent="." instance=ExtResource( 1 )]
+
+editor/display_folded = true
+transform/pos = Vector2( 0, -896 )
+parent_block_path = NodePath("../StartUp")
+position_on_parent = Vector2( 3, 0 )
+
+[node name="TileMap" parent="StartUpPocketTop"]
+
+tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 1, 65537, 1, 65538, 1, 65539, 1, 65540, 1, 131072, 1, 131073, 1, 131074, 1, 131075, 1, 131076, 1, 196608, 1, 196609, 1, 196610, 1, 196611, 0, 196612, 0, 262144, 1, 262145, 1, 262146, 1, 262147, 0, 262148, 1 )
+
+[node name="StartUpPocketRight" parent="." instance=ExtResource( 1 )]
+
+editor/display_folded = true
+transform/pos = Vector2( 448, -896 )
+parent_block_path = NodePath("../StartUp")
+position_on_parent = Vector2( 4, 0 )
+
+[node name="TileMap" parent="StartUpPocketRight"]
+
+tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 1, 65537, 1, 65538, 1, 65539, 1, 65540, 1, 131072, 1, 131073, 1, 131074, 1, 131075, 1, 131076, 1, 196608, 0, 196609, 0, 196610, 1, 196611, 1, 196612, 1, 262144, 1, 262145, 0, 262146, 1, 262147, 1, 262148, 1 )
+
+[node name="StartUpPocketBottom" parent="." instance=ExtResource( 1 )]
+
+transform/pos = Vector2( 448, -448 )
+parent_block_path = NodePath("../StartUp")
+position_on_parent = Vector2( 4, 1 )
+
+[node name="TileMap" parent="StartUpPocketBottom"]
+
+tile_data = IntArray( 0, 1, 1, 0, 2, 1, 3, 1, 4, 1, 65536, 0, 65537, 0, 65538, 1, 65539, 1, 65540, 1, 131072, 1, 131073, 1, 131074, 1, 131075, 1, 131076, 1, 196608, 1, 196609, 1, 196610, 1, 196611, 1, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
 
 
 [editable path="StartPlayer"]
 [editable path="StartLeft"]
 [editable path="StartRight"]
 [editable path="Arrow"]
+[editable path="StartUp"]
+[editable path="StartUpPocketTop"]
+[editable path="StartUpPocketRight"]
+[editable path="StartUpPocketBottom"]
