@@ -4,36 +4,47 @@
 
 [node name="Design" type="Node2D"]
 
-[node name="Block1" parent="." instance=ExtResource( 1 )]
-
-parent_block_path = NodePath("../Block2")
-position_on_parent = Vector2( 2, 2 )
-
-[node name="TileMap" parent="Block1"]
-
-tile_data = IntArray( 0, 0, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 0, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 1, 196608, 1, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
-
-[node name="Block2" parent="." instance=ExtResource( 1 )]
+[node name="StartPlayer" parent="." instance=ExtResource( 1 )]
 
 transform/pos = Vector2( 0, 640 )
-parent_block_path = NodePath("../Block1")
+parent_block_path = NodePath("../StartLeft")
 is_player = true
 
-[node name="TileMap" parent="Block2"]
+[node name="TileMap" parent="StartPlayer"]
 
 tile_data = IntArray( 0, 1, 1, 0, 2, 0, 3, 0, 4, 1, 65536, 0, 65537, 1, 65538, 0, 65539, 1, 65540, 0, 131072, 0, 131073, 0, 131074, 0, 131075, 0, 131076, 0, 196608, 0, 196609, 1, 196610, 0, 196611, 1, 196612, 0, 262144, 1, 262145, 0, 262146, 0, 262147, 0, 262148, 1 )
 
-[node name="Block3" parent="." instance=ExtResource( 1 )]
+[node name="StartLeft" parent="." instance=ExtResource( 1 )]
 
-transform/pos = Vector2( 448, 0 )
-parent_block_path = NodePath("../Block2")
+parent_block_path = NodePath("../StartPlayer")
 position_on_parent = Vector2( 3, 2 )
 
-[node name="TileMap" parent="Block3"]
+[node name="TileMap" parent="StartLeft"]
 
-tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 0, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 1, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 0, 196608, 1, 196609, 0, 196610, 1, 196611, 1, 196612, 0, 262144, 1, 262145, 0, 262146, 0, 262147, 0, 262148, 0 )
+tile_data = IntArray( 0, 0, 1, 1, 2, 1, 3, 1, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 0, 131072, 0, 131073, 0, 131074, 1, 131075, 0, 131076, 1, 196608, 1, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
+
+[node name="StartRight" parent="." instance=ExtResource( 1 )]
+
+transform/pos = Vector2( 448, 0 )
+parent_block_path = NodePath("../StartPlayer")
+position_on_parent = Vector2( 4, 2 )
+
+[node name="TileMap" parent="StartRight"]
+
+tile_data = IntArray( 0, 1, 1, 1, 2, 1, 3, 0, 4, 1, 65536, 0, 65537, 1, 65538, 1, 65539, 0, 65540, 1, 131072, 0, 131073, 1, 131074, 1, 131075, 0, 131076, 1, 196608, 0, 196609, 0, 196610, 0, 196611, 0, 196612, 1, 262144, 1, 262145, 1, 262146, 1, 262147, 1, 262148, 1 )
+
+[node name="Arrow" parent="." instance=ExtResource( 1 )]
+
+transform/pos = Vector2( 448, 640 )
+parent_block_path = NodePath("../StartRight")
+position_on_parent = Vector2( 3, 0 )
+
+[node name="TileMap" parent="Arrow"]
+
+tile_data = IntArray( 0, 1, 1, 1, 2, 0, 3, 1, 4, 1, 65536, 1, 65537, 0, 65538, 0, 65539, 0, 65540, 1, 131072, 0, 131073, 1, 131074, 0, 131075, 1, 131076, 0, 196608, 1, 196609, 1, 196610, 0, 196611, 1, 196612, 1, 262144, 1, 262145, 1, 262146, 0, 262147, 1, 262148, 1 )
 
 
-[editable path="Block1"]
-[editable path="Block2"]
-[editable path="Block3"]
+[editable path="StartPlayer"]
+[editable path="StartLeft"]
+[editable path="StartRight"]
+[editable path="Arrow"]
