@@ -7,6 +7,7 @@ var player_block = null
 
 func _ready():
 	self.set_process_input(true)
+	self.set_process(true)
 
 	var blocks = get_tree().get_nodes_in_group("blocks")
 
@@ -56,23 +57,27 @@ func move_player(move_vect):
 	if not self.player_block.parent_block == prev_parent:
 		self.director.move_camera(move_vect)
 
-func _input(event):
-	if event.is_action_pressed("zoom"):
-		self.zoom()
-		return
+func _process(delta):
+	poll_directions()
 
+func poll_directions():
 	var move_vect = null
-	if event.is_action_pressed("move_left"):
+	if Input.is_action_pressed("move_left"):
 		move_vect = Vector2(-1, 0)
 
-	if event.is_action_pressed("move_right"):
+	if Input.is_action_pressed("move_right"):
 		move_vect = Vector2(1, 0)
 
-	if event.is_action_pressed("move_up"):
+	if Input.is_action_pressed("move_up"):
 		move_vect = Vector2(0, -1)
 
-	if event.is_action_pressed("move_down"):
+	if Input.is_action_pressed("move_down"):
 		move_vect = Vector2(0, 1)
 
 	if not move_vect == null:
 		self.move_player(move_vect)
+
+func _input(event):
+	if event.is_action_pressed("zoom"):
+		self.zoom()
+		return

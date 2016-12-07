@@ -41,7 +41,7 @@ func _ready():
 	var transform = Matrix32(0, -self.self_rect.pos)
 	viewport.set_canvas_transform(transform)
 
-	self.set_fixed_process(true)
+	self.set_process(true)
 
 
 ################################################################################
@@ -231,7 +231,7 @@ func easing_function(t):
 	var u3 = 1
 	return u0 * (1-t*t*t) + 3*u1*(1-t*t)*t + 3*u2*(1-t)*t*t + u3*t*t*t*t
 
-func _fixed_process(delta):
+func _process(delta):
 	if self.is_moving:
 		self.current_move_time += delta
 		if self.current_move_time > Constants.move_duration:
