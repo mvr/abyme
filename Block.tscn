@@ -10,6 +10,7 @@ script/script = ExtResource( 1 )
 parent_block_path = null
 position_on_parent = Vector2( 0, 0 )
 is_player = false
+tint_color = 0
 
 [node name="TileMap" type="TileMap" parent="."]
 
@@ -39,7 +40,7 @@ transparent_bg = true
 render_target/enabled = true
 render_target/v_flip = false
 render_target/clear_on_new_frame = true
-render_target/filter = false
+render_target/filter = true
 render_target/gen_mipmaps = false
 render_target/update_mode = 2
 audio_listener/enable_2d = false

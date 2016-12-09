@@ -30,30 +30,34 @@ func log_base(x, b):
 ################################################################################
 ## Drawing
 
-func draw_rect(rect, colour, width):
+func draw_rect(rect, color, width):
 	var corner1 = rect.pos
 	var corner2 = rect.pos + Vector2(0, rect.size.y)
 	var corner3 = rect.end
 	var corner4 = rect.pos + Vector2(rect.size.x, 0)
 
-	self.draw_line(corner1, corner2, colour, width)
-	self.draw_line(corner2, corner3, colour, width)
-	self.draw_line(corner3, corner4, colour, width)
-	self.draw_line(corner4, corner1, colour, width)
+	self.draw_line(corner1, corner2, color, width)
+	self.draw_line(corner2, corner3, color, width)
+	self.draw_line(corner3, corner4, color, width)
+	self.draw_line(corner4, corner1, color, width)
 
 func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 	var tileset = block.tilemap.get_tileset()
 	var block_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale)
 	var cell_screen_size = block.tilemap.get_cell_size() * int_exp(Constants.block_size, scale - 1)
 
-	var fade_colour = null
+	var fade_amount = null
 	if depth == start_depth :
-		var fade_amount = log_base(self.camera_zoom, Constants.block_size)
-		fade_colour = Color(1,1,1).linear_interpolate(Constants.background_fade, fade_amount)
+		fade_amount = log_base(self.camera_zoom, Constants.block_size)
 	elif depth < start_depth:
-		fade_colour = Constants.background_fade
+		fade_amount = 1
 	else:
-		fade_colour = Color(1,1,1)
+		fade_amount = 0
+
+	var fade_color = Color(1,1,1).linear_interpolate(Constants.background_fade, fade_amount)
+
+	# var final_color = fade_color.blend(Constants.tint_for(block.tint_color))
+	var final_color = fade_color
 
 	for i in range(Constants.block_size):
 		for j in range(Constants.block_size):
@@ -61,7 +65,7 @@ func draw_tilemap_manually(block, pos, scale, depth, start_depth):
 			var texture = tileset.tile_get_texture(tile)
 			var corner = pos + cell_screen_size * Vector2(i, j)
 			var drawrect = Rect2(corner, cell_screen_size)
-			self.draw_texture_rect(texture, drawrect, false, fade_colour)
+			self.draw_texture_rect(texture, drawrect, false, final_color)
 
 func draw_block_manually(block, pos, scale, depth, start_depth, max_depth):
 	if depth > max_depth:
