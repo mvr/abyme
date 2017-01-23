@@ -5,7 +5,6 @@ extends Node2D
 
 # Gameplay
 onready var tilemap   = self.get_node("TileMap")
-enum TILES {TILE_EMPTY, TILE_WALL, TILE_EMPTY_RED, TILE_EMPTY_BLUE}
 
 export(NodePath) var parent_block_path = null
 export(Vector2)  var position_on_parent = Vector2(0, 0)
@@ -33,16 +32,16 @@ onready var self_rect = self.get_self_rect()
 func add_tint():
 	var empty_tile_id = null
 	if self.tint_color == Constants.TINT_RED:
-		empty_tile_id = TILE_EMPTY_RED
+		empty_tile_id = Constants.TILE_EMPTY_RED
 	elif self.tint_color == Constants.TINT_BLUE:
-		empty_tile_id = TILE_EMPTY_BLUE
+		empty_tile_id = Constants.TILE_EMPTY_BLUE
 	else:
 		return
 
 	for i in range(Constants.block_size):
 		for j in range(Constants.block_size):
 			var tile = self.tilemap.get_cell(i, j)
-			if tile == TILE_EMPTY:
+			if tile == Constants.TILE_EMPTY:
 				self.tilemap.set_cell(i, j, empty_tile_id)
 
 func _ready():
@@ -131,7 +130,7 @@ class BlockPosition:
 		return get_script().new(newblock, newpos)
 
 	func is_underlying_walkable():
-		return not self.get_tile_id() == TILE_WALL
+		return not self.get_tile_id() == Constants.TILE_WALL
 
 	func block_at():
 		for b in self.block.child_blocks:
