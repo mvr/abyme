@@ -1,0 +1,36 @@
+Plan
+====
+
+Want any shape, continuous movement. Chunks of multiple shapes move
+together when they are connected by a lower chunk sitting over the
+boundary.
+
+Things are "coordinate free", which is a bit tricky. There are regions
+of adjacent shapes. Need a notion of "accessible region", but this may
+change as you move around and come up against other shapes.
+
+Fuck it, let's do it in python:
+* pysdl2/pyopengl for graphics? what a pain...
+* pybox2d for physics
+* Shapely for geometry
+
+Shape
+-----
+* Has a parent chunk
+* Has a position (relative to chunk)
+* Has a poly
+
+Region
+------
+* 
+* Has a poly
+* Has a list of shapes
+
+Chunk 
+-----
+* Has a list of shapes
+* Has a poly
+* Has a parent region
+
+Every step
+----------
