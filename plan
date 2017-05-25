@@ -9,11 +9,6 @@ Things are "coordinate free", which is a bit tricky. There are regions
 of adjacent shapes. Need a notion of "accessible region", but this may
 change as you move around and come up against other shapes.
 
-Fuck it, let's do it in python:
-* pysdl2/pyopengl for graphics? what a pain...
-* pybox2d for physics
-* Shapely for geometry
-
 Shape
 -----
 * Has a parent chunk
@@ -23,14 +18,14 @@ Shape
 Region
 ------
 * 
-* Has a poly
-* Has a list of shapes
+* Has a list of chunks
+* Has a (calculated) poly
 
 Chunk 
 -----
 * Has a list of shapes
-* Has a poly
 * Has a parent region
+* Has a (calculated) poly
 
 Every step
 ----------

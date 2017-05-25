@@ -1,0 +1,24 @@
+resolver: lts-8.5
+
+packages:
+- '.'
+# - 'geos'
+# - location:
+#     git: https://github.com/lynnard/Hipmunk.git
+#     commit: 24829215b3fcb2a91f79ae32dfb42cfd4664877b
+#   extra-dep: true
+- location:
+    git: https://github.com/ekmett/gl.git
+    commit: 885e08a96aa53d80c3b62e157b20d2f05e34f133
+  extra-dep: true
+
+# Dependency packages to be pulled from upstream that are not in the resolver
+# (e.g., acme-missiles-0.3)
+extra-deps:
+- nanovg-0.5.2.0
+
+# Override default flag values for local packages and extra-deps
+flags: {}
+
+# Extra package databases containing global packages
+extra-package-dbs: []
