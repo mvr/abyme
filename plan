@@ -9,23 +9,13 @@ Things are "coordinate free", which is a bit tricky. There are regions
 of adjacent shapes. Need a notion of "accessible region", but this may
 change as you move around and come up against other shapes.
 
-Shape
------
-* Has a parent chunk
-* Has a position (relative to chunk)
-* Has a poly
-
-Region
-------
-* 
-* Has a list of chunks
-* Has a (calculated) poly
-
-Chunk 
------
-* Has a list of shapes
-* Has a parent region
-* Has a (calculated) poly
-
 Every step
 ----------
+TODO
+
+Names
+=====
+
+* Abyme
+* Sympathy
+* Synecdcohe
