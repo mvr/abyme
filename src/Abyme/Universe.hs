@@ -4,15 +4,24 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Universe where
 
-import Control.Lens
+import Control.Lens hiding (contains)
 import Data.List (nub, intersect, union, find)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, catMaybes)
 import qualified Data.Map as M
 import Data.Monoid
 import Linear
 
 import Abyme.Direction
 import Abyme.Polyomino
+
+-- Some nomenclature:
+-- * There are Shapes that when next to each other form Regions.
+-- * Some Shapes in a Region are actually locked together by shapes on a
+--   lower level, these form Chunks
+-- * A Piece is one Square in a Region
+-- * Every Shape is made up of Squares, every Square lies on a Location
+-- * Fringe is all the squares adjacent to something in a particular direction
+--   Halo is all the squares adjacent to something in any direction
 
 levelScale :: Integer
 levelScale = 2
@@ -79,15 +88,17 @@ data Location = Location {
 } deriving (Eq, Show)
 makeLenses ''Location
 
--- Could be traversals
+data Chunk = Chunk {
+  _chunkPieces :: [Piece]
+} deriving (Eq, Show)
+makeLenses ''Chunk
+
+-- --------------------------------------------------------------------------------
+-- Fundamentals
+
+-- Could be indexed traversals
 regionPieces :: Region -> [Piece]
 regionPieces r = fmap (Piece r) (r ^. regionShapes)
-
-regionChildRegions :: Universe -> Region -> [Region]
-regionChildRegions u r = u ^.. universeRegions . traverse . filtered (\c -> r^.regionId == c^.regionParentId)
-
-regionChildPieces :: Universe -> Region -> [Piece]
-regionChildPieces u r = regionPieces =<< (regionChildRegions u r)
 
 -- Position relative to constituent region origin
 shapeContains :: Shape -> V2 Integer -> Bool
@@ -114,14 +125,72 @@ squareLocation u (Square (Piece c s) p) = Location newSquare subp
 inhabitant :: Universe -> Location -> Maybe Square
 inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (levelScale *^ p + subp)
 
-pieceSquares :: Piece -> [Square]
-pieceSquares p = fmap (\s -> Square p s) (p ^. pieceShape . shapePolyomino . polyominoSquares)
+-- --------------------------------------------------------------------------------
+-- -- More convenient accessors
 
-pieceLocations :: Universe -> Piece -> [Location]
-pieceLocations u p = fmap (squareLocation u) (pieceSquares p)
+class Eq a => HasSquares a where
+  constituentSquares :: Universe -> a -> [Square]
+
+  childRegions :: Universe -> a -> [Region]
+  childRegions u a = nub $ fmap (_pieceRegion . _squarePiece) $ catMaybes $ fmap (inhabitant u) (constituentLocations u a)
+
+instance HasSquares Square where
+  constituentSquares _ s = [s]
+
+instance HasSquares Piece where
+  constituentSquares _ p = fmap (\s -> Square p s) (p ^. pieceShape . shapePolyomino . polyominoSquares)
+
+instance HasSquares Chunk where
+  constituentSquares u c = concat $ fmap (constituentSquares u)(_chunkPieces c)
+
+instance HasSquares Region where
+  constituentSquares u r = concat $ fmap (constituentSquares u) pieces
+    where pieces = fmap (Piece r) (r ^. regionShapes)
+  childRegions u r = u ^.. universeRegions . traverse . filtered (\c -> r^.regionId == c^.regionParentId)
+
+constituentLocations :: HasSquares a => Universe -> a -> [Location]
+constituentLocations u a = do
+  s <- constituentSquares u a
+  subp <- allSubpositions
+  return $ Location s subp
+
+contains :: HasSquares a => Universe -> a -> Square -> Bool
+contains u a s = s `elem` (constituentSquares u a)
+
+locations :: HasSquares a => Universe -> a -> [Location]
+locations u a = fmap (squareLocation u) (constituentSquares u a)
+
+inhabits :: HasSquares a => Universe -> a -> Location -> Bool
+inhabits u a l = l `elem` (locations u a)
+
+habitat :: HasSquares a => Universe -> a -> [Piece]
+habitat u a = nub $ fmap (\l -> l ^. locationSquare . squarePiece) (locations u a)
+
+-- Bool records if we hit OoB
+fringe :: HasSquares a => Universe -> Direction -> a -> ([Location], Bool)
+fringe u d a = (filter (inhabits u a) justs, length allMaybes == length justs)
+  where allMaybes = fmap (nudgeLocation u d) $ locations u a
+        justs = catMaybes allMaybes
+
+halo :: HasSquares a => Universe -> a -> [Location]
+halo uni a = nub $ u ++ d ++ l ++ r
+  where (u, _) = fringe uni Up a
+        (d, _) = fringe uni Down a
+        (l, _) = fringe uni LEft a
+        (r, _) = fringe uni RIght a
+
+childPieces :: HasSquares a => Universe -> a -> [Piece]
+childPieces u a = regionPieces =<< (childRegions u a)
+  where regionPieces r = fmap (Piece r) (r ^. regionShapes)
 
 -- --------------------------------------------------------------------------------
 -- -- Nudging
+
+allSubpositions :: [V2 Integer]
+allSubpositions = do
+  x <- [0 .. levelScale - 1]
+  y <- [0 .. levelScale - 1]
+  return $ V2 x y
 
 wrapSubposition :: V2 Integer -> (Bool, V2 Integer)
 wrapSubposition (V2 x y) = (x /= wx || y /= wy, V2 wx wy)
@@ -163,17 +232,6 @@ nudgeSquare u d s = nudgeSquare' u (First Nothing) d s
 -- -- Chunks
 -- TODO: DANGER DANGER: this only works for exactly 2 levels
 
-data Chunk = Chunk {
-  _chunkPieces :: [Piece]
-} deriving (Eq, Show)
-makeLenses ''Chunk
-
-chunkFringe :: Universe -> Direction -> Chunk -> [Location]
-chunkFringe = undefined
-
-pieceParents :: Universe -> Piece -> [Piece]
-pieceParents u p = nub $ fmap (_squarePiece . _locationSquare . squareLocation u) $ pieceSquares p
-
 unionize :: Eq a => [[a]] -> [[a]]
 unionize [] = []
 unionize (g:gs) = go [] g gs
@@ -183,11 +241,58 @@ unionize (g:gs) = go [] g gs
                          else
                            unionize $ [union g b] ++ as ++ bs
 
+-- TODO maybe store this in Region
 regionChunks :: Universe -> Region -> [Chunk]
-regionChunks u r = fmap Chunk $ unionize $ fmap (pieceParents u) $ regionChildPieces u r
+regionChunks u r = fmap Chunk $ unionize $ fmap (habitat u) $ concatMap regionPieces $ childRegions u r
 
 findChunk :: Universe -> Piece -> Chunk
-findChunk u p = Chunk $ fromJustOrDie "Piece was not found in list of nearby chunks" $ find (p `elem`) (fmap _chunkPieces $ regionChunks u (p ^. pieceRegion))
+findChunk u p = Chunk $ fromJustOrDie "Piece was not found in list of its own nearby chunks" $ find (p `elem`) (fmap _chunkPieces $ regionChunks u (p ^. pieceRegion))
+
+fusePair :: Region -> Region -> Region
+fusePair (Region lid lparent lpos lshapes) (Region rid rparent rpos rshapes)
+  = if lparent == rparent then
+      Region lid lparent lpos (lshapes ++ fmap fixShape rshapes)
+    else
+      error "Can't fuse Regions with different parents"
+  where
+    fixShape (Shape pos poly) = Shape (pos + lpos - rpos) poly
+
+fuseRegions :: [Region] -> Region
+fuseRegions [] = error "Cannot fuse empty list"
+fuseRegions rs = foldl1 fusePair rs
+
+adjacentRegions :: Universe -> Region -> [Region]
+adjacentRegions u r = (r:) $ nub $ fmap (_pieceRegion . _squarePiece) $ catMaybes $ fmap (inhabitant u) (halo u r)
+
+collectRegionChunks :: Universe -> [Region] -> [[Region]]
+collectRegionChunks u rs = unionize $ fmap (adjacentRegions u) $ rs
+
+findNewParent :: Eq a => [(a, [a])] -> a -> a
+findNewParent [] a = a
+findNewParent ((n, os):rest) a = if a `elem` os then n else findNewParent rest a
+
+-- new parent, child
+adjustChild :: Universe -> [Region] -> [(Region, [Region])] -> Region -> Region
+adjustChild u needFixing adjs c@(Region cid _ cpos cshapes)
+  = if o `elem` needFixing then
+      let (Region pid _ ppos _) = findNewParent adjs c in
+      Region cid pid (cpos + opos - ppos) cshapes
+    else
+      c
+  where o@(Region _ _ opos _) = regionParent u c -- old parent
+
+fuseInhabitantRegions :: Universe -> Region -> Universe
+fuseInhabitantRegions u@(Universe regionMap) r = Universe adjusted
+  where children = childRegions u r
+        chunks = collectRegionChunks u children
+        newRegions = fmap fuseRegions chunks
+        adjustments = zip newRegions chunks
+        deletedM = foldl (\m i -> M.delete i m) regionMap (fmap _regionId children)
+        addedM = foldl (\m r -> M.insert (_regionId r) r m) deletedM newRegions
+        adjusted = fmap (adjustChild u children adjustments) addedM
+
+pushChunk :: Universe -> Direction -> Chunk -> Universe
+pushChunk = undefined
 
 -- --------------------------------------------------------------------------------
 -- -- Example
