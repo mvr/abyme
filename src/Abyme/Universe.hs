@@ -299,8 +299,8 @@ setNewParent u adjs c@(Region cid _ cpos cshapes) = Region cid pid (cpos + opos 
   where oldp@(Region _ _ opos _) = regionParent u c
         newp@(Region pid _ ppos _) = findNewParent adjs c
 
-fuseInhabitantRegions :: Universe -> Region -> Universe
-fuseInhabitantRegions u@(Universe regionMap) r = Universe adjusted
+fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
+fuseInhabitantRegions' u@(Universe regionMap) r = (Universe adjusted, needRecursion)
   where children = childRegions u r
         childrenIds = fmap _regionId children
         chunks = collectRegionChunks u children
@@ -309,6 +309,16 @@ fuseInhabitantRegions u@(Universe regionMap) r = Universe adjusted
         deletedM = foldl (\m i -> M.delete i m) regionMap (fmap _regionId children)
         addedM = foldl (\m r -> M.insert (_regionId r) r m) deletedM newRegions
         adjusted = addedM & itraversed . indices (`elem` childrenIds) %~ setNewParent u adjustments
+        needRecursion = fmap _regionId $ concat $ filter (\g -> length g > 1) chunks
+
+fuseInhabitantRegions :: Universe -> Region -> Universe
+fuseInhabitantRegions u r = go u [r ^. regionId]
+  where go u [] = u
+        go u (i:is) = if M.member i (u ^. universeRegions) then
+                        let (u', newis) = fuseInhabitantRegions' u (u ^?! universeRegions . ix i)
+                        in go u' (is ++ newis)
+                      else
+                        go u is
 
 -- TODO: DANGER DANGER: need to fuse recursively
 
