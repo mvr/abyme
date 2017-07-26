@@ -5,9 +5,9 @@
 module Abyme.Universe where
 
 import Control.Lens hiding (contains)
-import Data.List (nub, intersect, union, find)
-import Data.Maybe (fromJust, catMaybes)
-import qualified Data.Map as M
+import Data.List (nub, intersect, union, find, delete, (\\))
+import Data.Maybe (fromJust, catMaybes, isJust)
+import qualified Data.Map.Strict as M
 import Data.Monoid
 import Linear
 
@@ -22,6 +22,9 @@ import Abyme.Polyomino
 -- * Every Shape is made up of Squares, every Square lies on a Location
 -- * Fringe is all the squares adjacent to something in a particular direction
 --   Halo is all the squares adjacent to something in any direction
+
+-- TODO: for efficiency:
+-- * Keep track of which shapes are on the edge of their region?
 
 levelScale :: Integer
 levelScale = 2
@@ -67,6 +70,15 @@ makeLenses ''Universe
 regionParent :: Universe -> Region -> Region
 regionParent u c = fromJust $ u ^. universeRegions . at (c ^. regionParentId)
 
+regionEraseShape :: Shape -> Region -> Region
+regionEraseShape s r = r & regionShapes %~ (delete s)
+
+regionEraseShapes :: [Shape] -> Region -> Region
+regionEraseShapes ss r = r & regionShapes %~ (\\ ss)
+
+newRegionId :: Universe -> RegionId
+newRegionId (Universe rs) = RegionId $ 1 + (getRegionId $ fst $ M.findMax rs)
+
 -- --------------------------------------------------------------------------------
 -- -- Addressing
 
@@ -87,11 +99,6 @@ data Location = Location {
   _locationSubPosition :: V2 Integer
 } deriving (Eq, Show)
 makeLenses ''Location
-
-data Chunk = Chunk {
-  _chunkPieces :: [Piece]
-} deriving (Eq, Show)
-makeLenses ''Chunk
 
 -- --------------------------------------------------------------------------------
 -- Fundamentals
@@ -125,6 +132,9 @@ squareLocation u (Square (Piece c s) p) = Location newSquare subp
 inhabitant :: Universe -> Location -> Maybe Square
 inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (levelScale *^ p + subp)
 
+isInhabited :: Universe -> Location -> Bool
+isInhabited u l = isJust $ inhabitant u l
+
 -- --------------------------------------------------------------------------------
 -- -- More convenient accessors
 
@@ -139,9 +149,6 @@ instance HasSquares Square where
 
 instance HasSquares Piece where
   constituentSquares _ p = fmap (\s -> Square p s) (p ^. pieceShape . shapePolyomino . polyominoSquares)
-
-instance HasSquares Chunk where
-  constituentSquares u c = concat $ fmap (constituentSquares u)(_chunkPieces c)
 
 instance HasSquares Region where
   constituentSquares u r = concat $ fmap (constituentSquares u) pieces
@@ -230,7 +237,22 @@ nudgeSquare u d s = nudgeSquare' u (First Nothing) d s
 
 -- --------------------------------------------------------------------------------
 -- -- Chunks
--- TODO: DANGER DANGER: this only works for exactly 2 levels
+-- A Chunk should be EXACTLY a collection of shapes that are glued together
+
+data Chunk = Chunk {
+  _chunkRegion :: Region,
+  _chunkShapes :: [Shape]
+} deriving (Eq, Show)
+makeLenses ''Chunk
+
+instance HasSquares Chunk where
+  constituentSquares u c = concat $ fmap (constituentSquares u) (chunkPieces c)
+
+chunkPieces :: Chunk -> [Piece]
+chunkPieces (Chunk r ss) = fmap (Piece r) ss
+
+chunkHasPiece :: Chunk -> Piece -> Bool
+chunkHasPiece (Chunk r ss) (Piece r' s) = r == r' && s `elem` ss
 
 unionize :: Eq a => [[a]] -> [[a]]
 unionize [] = []
@@ -243,10 +265,11 @@ unionize (g:gs) = go [] g gs
 
 -- TODO maybe store this in Region
 regionChunks :: Universe -> Region -> [Chunk]
-regionChunks u r = fmap Chunk $ unionize $ fmap (habitat u) $ concatMap regionPieces $ childRegions u r
+regionChunks u r = fmap (Chunk r) $ fmap (fmap _pieceShape) $ unionize $ fmap (habitat u) $ concatMap regionPieces $ childRegions u r
 
+-- TODO: DANGER DANGER: this only works for exactly 2 levels
 findChunk :: Universe -> Piece -> Chunk
-findChunk u p = Chunk $ fromJustOrDie "Piece was not found in list of its own nearby chunks" $ find (p `elem`) (fmap _chunkPieces $ regionChunks u (p ^. pieceRegion))
+findChunk u p = fromJustOrDie "Piece was not found in list of its own nearby chunks" $ find (flip chunkHasPiece p) (regionChunks u (p ^. pieceRegion))
 
 fusePair :: Region -> Region -> Region
 fusePair (Region lid lparent lpos lshapes) (Region rid rparent rpos rshapes)
@@ -271,28 +294,58 @@ findNewParent :: Eq a => [(a, [a])] -> a -> a
 findNewParent [] a = a
 findNewParent ((n, os):rest) a = if a `elem` os then n else findNewParent rest a
 
--- new parent, child
-adjustChild :: Universe -> [Region] -> [(Region, [Region])] -> Region -> Region
-adjustChild u needFixing adjs c@(Region cid _ cpos cshapes)
-  = if o `elem` needFixing then
-      let (Region pid _ ppos _) = findNewParent adjs c in
-      Region cid pid (cpos + opos - ppos) cshapes
-    else
-      c
-  where o@(Region _ _ opos _) = regionParent u c -- old parent
+setNewParent :: Universe -> [(Region, [Region])] -> Region -> Region
+setNewParent u adjs c@(Region cid _ cpos cshapes) = Region cid pid (cpos + opos - ppos) cshapes
+  where oldp@(Region _ _ opos _) = regionParent u c
+        newp@(Region pid _ ppos _) = findNewParent adjs c
 
 fuseInhabitantRegions :: Universe -> Region -> Universe
 fuseInhabitantRegions u@(Universe regionMap) r = Universe adjusted
   where children = childRegions u r
+        childrenIds = fmap _regionId children
         chunks = collectRegionChunks u children
         newRegions = fmap fuseRegions chunks
         adjustments = zip newRegions chunks
         deletedM = foldl (\m i -> M.delete i m) regionMap (fmap _regionId children)
         addedM = foldl (\m r -> M.insert (_regionId r) r m) deletedM newRegions
-        adjusted = fmap (adjustChild u children adjustments) addedM
+        adjusted = addedM & itraversed . indices (`elem` childrenIds) %~ setNewParent u adjustments
+
+-- TODO: DANGER DANGER: need to fuse recursively
+
+canPushChunk :: Universe -> Direction -> Chunk -> Bool
+canPushChunk u d c = not (oob || any (isInhabited u) fr)
+  where (fr, oob) = fringe u d c
+
+-- These are unsafe if used on their own:
+erasePiece :: Universe -> Piece -> Universe
+erasePiece (Universe rs) (Piece r s) = Universe $ M.adjust (regionEraseShape s) (r ^. regionId) rs
+
+eraseChunk :: Universe -> Chunk -> Universe
+eraseChunk (Universe rs) (Chunk r ss) = Universe $ M.adjust (regionEraseShapes ss) (r ^. regionId) rs
+
+splitChunkIntoRegion :: Universe -> Chunk -> (Region, Universe)
+splitChunkIntoRegion u@(Universe m) c = if isWholeRegion then
+                                          (region, u)
+                                        else
+                                          (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ m)
+  where region = c ^. chunkRegion
+        isWholeRegion = length (region ^. regionShapes \\ c ^. chunkShapes) > 0
+        newId = newRegionId u
+        newRegion = Region newId (region ^. regionParentId) (region ^. regionPosition) (c ^. chunkShapes)
+        remainingRegion = (c ^. chunkRegion) {_regionShapes = region ^. regionShapes \\ c ^. chunkShapes }
+        adjustParent (Region id pid pos sh)
+          = if head sh `elem` c ^. chunkShapes then
+              Region id newId pos sh
+            else
+              Region id pid pos sh
+
+pushRegion :: Universe -> Direction -> Region -> Universe
+pushRegion u d r = u & universeRegions . ix (r ^. regionId) . regionPosition +~ directionToVector d
 
 pushChunk :: Universe -> Direction -> Chunk -> Universe
-pushChunk = undefined
+pushChunk u d c = let (r, u') = splitChunkIntoRegion u c
+                  in fuseInhabitantRegions (pushRegion u' d r) (u ^?! universeRegions . ix (r ^. regionParentId))
+
 
 -- --------------------------------------------------------------------------------
 -- -- Example
