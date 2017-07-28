@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Addressing where
 
@@ -58,6 +60,12 @@ inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (
 
 isInhabited :: Universe -> Location -> Bool
 isInhabited u l = isJust $ inhabitant u l
+
+-- --------------------------------------------------------------------------------
+-- Lenses
+
+atPiece :: Piece -> Lens' Universe Shape
+atPiece (Piece r s) = singular $ universeRegions . ix (r ^. regionId) . regionShapes . traverse . filtered (== s)
 
 -- --------------------------------------------------------------------------------
 -- HasSquares

@@ -79,15 +79,3 @@ shapeContains s p = polyContainsPoint (s^.shapePolyomino) (p - s^.shapePosition)
 -- Position relative to parent region origin
 shapeInhabits :: Region -> Shape -> V2 Integer -> Bool
 shapeInhabits c s p = shapeContains s (p - c^.regionPosition)
-
--- --------------------------------------------------------------------------------
--- -- Example
-
--- minimal :: Universe
--- minimal = Universe (M.fromList [(cid1, [shape1]), (cid2, [shape2])])
---                    (M.fromList [(cid1, [shape2]), (cid2, [shape1])])
--- mono = Polyomino [V2 0 0]
--- cid1 = RegionId 1
--- cid2 = RegionId 2
--- shape1 = Shape cid1 (V2 0 0) cid2 (V2 0 0) mono
--- shape2 = Shape cid2 (V2 0 0) cid1 (V2 0 0) mono

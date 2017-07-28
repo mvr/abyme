@@ -6,7 +6,6 @@ import Data.List (nub, intersect, union, find, delete, (\\))
 import Data.Maybe (catMaybes)
 import qualified Data.Map.Strict as M
 
-
 import Abyme.Direction
 import Abyme.Universe
 import Abyme.Addressing
@@ -46,6 +45,9 @@ regionChunks u r = fmap (Chunk r) $ fmap (fmap _pieceShape) $ unionize $ fmap (h
 -- TODO: DANGER DANGER: this only works for exactly 2 levels
 findChunk :: Universe -> Piece -> Chunk
 findChunk u p = fromJustOrDie "Piece was not found in list of its own nearby chunks" $ find (flip chunkHasPiece p) (regionChunks u (p ^. pieceRegion))
+
+-- --------------------------------------------------------------------------------
+-- -- Fusing and Splitting
 
 fusePair :: Region -> Region -> Region
 fusePair (Region lid lparent lpos lshapes) (Region rid rparent rpos rshapes)
