@@ -15,25 +15,28 @@ cabal-version:       >=1.10
 executable abyme
   main-is:             Main.hs
 
-  other-modules:       Abyme.Poly  
-                     , Abyme.Shape
-                     , Abyme.Chunk
---                     , Abyme.Region
+  other-modules:       Abyme.Polyomino 
+                     , Abyme.Direction
                      , Abyme.Universe
+                     , Abyme.Addressing
+                     , Abyme.Chunk
+                     , Abyme.Universe.Generator
+                     , Abyme.Universe.Explorer
+                     , Abyme.Universe.Normalise
                      
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10
                      , lens
-                     , transformers
-                     , monad-loops
+--                     , transformers
+--                     , monad-loops
                      , containers
-                     , text
-                     , vector
+--                     , text
+--                     , vector
 
                        -- Graphics
-                     , gl
-                     , GLFW-b
-                     , nanovg
+                     -- , gl
+                     -- , GLFW-b
+                     -- , nanovg
 
                        -- Math
                      , linear
