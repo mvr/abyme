@@ -29,7 +29,8 @@ minimal = Universe (M.fromList [(id1, region1), (id2, region2)])
 
 -- Assuming there isn't already a square there
 growPiece :: Universe -> Piece -> V2 Integer -> Universe
-growPiece u p n = u & atPiece p . shapePolyomino . polyominoSquares %~ (n:)
+growPiece u p n = fuseInhabitantRegions added (regionParent added (p ^. pieceRegion))
+  where added = u & atPiece p . shapePolyomino . polyominoSquares %~ (n:)
 
 potentialNewSquares :: Universe -> Region -> [(Piece, V2 Integer)]
 potentialNewSquares u r = do

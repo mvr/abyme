@@ -60,15 +60,16 @@ adjacentRegions u r = (r:) $ nub $ fmap (_pieceRegion . _squarePiece) $ catMaybe
 collectRegionChunks :: Universe -> [Region] -> [[Region]]
 collectRegionChunks u rs = unionize $ fmap (adjacentRegions u) $ rs
 
-findNewParent :: Eq a => [(a, [a])] -> a -> a
-findNewParent [] a = a
-findNewParent ((n, os):rest) a = if a `elem` os then n else findNewParent rest a
+findRepresentative :: Eq a => [(a, [a])] -> a -> a
+findRepresentative [] a = a
+findRepresentative ((n, os):rest) a = if a `elem` os then n else findRepresentative rest a
 
 setNewParent :: Universe -> [(Region, [Region])] -> Region -> Region
 setNewParent u adjs c@(Region cid _ cpos cshapes) = Region cid pid (cpos + opos - ppos) cshapes
   where oldp@(Region _ _ opos _) = regionParent u c
-        newp@(Region pid _ ppos _) = findNewParent adjs c
+        newp@(Region pid _ ppos _) = regionParent u $ findRepresentative adjs c
 
+-- TODO: don't adjust regions that don't change
 fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
 fuseInhabitantRegions' u@(Universe regionMap) r = (Universe adjusted, needRecursion)
   where children = childRegions u r
