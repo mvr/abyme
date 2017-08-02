@@ -7,6 +7,7 @@ import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as M
 import Linear
 
+import Abyme.Util
 import Abyme.Direction
 import Abyme.Polyomino
 
@@ -21,18 +22,6 @@ import Abyme.Polyomino
 
 -- TODO: for efficiency:
 -- * Keep track of which shapes are on the edge of their region?
-
-levelScale :: Integer
-levelScale = 2
-
-posDivMod :: V2 Integer -> (V2 Integer, V2 Integer)
-posDivMod (V2 x y) = (V2 q q', V2 r r')
-  where (q, r) = x `divMod` levelScale
-        (q', r') = y `divMod` levelScale
-
-fromJustOrDie :: String -> Maybe a -> a
-fromJustOrDie _ (Just a) = a
-fromJustOrDie m Nothing = error m
 
 newtype RegionId = RegionId { getRegionId :: Integer }
   deriving (Eq, Ord, Show)

@@ -9,6 +9,7 @@ import qualified Data.Map.Strict as M
 import Abyme.Direction
 import Abyme.Universe
 import Abyme.Addressing
+import Abyme.Util (unionize, fromJustOrDie)
 
 -- --------------------------------------------------------------------------------
 -- -- Chunks
@@ -28,15 +29,6 @@ chunkPieces (Chunk r ss) = fmap (Piece r) ss
 
 chunkHasPiece :: Chunk -> Piece -> Bool
 chunkHasPiece (Chunk r ss) (Piece r' s) = r == r' && s `elem` ss
-
-unionize :: Eq a => [[a]] -> [[a]]
-unionize [] = []
-unionize (g:gs) = go [] g gs
-  where go as g [] = g : unionize as
-        go as g (b:bs) = if null $ intersect g b then
-                           go (b:as) g bs
-                         else
-                           unionize $ [union g b] ++ as ++ bs
 
 -- TODO maybe store this in Region
 regionChunks :: Universe -> Region -> [Chunk]

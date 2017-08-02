@@ -9,6 +9,7 @@ import Data.Maybe (catMaybes, isJust)
 import Data.Monoid
 import Linear
 
+import Abyme.Util (posDivMod, levelScale, fromJustOrDie)
 import Abyme.Direction
 import Abyme.Polyomino
 import Abyme.Universe
@@ -37,7 +38,7 @@ makeLenses ''Location
 -- --------------------------------------------------------------------------------
 -- Fundamentals
 
--- Could be indexed traversals
+-- Could be indexed(?) traversals
 regionPieces :: Region -> [Piece]
 regionPieces r = fmap (Piece r) (r ^. regionShapes)
 
@@ -121,6 +122,9 @@ halo uni a = nub $ u ++ d ++ l ++ r
 childPieces :: HasSquares a => Universe -> a -> [Piece]
 childPieces u a = regionPieces =<< (childRegions u a)
   where regionPieces r = fmap (Piece r) (r ^. regionShapes)
+
+uninhabited :: HasSquares a => Universe -> a -> Bool
+uninhabited u a = null (childRegions u a)
 
 -- --------------------------------------------------------------------------------
 -- -- Nudging
