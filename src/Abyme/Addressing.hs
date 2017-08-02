@@ -108,7 +108,7 @@ habitat u a = nub $ fmap (\l -> l ^. locationSquare . squarePiece) (locations u 
 
 -- Bool records if we hit OoB
 fringe :: HasSquares a => Universe -> Direction -> a -> ([Location], Bool)
-fringe u d a = (filter (inhabits u a) justs, length allMaybes == length justs)
+fringe u d a = (filter (not . inhabits u a) justs, length allMaybes /= length justs)
   where allMaybes = fmap (nudgeLocation u d) $ locations u a
         justs = catMaybes allMaybes
 
