@@ -91,8 +91,6 @@ fuseInhabitantRegions u r = go u [r ^. regionId]
                       else
                         go u is
 
--- TODO: DANGER DANGER: need to fuse recursively
-
 canPushChunk :: Universe -> Direction -> Chunk -> Bool
 canPushChunk u d c = not (oob || any (isInhabited u) fr)
   where (fr, oob) = fringe u d c

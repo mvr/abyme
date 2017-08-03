@@ -47,7 +47,12 @@ findConstituentSquare c p = fmap (\s -> Square (Piece c s) (p - s^.shapePosition
   where maybeSquare = c ^? regionShapes . traverse . filtered (flip shapeContains p)
 
 findInhabitantSquare :: Universe -> Region -> V2 Integer -> Maybe Square
-findInhabitantSquare u c p = findConstituentSquare (regionParent u c) (p - c^.regionPosition)
+findInhabitantSquare u r p = case catMaybes $ fmap checkChild children of
+                               []  -> Nothing
+                               [s] -> Just s
+                               _   -> error "Multiple child regions claim to inhabit the same location"
+  where children = childRegions u r
+        checkChild c = findConstituentSquare c (p - c^.regionPosition)
 
 -- This is total unless the Universe is busted
 squareLocation :: Universe -> Square -> Location
@@ -57,7 +62,7 @@ squareLocation u (Square (Piece c s) p) = Location newSquare subp
                     findConstituentSquare (regionParent u c) p'
 
 inhabitant :: Universe -> Location -> Maybe Square
-inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (levelScale *^ p + subp)
+inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c ((levelScale *^ p) + subp)
 
 isInhabited :: Universe -> Location -> Bool
 isInhabited u l = isJust $ inhabitant u l
