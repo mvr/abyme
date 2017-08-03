@@ -143,13 +143,14 @@ wrapSubposition (V2 x y) = (x /= wx || y /= wy, V2 wx wy)
 nudgeSubposition :: Direction -> V2 Integer -> (Bool, V2 Integer)
 nudgeSubposition d v = wrapSubposition (v + directionToVector d)
 
-nudgeLocation' :: Universe -> First (Direction, Location) -> Direction -> Location -> Maybe Location
-nudgeLocation' _ (First (Just (d', l'))) d l | d == d' && l == l' = Nothing
-nudgeLocation' u f d l@(Location s p)
+-- TODO: maybe instead a 'countdown' instead a list of seen
+nudgeLocation' :: Universe -> [(Direction, Location)] -> Direction -> Location -> Maybe Location
+nudgeLocation' _ seen d l | (d, l) `elem` seen = Nothing
+nudgeLocation' u seen d l@(Location s p)
   = case nudgeSubposition d p of
       (False, p') -> Just (Location s p')
       (True, p') -> do
-        s' <- nudgeSquare' u (f <> First (Just (d, l))) d s
+        s' <- nudgeSquare' u ((d, l) : seen) d s
         return $ Location s' p'
 
 nudgeSquareOnPoly :: Direction -> Square -> Maybe Square
@@ -159,14 +160,14 @@ nudgeSquareOnPoly d (Square (Piece c s@(Shape _ poly)) p)
     else
       Nothing
 
-nudgeSquare' :: Universe -> First (Direction, Location) -> Direction -> Square -> Maybe Square
+nudgeSquare' :: Universe -> [(Direction, Location)] -> Direction -> Square -> Maybe Square
 nudgeSquare' _ _ d s | Just s' <- nudgeSquareOnPoly d s = Just s'
-nudgeSquare' u f d s = do
-  l <- nudgeLocation' u f d (squareLocation u s)
+nudgeSquare' u seen d s = do
+  l <- nudgeLocation' u seen d (squareLocation u s)
   inhabitant u l
 
 nudgeLocation :: Universe -> Direction -> Location -> Maybe Location
-nudgeLocation u d l = nudgeLocation' u (First Nothing) d l
+nudgeLocation u d l = nudgeLocation' u [] d l
 
 nudgeSquare :: Universe -> Direction -> Square -> Maybe Square
-nudgeSquare u d s = nudgeSquare' u (First Nothing) d s
+nudgeSquare u d s = nudgeSquare' u [] d s
