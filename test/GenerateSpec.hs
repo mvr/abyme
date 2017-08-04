@@ -1,11 +1,11 @@
-module GeneratorSpec (spec) where
+module GenerateSpec (spec) where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
 import Abyme.Universe
-import Abyme.Universe.Generator ()
-import Abyme.Universe.Validator
+import Abyme.Universe.Generate ()
+import Abyme.Universe.Validate
 
 spec :: Spec
 spec = describe "generator" $ do

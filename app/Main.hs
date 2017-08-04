@@ -1,7 +1,7 @@
 module Main where
 
 import Abyme.Universe
-import Abyme.Universe.Generator
+import Abyme.Universe.Generate
 
 main :: IO ()
 main = do

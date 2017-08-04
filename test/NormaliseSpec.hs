@@ -5,7 +5,7 @@ import Test.Hspec.QuickCheck
 
 import Abyme.Universe
 import Abyme.Universe.Normalise
-import Abyme.Universe.Generator ()
+import Abyme.Universe.Generate ()
 
 spec :: Spec
 spec = describe "normalisation" $ do

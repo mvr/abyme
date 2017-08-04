@@ -22,9 +22,9 @@ library
                      , Abyme.Universe
                      , Abyme.Addressing
                      , Abyme.Chunk
-                     , Abyme.Universe.Validator
-                     , Abyme.Universe.Generator
-                     , Abyme.Universe.Explorer
+                     , Abyme.Universe.Validate
+                     , Abyme.Universe.Generate
+                     , Abyme.Universe.Explore
                      , Abyme.Universe.Normalise
                      
   -- other-extensions:    
@@ -62,7 +62,7 @@ test-suite abyme-test
   ghc-options:          -Wall
   main-is:              Spec.hs
   other-modules:        UniverseSpec
-                      , GeneratorSpec
+                      , GenerateSpec
                       , NormaliseSpec
   build-depends:        base
                       , abyme

@@ -1,4 +1,4 @@
-module Abyme.Universe.Validator where
+module Abyme.Universe.Validate where
 
 import Control.Lens
 import Data.List (tails)
