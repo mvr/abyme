@@ -11,7 +11,7 @@ import Abyme.Direction
 newtype Polyomino = Polyomino
   {
     _polyominoSquares :: [V2 Integer]
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 
 makeLenses ''Polyomino
 

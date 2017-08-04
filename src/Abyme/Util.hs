@@ -8,7 +8,7 @@ levelScale = 2
 
 unionize :: Eq a => [[a]] -> [[a]]
 unionize [] = []
-unionize (g:gs) = go [] g gs
+unionize (s:gs) = go [] s gs
   where go as g [] = g : unionize as
         go as g (b:bs) = if null $ intersect g b then
                            go (b:as) g bs

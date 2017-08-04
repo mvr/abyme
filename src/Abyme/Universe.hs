@@ -7,8 +7,6 @@ import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as M
 import Linear
 
-import Abyme.Util
-import Abyme.Direction
 import Abyme.Polyomino
 
 -- Some nomenclature:
@@ -30,7 +28,7 @@ data Shape = Shape
   {
     _shapePosition :: V2 Integer, -- on region
     _shapePolyomino :: Polyomino
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 makeLenses ''Shape
 
 data Region = Region
@@ -68,3 +66,9 @@ shapeContains s p = polyContainsPoint (s^.shapePolyomino) (p - s^.shapePosition)
 -- Position relative to parent region origin
 shapeInhabits :: Region -> Shape -> V2 Integer -> Bool
 shapeInhabits c s p = shapeContains s (p - c^.regionPosition)
+
+remapIds :: [(RegionId, RegionId)] -> Universe -> Universe
+remapIds assoc m = m & universeRegions . traverse %~ fixRegion
+                     & universeRegions %~ M.mapKeys forceRemap
+  where fixRegion r = r & regionId %~ forceRemap & regionParentId %~ forceRemap
+        forceRemap = fromJust . flip lookup assoc
