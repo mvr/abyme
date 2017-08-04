@@ -4,6 +4,7 @@ module Abyme.Universe where
 import Control.Lens hiding (contains)
 import Data.List (delete, (\\))
 import Data.Maybe (fromJust)
+import Data.Semigroup
 import qualified Data.Map.Strict as M
 import Linear
 
@@ -36,7 +37,7 @@ data Region = Region
     _regionId :: RegionId,
     _regionParentId :: RegionId,
     _regionPosition :: V2 Integer, -- on parent
-    _regionShapes :: [Shape] -- constituents
+    _regionShapes :: [Shape] -- constituents -- TODO: NonEmpty
   } deriving (Eq, Show)
 makeLenses ''Region
 
@@ -55,6 +56,13 @@ regionEraseShape s r = r & regionShapes %~ (delete s)
 
 regionEraseShapes :: [Shape] -> Region -> Region
 regionEraseShapes ss r = r & regionShapes %~ (\\ ss)
+
+instance Semigroup Shape where
+  (Shape p ss) <> (Shape p' ss') = Shape p $ ss <> polyOffset ss' p'
+
+-- TODO:
+-- regionCompositePoly :: Region -> Polyomino
+-- regionCompositePoly =
 
 newRegionId :: Universe -> RegionId
 newRegionId (Universe rs) = RegionId $ 1 + (getRegionId $ fst $ M.findMax rs)

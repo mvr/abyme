@@ -102,8 +102,7 @@ removeRegion :: Universe -> Region -> Universe
 removeRegion u r = u & universeRegions . at (r ^. regionId) .~ Nothing
 
 pieceRemovableSquares :: Universe -> Piece -> [Square]
-pieceRemovableSquares u p = undefined
-  where removable = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
+pieceRemovableSquares u p = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
 
 allRemovableSquares :: Universe -> [Square]
 allRemovableSquares u = do
@@ -118,6 +117,26 @@ removeSquare u s = u & atPiece (s ^. squarePiece) . shapePolyomino . polyominoSq
 -- --------------------------------------------------------------------------------
 -- -- Arbitrary
 
+instance Arbitrary (V2 Integer) where
+  arbitrary = sized $ \n -> do
+    let m = ceiling $ sqrt $ (fromIntegral n :: Double)
+    x <- choose (-m, m)
+    y <- choose (-m, m)
+    return $ V2 x y
+
+instance Arbitrary Polyomino where
+  arbitrary = attempt `suchThat` polyIsConnected
+    where attempt = do
+            squares <- listOf arbitrary
+            return (Polyomino $ nub squares)
+
+  shrink (Polyomino ss) = filter polyIsConnected $ fmap Polyomino $ shrink ss
+
+instance Arbitrary Shape where
+  arbitrary = Shape <$> arbitrary <*> arbitrary
+
+-- instance Arbitrary Region where
+
 instance Arbitrary Universe where
   arbitrary = sized $ \n -> do
     if n == 0 then
@@ -125,5 +144,6 @@ instance Arbitrary Universe where
     else do
       u <- resize (n - 1) arbitrary
       growByOne u
+
   shrink u = fmap (removeSquare u) (allRemovableSquares u)
              ++ fmap (removeRegion u) (removableRegions u)

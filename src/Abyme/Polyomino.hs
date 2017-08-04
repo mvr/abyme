@@ -2,7 +2,8 @@
 module Abyme.Polyomino where
 
 import Control.Lens
-import Data.List ((\\), delete, intersect)
+import Data.List ((\\), delete, intersect, nub)
+import Data.Semigroup
 import Linear
 
 import Abyme.Util
@@ -12,8 +13,10 @@ newtype Polyomino = Polyomino
   {
     _polyominoSquares :: [V2 Integer]
   } deriving (Eq, Show, Ord)
-
 makeLenses ''Polyomino
+
+instance Semigroup Polyomino where
+  (Polyomino p) <> (Polyomino p') = Polyomino $ nub (p ++ p')
 
 polyContainsPoint :: Polyomino -> V2 Integer -> Bool
 polyContainsPoint (Polyomino ps) p = p `elem` ps
