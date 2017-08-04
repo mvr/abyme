@@ -1,7 +1,9 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Abyme.Universe.Generator where
 
-import Data.List (delete)
+import Data.List (delete, nub)
 import qualified Data.Map.Strict as M
 import Control.Monad (guard)
 import Control.Lens hiding (elements)

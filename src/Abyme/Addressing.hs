@@ -3,10 +3,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Addressing where
 
-import Control.Lens hiding (contains)
+import Control.Lens hiding (contains, children)
 import Data.List (nub)
 import Data.Maybe (catMaybes, isJust)
-import Data.Monoid
 import Linear
 
 import Abyme.Util (posDivMod, levelScale, fromJustOrDie)
@@ -56,10 +55,10 @@ findInhabitantSquare u r p = case catMaybes $ fmap checkChild children of
 
 -- This is total unless the Universe is busted
 squareLocation :: Universe -> Square -> Location
-squareLocation u (Square (Piece c s) p) = Location newSquare subp
+squareLocation u (Square (Piece r s) p) = Location newSquare subp
   where (p', subp) = posDivMod p
         newSquare = fromJustOrDie "Square wasn't sitting on a square in the parent region" $
-                    findConstituentSquare (regionParent u c) p'
+                    findConstituentSquare (regionParent u r) p'
 
 inhabitant :: Universe -> Location -> Maybe Square
 inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c ((levelScale *^ p) + subp)
@@ -125,8 +124,8 @@ halo uni a = nub $ u ++ d ++ l ++ r
         (r, _) = fringe uni RIght a
 
 childPieces :: HasSquares a => Universe -> a -> [Piece]
-childPieces u a = regionPieces =<< (childRegions u a)
-  where regionPieces r = fmap (Piece r) (r ^. regionShapes)
+childPieces u a = pieces =<< (childRegions u a)
+  where pieces r = fmap (Piece r) (r ^. regionShapes)
 
 uninhabited :: HasSquares a => Universe -> a -> Bool
 uninhabited u a = null (childRegions u a)
