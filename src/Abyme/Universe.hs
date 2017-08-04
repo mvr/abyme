@@ -76,6 +76,12 @@ shapeContains s p = polyContainsPoint (s^.shapePolyomino) (p - s^.shapePosition)
 shapeInhabits :: Region -> Shape -> V2 Integer -> Bool
 shapeInhabits c s p = shapeContains s (p - c^.regionPosition)
 
+shapePolyWithOffset :: Shape -> Polyomino
+shapePolyWithOffset s = polyOffset (s ^. shapePolyomino) (s ^. shapePosition)
+
+shapeIntersects :: Shape -> Shape -> Bool
+shapeIntersects s s' = polyIntersects (shapePolyWithOffset s) (shapePolyWithOffset s')
+
 remapIds :: [(RegionId, RegionId)] -> Universe -> Universe
 remapIds assoc m = m & universeRegions . traverse %~ fixRegion
                      & universeRegions %~ M.mapKeys forceRemap

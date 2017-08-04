@@ -9,6 +9,7 @@ import Linear
 import Abyme.Util
 import Abyme.Direction
 
+-- TODO: Set
 newtype Polyomino = Polyomino
   {
     _polyominoSquares :: [V2 Integer]
@@ -28,6 +29,10 @@ polyOffset (Polyomino ps) p = Polyomino $ fmap (+p) ps
 polyFringe :: Direction -> Polyomino -> [V2 Integer]
 polyFringe d (Polyomino s) = (fmap (+v) s) \\ s
   where v = directionToVector d
+
+polyIntersects :: Polyomino -> Polyomino -> Bool
+polyIntersects (Polyomino ps) (Polyomino ps') = ps `intersects` ps'
+  where intersects as bs = any (`elem` bs) as
 
 polySquareNeighbourhood :: Polyomino -> V2 Integer -> [V2 Integer]
 polySquareNeighbourhood p pos = possible `intersect` (p ^. polyominoSquares)
