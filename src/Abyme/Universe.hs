@@ -8,6 +8,7 @@ import Data.Semigroup
 import qualified Data.Map.Strict as M
 import Linear
 
+import Abyme.Util
 import Abyme.Polyomino
 
 -- Some nomenclature:
@@ -49,7 +50,7 @@ makeLenses ''Universe
 
 -- Should be total
 regionParent :: Universe -> Region -> Region
-regionParent u c = fromJust $ u ^. universeRegions . at (c ^. regionParentId)
+regionParent u c = fromJustOrDie "Region's parent doesn't exist" $ u ^. universeRegions . at (c ^. regionParentId)
 
 regionEraseShape :: Shape -> Region -> Region
 regionEraseShape s r = r & regionShapes %~ (delete s)
@@ -79,4 +80,4 @@ remapIds :: [(RegionId, RegionId)] -> Universe -> Universe
 remapIds assoc m = m & universeRegions . traverse %~ fixRegion
                      & universeRegions %~ M.mapKeys forceRemap
   where fixRegion r = r & regionId %~ forceRemap & regionParentId %~ forceRemap
-        forceRemap = fromJust . flip lookup assoc
+        forceRemap = fromJustOrDie "Missing a remapping" . flip lookup assoc
