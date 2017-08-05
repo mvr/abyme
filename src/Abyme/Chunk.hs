@@ -2,9 +2,10 @@
 module Abyme.Chunk where
 
 import Control.Lens hiding (contains)
-import Data.List (nub, intersect, union, find, delete, (\\))
+import Data.List (nub, find, (\\))
 import Data.Maybe (catMaybes)
 import qualified Data.Map.Strict as M
+import Linear
 
 import Abyme.Direction
 import Abyme.Universe
