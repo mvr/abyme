@@ -3,7 +3,6 @@ module Abyme.Universe where
 
 import Control.Lens hiding (contains)
 import Data.List (delete, (\\))
-import Data.Maybe (fromJust)
 import Data.Semigroup
 import qualified Data.Map.Strict as M
 import Linear

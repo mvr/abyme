@@ -66,8 +66,8 @@ findRepresentative ((n, os):rest) a = if a `elem` os then n else findRepresentat
 
 setNewParent :: Universe -> [(Region, [Region])] -> Region -> Region
 setNewParent u adjs c@(Region cid _ cpos cshapes) = Region cid pid (cpos + opos - ppos) cshapes
-  where oldp@(Region _ _ opos _) = regionParent u c
-        newp@(Region pid _ ppos _) = regionParent u $ findRepresentative adjs c
+  where (Region _ _ opos _) = regionParent u c
+        (Region pid _ ppos _) = regionParent u $ findRepresentative adjs c
 
 -- TODO: don't adjust regions that don't change
 fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
@@ -112,11 +112,11 @@ splitChunkIntoRegion u@(Universe m) c = if isWholeRegion then
         newId = newRegionId u
         newRegion = Region newId (region ^. regionParentId) (region ^. regionPosition) (c ^. chunkShapes)
         remainingRegion = (c ^. chunkRegion) {_regionShapes = region ^. regionShapes \\ c ^. chunkShapes }
-        adjustParent (Region id pid pos sh)
+        adjustParent (Region rid pid pos sh)
           = if head sh `elem` c ^. chunkShapes then
-              Region id newId pos sh
+              Region rid newId pos sh
             else
-              Region id pid pos sh
+              Region rid pid pos sh
 
 pushRegion :: Universe -> Direction -> Region -> Universe
 pushRegion u d r = u & universeRegions . ix (r ^. regionId) . regionPosition +~ directionToVector d
