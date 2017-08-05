@@ -60,26 +60,28 @@ adjacentRegions u r = nub $ (r:) $ fmap (\s -> s ^. squarePiece . pieceRegion) $
 collectRegionChunks :: Universe -> [Region] -> [[Region]]
 collectRegionChunks u rs = unionize $ fmap (adjacentRegions u) $ rs
 
-findRepresentative :: Eq a => [(a, [a])] -> a -> a
-findRepresentative [] a = a
-findRepresentative ((n, os):rest) a = if a `elem` os then n else findRepresentative rest a
+findRepresentative :: Eq a => [(a, [a])] -> a -> Maybe a
+findRepresentative [] _ = Nothing
+findRepresentative ((n, os):rest) a = if a `elem` os then Just n else findRepresentative rest a
 
 setNewParent :: Universe -> [(Region, [Region])] -> Region -> Region
-setNewParent u adjs c@(Region cid _ cpos cshapes) = Region cid pid (cpos + opos - ppos) cshapes
-  where (Region _ _ opos _) = regionParent u c
-        (Region pid _ ppos _) = regionParent u $ findRepresentative adjs c
+setNewParent u adjs c@(Region cid _ cpos cshapes)
+  = let o = regionParent u c in -- old parent
+    case findRepresentative adjs o of
+      Just (Region nid _ npos _) -> Region cid nid (cpos + (o^.regionPosition) - npos) cshapes
+      Nothing -> c
 
 -- TODO: don't adjust regions that don't change
 fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
-fuseInhabitantRegions' u@(Universe regionMap) r = (Universe adjusted, needRecursion)
+fuseInhabitantRegions' u r = traceShow (u, r) $ (Universe adjusted, needRecursion)
   where children = childRegions u r
-        childrenIds = fmap _regionId children
+--        childrenIds = fmap _regionId children
         chunks = collectRegionChunks u children
         newRegions = fmap fuseRegions chunks
         adjustments = zip newRegions chunks
-        deletedM = foldl (\m i -> M.delete i m) regionMap (fmap _regionId children)
+        deletedM = foldl (\m i -> M.delete i m) (u ^. universeRegions) (fmap _regionId children)
         addedM = foldl (\m r -> M.insert (_regionId r) r m) deletedM newRegions
-        adjusted = addedM & itraversed . indices (`elem` childrenIds) %~ setNewParent u adjustments
+        adjusted = addedM & traversed %~ setNewParent u adjustments
         needRecursion = fmap _regionId $ concat $ filter (\g -> length g > 1) chunks
 
 fuseInhabitantRegions :: Universe -> Region -> Universe
