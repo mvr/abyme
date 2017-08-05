@@ -48,7 +48,7 @@ fusePair (Region lid lparent lpos lshapes) (Region rid rparent rpos rshapes)
     else
       error "Can't fuse Regions with different parents"
   where
-    fixShape (Shape pos poly) = Shape (pos + lpos - rpos) poly
+    fixShape (Shape pos poly) = Shape (pos - lpos + rpos) poly
 
 fuseRegions :: [Region] -> Region
 fuseRegions [] = error "Cannot fuse empty list"
