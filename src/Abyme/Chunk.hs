@@ -55,7 +55,7 @@ fuseRegions [] = error "Cannot fuse empty list"
 fuseRegions rs = foldl1 fusePair rs
 
 adjacentRegions :: Universe -> Region -> [Region]
-adjacentRegions u r = (r:) $ nub $ fmap (_pieceRegion . _squarePiece) $ catMaybes $ fmap (inhabitant u) (halo u r)
+adjacentRegions u r = nub $ (r:) $ fmap (\s -> s ^. squarePiece . pieceRegion) $ catMaybes $ fmap (inhabitant u) (halo u r)
 
 collectRegionChunks :: Universe -> [Region] -> [[Region]]
 collectRegionChunks u rs = unionize $ fmap (adjacentRegions u) $ rs
