@@ -9,7 +9,7 @@ import qualified Data.Map.Strict as M
 import Abyme.Direction
 import Abyme.Universe
 import Abyme.Addressing
-import Abyme.Util (unionize, fromJustOrDie)
+import Abyme.Util (levelScale, unionize, fromJustOrDie)
 
 -- --------------------------------------------------------------------------------
 -- -- Chunks
@@ -68,12 +68,13 @@ setNewParent :: Universe -> [(Region, [Region])] -> Region -> Region
 setNewParent u adjs c@(Region cid _ cpos cshapes)
   = let o = regionParent u c in -- old parent
     case findRepresentative adjs o of
-      Just (Region nid _ npos _) -> Region cid nid (cpos + (o^.regionPosition) - npos) cshapes
+      Just (Region nid _ npos _) -> Region cid nid (cpos + parentOffset) cshapes
+        where parentOffset = levelScale *^ ((o^.regionPosition) - npos)
       Nothing -> c
 
 -- TODO: don't adjust regions that don't change
 fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
-fuseInhabitantRegions' u r = traceShow (u, r) $ (Universe adjusted, needRecursion)
+fuseInhabitantRegions' u r = (Universe adjusted, needRecursion)
   where children = childRegions u r
 --        childrenIds = fmap _regionId children
         chunks = collectRegionChunks u children
