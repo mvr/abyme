@@ -12,7 +12,6 @@ import Linear
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 
-import Abyme.Util (levelScale)
 import Abyme.Polyomino
 import Abyme.Universe
 import Abyme.Addressing
@@ -38,7 +37,7 @@ potentialNewSquares u r = do
   p <- regionPieces r
   l <- halo u p
   guard (not $ isInhabited u l)
-  return $ (p, locationToPosition l - (p ^. pieceShape . shapePosition))
+  return $ (p, locationToPosition l - (p ^. pieceShape . shapePosition) - (r ^. regionPosition))
 
 -- Assuming the square is uninhabited
 growChild :: Universe -> Location -> Universe
