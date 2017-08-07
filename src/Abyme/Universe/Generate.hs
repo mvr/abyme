@@ -40,18 +40,19 @@ potentialNewSquares u r = do
   p <- regionPieces r
   l <- halo u p
   guard (not $ isInhabited u l)
-  return (p, locationToPosition l)
+  return $ (p, locationToPosition l - (p ^. pieceShape . shapePosition))
 
 -- TODO: broken?
 locationToPosition :: Location -> V2 Integer
-locationToPosition (Location (Square _ p) subp) = levelScale *^ p + subp
+locationToPosition (Location (Square (Piece _ s) p) subp) = levelScale *^ (p + s ^. shapePosition) + subp
 
 -- Assuming the square is uninhabited
 growChild :: Universe -> Location -> Universe
-growChild u l = fuseInhabitantRegions (u & universeRegions . at newId ?~ newRegion) locationRegion
+growChild u l = fuseInhabitantRegions newUniverse locationRegion
   where newId = newRegionId u
         locationRegion = l ^. locationSquare . squarePiece . pieceRegion
         newRegion = Region newId (locationRegion ^. regionId) (locationToPosition l) [monomino]
+        newUniverse = u & universeRegions . at newId ?~ newRegion
 
 potentialNewChildren :: Universe -> Region -> [Location]
 potentialNewChildren u r = filter (not . isInhabited u) $ constituentLocations u r

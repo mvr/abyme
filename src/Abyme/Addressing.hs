@@ -56,12 +56,12 @@ findInhabitantSquare u r p = case catMaybes $ fmap checkChild children of
 -- This is total unless the Universe is busted
 squareLocation :: Universe -> Square -> Location
 squareLocation u (Square (Piece r s) p) = Location newSquare subp
-  where (p', subp) = posDivMod p
+  where (p', subp) = posDivMod (p + s ^. shapePosition)
         newSquare = fromJustOrDie "Square wasn't sitting on a square in the parent region" $
                     findConstituentSquare (regionParent u r) p'
 
 inhabitant :: Universe -> Location -> Maybe Square
-inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c ((levelScale *^ p) + subp)
+inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (levelScale *^ (p + s ^. shapePosition) + subp)
 
 isInhabited :: Universe -> Location -> Bool
 isInhabited u l = isJust $ inhabitant u l
