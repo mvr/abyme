@@ -18,8 +18,6 @@ import Abyme.Universe
 import Abyme.Addressing
 import Abyme.Chunk
 
-import Debug.Trace
-
 monomino :: Shape
 monomino = Shape (V2 0 0) (Polyomino [V2 0 0])
 
@@ -41,10 +39,6 @@ potentialNewSquares u r = do
   l <- halo u p
   guard (not $ isInhabited u l)
   return $ (p, locationToPosition l - (p ^. pieceShape . shapePosition))
-
--- TODO: broken?
-locationToPosition :: Location -> V2 Integer
-locationToPosition (Location (Square (Piece _ s) p) subp) = levelScale *^ (p + s ^. shapePosition) + subp
 
 -- Assuming the square is uninhabited
 growChild :: Universe -> Location -> Universe
@@ -105,7 +99,7 @@ removeRegion :: Universe -> Region -> Universe
 removeRegion u r = u & universeRegions . at (r ^. regionId) .~ Nothing
 
 pieceRemovableSquares :: Universe -> Piece -> [Square]
-pieceRemovableSquares u p = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
+pieceRemovableSquares _u p = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
 
 allRemovableSquares :: Universe -> [Square]
 allRemovableSquares u = do

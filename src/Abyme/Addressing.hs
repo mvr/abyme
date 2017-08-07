@@ -41,6 +41,9 @@ makeLenses ''Location
 regionPieces :: Region -> [Piece]
 regionPieces r = fmap (Piece r) (r ^. regionShapes)
 
+locationToPosition :: Location -> V2 Integer
+locationToPosition (Location (Square (Piece _ s) p) subp) = levelScale *^ (p + s ^. shapePosition) + subp
+
 findConstituentSquare :: Region -> V2 Integer -> Maybe Square
 findConstituentSquare c p = fmap (\s -> Square (Piece c s) (p - s^.shapePosition)) maybeSquare
   where maybeSquare = c ^? regionShapes . traverse . filtered (flip shapeContains p)
@@ -56,12 +59,12 @@ findInhabitantSquare u r p = case catMaybes $ fmap checkChild children of
 -- This is total unless the Universe is busted
 squareLocation :: Universe -> Square -> Location
 squareLocation u (Square (Piece r s) p) = Location newSquare subp
-  where (p', subp) = posDivMod (p + s ^. shapePosition)
-        newSquare = fromJustOrDie "Square wasn't sitting on a square in the parent region" $
+  where (p', subp) = posDivMod (p + s ^. shapePosition + r ^. regionPosition)
+        newSquare = fromJustOrDie ("Square wasn't sitting on a square in the parent region") $
                     findConstituentSquare (regionParent u r) p'
 
 inhabitant :: Universe -> Location -> Maybe Square
-inhabitant u (Location (Square (Piece c s) p) subp) = findInhabitantSquare u c (levelScale *^ (p + s ^. shapePosition) + subp)
+inhabitant u l@(Location (Square (Piece c _) _) _) = findInhabitantSquare u c (locationToPosition l)
 
 isInhabited :: Universe -> Location -> Bool
 isInhabited u l = isJust $ inhabitant u l
