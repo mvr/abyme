@@ -12,6 +12,7 @@ import Linear
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 
+import Abyme.Util
 import Abyme.Polyomino
 import Abyme.Universe
 import Abyme.Addressing
@@ -62,6 +63,18 @@ randomPiece :: Universe -> Gen Piece
 randomPiece u = do
   region <- randomRegion u
   elements (regionPieces region)
+
+randomSquare :: Universe -> Gen Square
+randomSquare u = do
+  piece <- randomPiece u
+  elements (constituentSquares u piece)
+
+randomLocation :: Universe -> Gen Location
+randomLocation u = do
+  square <- randomSquare u
+  x <- elements [0 .. levelScale - 1]
+  y <- elements [0 .. levelScale - 1]
+  return (Location square (V2 x y))
 
 growRandomPiece :: Universe -> Gen Universe
 growRandomPiece u = do
@@ -120,6 +133,7 @@ instance Arbitrary (V2 Integer) where
     y <- choose (-m, m)
     return $ V2 x y
 
+-- This is dumb and slow
 instance Arbitrary Polyomino where
   arbitrary = attempt `suchThat` polyIsConnected
     where attempt = do
@@ -141,5 +155,5 @@ instance Arbitrary Universe where
       u <- resize (n - 1) arbitrary
       growByOne u
 
-  -- shrink u = fmap (removeSquare u) (allRemovableSquares u)
-  --            ++ fmap (removeRegion u) (removableRegions u)
+  shrink u = fmap (removeSquare u) (allRemovableSquares u)
+             ++ fmap (removeRegion u) (removableRegions u)

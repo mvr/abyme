@@ -150,7 +150,6 @@ wrapSubposition (V2 x y) = (x /= wx || y /= wy, V2 wx wy)
 nudgeSubposition :: Direction -> V2 Integer -> (Bool, V2 Integer)
 nudgeSubposition d v = wrapSubposition (v + directionToVector d)
 
--- TODO: maybe instead a 'countdown' instead a list of seen
 nudgeLocation' :: Universe -> [(Direction, Location)] -> Direction -> Location -> Maybe Location
 nudgeLocation' _ seen d l | (d, l) `elem` seen = Nothing
 nudgeLocation' u seen d l@(Location s p)
