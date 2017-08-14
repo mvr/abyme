@@ -5,8 +5,10 @@ import Data.List (tails)
 
 import Abyme.Universe
 
--- TODO: return an error
+-- TODO: return a descriptive error
 -- TODO: check ids of key and value match
+-- TODO: check every square is sitting validly on parent region
+-- TODO: harder? check universe is connected
 
 pairs :: [a] -> [(a, a)]
 pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
