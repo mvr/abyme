@@ -23,15 +23,17 @@ spec = do
       return $ Just s === inhabitant u (squareLocation u s)
 
   describe "chunks" $ do
-    it "correctly finds the chunk example 1" $
-      let s11 = monomino
-          s12 = Shape {_shapePosition = V2 0 1, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}
-          s21 = monomino
-          r1 = Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [s11, s12]}
-          r2 = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [s21]}
-          u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1),
-                                                        (RegionId {getRegionId = 2}, r2) ]}
-      in findChunk u (Piece r1 s12) == Chunk r1 [s12]
+    let s11 = monomino
+        s12 = Shape {_shapePosition = V2 0 1, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}
+        s21 = monomino
+        r1 = Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [s11, s12]}
+        r2 = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [s21]}
+        u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1),
+                                                      (RegionId {getRegionId = 2}, r2) ]}
+    it "correctly identifies the chunks for r1" $
+      regionChunks u r1 == [Chunk r1 [s11], Chunk r1 [s12]]
+    it "correctly finds the chunk for s12" $
+      findChunk u (Piece r1 s12) == Chunk r1 [s12]
 
   describe "splitting" $ do
     prop "splitting then unsplitting is identity" $ \u -> do

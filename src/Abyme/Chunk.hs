@@ -31,9 +31,11 @@ chunkPieces (Chunk r ss) = fmap (Piece r) ss
 chunkHasPiece :: Chunk -> Piece -> Bool
 chunkHasPiece (Chunk r ss) (Piece r' s) = r == r' && s `elem` ss
 
--- TODO maybe store this in Region
+-- TODO: maybe store this in Region
 regionChunks :: Universe -> Region -> [Chunk]
-regionChunks u r = fmap (Chunk r) $ fmap (fmap _pieceShape) $ unionize $ fmap (habitat u) $ concatMap regionPieces $ childRegions u r
+regionChunks u r = fmap (Chunk r) $ fmap (fmap _pieceShape) $ unionize (connected ++ singletons)
+  where connected = fmap (habitat u) $ concatMap regionPieces $ childRegions u r
+        singletons = fmap (\p -> [p]) (regionPieces r)
 
 -- TODO: DANGER DANGER: this only works for exactly 2 levels
 findChunk :: Universe -> Piece -> Chunk
