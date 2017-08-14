@@ -106,13 +106,14 @@ erasePiece (Universe rs) (Piece r s) = Universe $ M.adjust (regionEraseShape s) 
 eraseChunk :: Universe -> Chunk -> Universe
 eraseChunk (Universe rs) (Chunk r ss) = Universe $ M.adjust (regionEraseShapes ss) (r ^. regionId) rs
 
+
 splitChunkIntoRegion :: Universe -> Chunk -> (Region, Universe)
 splitChunkIntoRegion u@(Universe m) c = if isWholeRegion then
                                           (region, u)
                                         else
                                           (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ m)
   where region = c ^. chunkRegion
-        isWholeRegion = length (region ^. regionShapes \\ c ^. chunkShapes) > 0
+        isWholeRegion = length (region ^. regionShapes \\ c ^. chunkShapes) == 0
         newId = newRegionId u
         newRegion = Region newId (region ^. regionParentId) (region ^. regionPosition) (c ^. chunkShapes)
         remainingRegion = (c ^. chunkRegion) {_regionShapes = region ^. regionShapes \\ c ^. chunkShapes }
