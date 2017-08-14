@@ -111,6 +111,7 @@ removeRegion :: Universe -> Region -> Universe
 removeRegion u r = u & universeRegions . at (r ^. regionId) .~ Nothing
 
 pieceRemovableSquares :: Universe -> Piece -> [Square]
+pieceRemovableSquares _u (Piece _ (Shape _ (Polyomino [_a]))) = [] -- We can't leave an empty shape
 pieceRemovableSquares _u p = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
 
 allRemovableSquares :: Universe -> [Square]
