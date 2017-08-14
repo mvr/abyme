@@ -73,6 +73,10 @@ setNewParent u adjs c@(Region cid _ cpos cshapes)
         where parentOffset = levelScale *^ ((o^.regionPosition) - npos)
       Nothing -> c
 
+-- This is a little complex... We need to fuse together the regions,
+-- then recursively fuse the child regions, as we may have caused a
+-- cascade.
+
 -- TODO: don't adjust regions that don't change
 fuseInhabitantRegions' :: Universe -> Region -> (Universe, [RegionId])
 fuseInhabitantRegions' u r = (Universe adjusted, needRecursion)
@@ -113,15 +117,17 @@ splitChunkIntoRegion u@(Universe m) c = if isWholeRegion then
                                         else
                                           (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ m)
   where region = c ^. chunkRegion
-        isWholeRegion = length (region ^. regionShapes \\ c ^. chunkShapes) == 0
+        remainingShapes = region ^. regionShapes \\ c ^. chunkShapes
+        isWholeRegion = length remainingShapes == 0
         newId = newRegionId u
-        newRegion = Region newId (region ^. regionParentId) (region ^. regionPosition) (c ^. chunkShapes)
-        remainingRegion = (c ^. chunkRegion) {_regionShapes = region ^. regionShapes \\ c ^. chunkShapes }
-        adjustParent (Region rid pid pos sh)
-          = if head sh `elem` c ^. chunkShapes then
-              Region rid newId pos sh
+        newRegion = region { _regionId = newId, _regionShapes = c ^. chunkShapes }
+        remainingRegion = region { _regionShapes = remainingShapes }
+        adjustParent r
+          = if r ^. regionParentId == region ^. regionId &&
+               head (habitat u r) `elem` chunkPieces c then
+              r & regionParentId .~ newId
             else
-              Region rid pid pos sh
+              r
 
 pushRegion :: Universe -> Direction -> Region -> Universe
 pushRegion u d r = u & universeRegions . ix (r ^. regionId) . regionPosition +~ directionToVector d
