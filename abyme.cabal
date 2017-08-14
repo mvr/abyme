@@ -68,3 +68,6 @@ test-suite abyme-test
                       , abyme
                       , hspec
                       , QuickCheck
+                      , lens
+                      , containers
+                      , linear
