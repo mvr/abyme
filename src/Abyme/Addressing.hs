@@ -78,11 +78,17 @@ atPiece (Piece r s) = singular $ universeRegions . ix (r ^. regionId) . regionSh
 -- --------------------------------------------------------------------------------
 -- HasSquares
 
+-- Here childRegions and childPieces are any children that intersect
+-- `a` at all, the children don't have to be completely contained
+
 class Eq a => HasSquares a where
   constituentSquares :: Universe -> a -> [Square]
 
   childRegions :: Universe -> a -> [Region]
   childRegions u a = nub $ fmap (_pieceRegion . _squarePiece) $ catMaybes $ fmap (inhabitant u) (constituentLocations u a)
+
+  childPieces :: Universe -> a -> [Piece]
+  childPieces u a = nub $ fmap (_squarePiece) $ catMaybes $ fmap (inhabitant u) (constituentLocations u a)
 
 instance HasSquares Square where
   constituentSquares _ s = [s]
@@ -125,10 +131,6 @@ halo uni a = nub $ u ++ d ++ l ++ r
         (d, _) = fringe uni Down a
         (l, _) = fringe uni LEft a
         (r, _) = fringe uni RIght a
-
-childPieces :: HasSquares a => Universe -> a -> [Piece]
-childPieces u a = pieces =<< (childRegions u a)
-  where pieces r = fmap (Piece r) (r ^. regionShapes)
 
 uninhabited :: HasSquares a => Universe -> a -> Bool
 uninhabited u a = null (childRegions u a)

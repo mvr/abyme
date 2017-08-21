@@ -22,22 +22,51 @@ spec = do
       s <- randomSquare u
       return $ Just s === inhabitant u (squareLocation u s)
 
-  describe "chunks" $ do
-    let s11 = monomino
-        s12 = Shape {_shapePosition = V2 0 1, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}
-        s21 = monomino
-        r1 = Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [s11, s12]}
-        r2 = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [s21]}
-        u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1),
-                                                      (RegionId {getRegionId = 2}, r2) ]}
-    it "correctly identifies the chunks for r1" $
-      regionChunks u r1 == [Chunk r1 [s11], Chunk r1 [s12]]
-    it "correctly finds the chunk for s12" $
-      findChunk u (Piece r1 s12) == Chunk r1 [s12]
+  describe "chunking" $ do
+    describe "minimal example" $ do
+      it "finds the chunk for r1" $
+        let r1 = minimal ^?! universeRegions . ix (RegionId 1)
+            p  = Piece r1 monomino
+        in
+          pieceChunk minimal p == Chunk r1 [monomino] []
 
-  describe "splitting" $ do
-    prop "splitting then unsplitting is identity" $ \u -> do
-      s <- randomPiece u
-      let c = findChunk u s
-      let (r, u') = splitChunkIntoRegion u c
-      return $ normaliseUniverse u === normaliseUniverse (fuseInhabitantRegions u' (regionParent u' r))
+    -- describe "tricky example 1" $ do
+    --   let s11 = monomino
+    --       s12 = Shape {_shapePosition = V2 0 1, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}
+    --       s21 = monomino
+    --       r1 = Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [s11, s12]}
+    --       r2 = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [s21]}
+    --       u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1),
+    --                                                   (RegionId {getRegionId = 2}, r2) ]}
+    --   it "correctly identifies the chunks for r1" $
+    --     regionChunks u r1 == [Chunk r1 [s11], Chunk r1 [s12]]
+    --   it "correctly finds the chunk for s12" $
+    --     findChunk u (Piece r1 s12) == Chunk r1 [s12]
+
+  -- describe "splitting" $ do
+  --   it "works for tricky example 1" $
+  --     -- TODO: reduce duplication
+  --     let u = Universe {_universeRegions = M.fromList [
+  --                          (RegionId {getRegionId = 1},Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [
+  --                                                                 Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 1 0,V2 0 0]}},
+  --                                                                 Shape {_shapePosition = V2 2 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}]}),
+  --                          (RegionId {getRegionId = 2},Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [
+  --                                                                 Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}},
+  --                                                                 Shape {_shapePosition = V2 1 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}]}),
+  --                          (RegionId {getRegionId = 3},Region {_regionId = RegionId {getRegionId = 3}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 5 0, _regionShapes = [
+  --                                                                 Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}]})
+  --                          ]}
+  --         p = Piece {_pieceRegion = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [
+  --                                              Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}},
+  --                                              Shape {_shapePosition = V2 1 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}]},
+  --                    _pieceShape = Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 0 0]}}}
+  --         c = findChunk u p
+  --         (r, u') = splitChunkIntoRegion u c
+  --     in u' == undefined
+
+
+  --   prop "splitting then unsplitting is identity" $ \u -> do
+  --     s <- randomPiece u
+  --     let c = findChunk u s
+  --     let (r, u') = splitChunkIntoRegion u c
+  --     return $ normaliseUniverse u === normaliseUniverse (fuseInhabitantRegions u' (regionParent u' r))
