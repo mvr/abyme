@@ -1,7 +1,34 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Abyme.Addressing where
+module Abyme.Addressing (
+  Piece(..),
+  Square(..),
+  Location(..),
+  regionPieces,
+-- locationToPosition,
+  squareLocation,
+  inhabitant,
+  isInhabited,
+
+  atPiece,
+
+  constituentSquares,
+  constituentLocations,
+  childRegions,
+  childPieces,
+
+  contains,
+  locations,
+  inhabits,
+  habitat,
+  fringe,
+  halo,
+  uninhabited,
+
+  nudgeLocation,
+  nudgeSquare
+) where
 
 import Control.Lens hiding (contains, children)
 import Data.List (nub)

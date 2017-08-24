@@ -1,6 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Abyme.Chunk where
+module Abyme.Chunk (
+  Chunk(..),
+  pieceChunk,
+  fuseInhabitantRegions,
+  canPushChunk,
+--  pushChunk,
+) where
 
 import Control.Lens hiding (contains)
 import Control.Monad.State
