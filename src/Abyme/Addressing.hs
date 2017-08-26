@@ -3,20 +3,25 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Addressing (
   Piece(..),
+  pieceRegion,
+  pieceShape,
   Square(..),
+  squarePiece,
+  squareCoordinates,
   Location(..),
+  locationSquare,
+  locationSubPosition,
+
   regionPieces,
--- locationToPosition,
+  locationToPosition,
   squareLocation,
   inhabitant,
   isInhabited,
 
   atPiece,
 
-  constituentSquares,
+  HasSquares(..),
   constituentLocations,
-  childRegions,
-  childPieces,
 
   contains,
   locations,
