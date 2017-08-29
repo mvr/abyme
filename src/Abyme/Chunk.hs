@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Chunk (
@@ -5,6 +6,7 @@ module Abyme.Chunk (
   pieceChunk,
   fuseInhabitantRegions,
   canPushChunk,
+  explorePiece,
 --  pushChunk,
 ) where
 
@@ -27,7 +29,7 @@ import Abyme.Util (levelScale, unionize, fromJustOrDie)
 data Chunk = Chunk {
   _chunkRegion :: Region,
   _chunkShapes :: [Shape],
-  _chunkSubChunks :: [Chunk] -- Should be the child pieces that aren't the full region
+  _chunkSubChunks :: M.Map RegionId [[Shape]]
 } deriving (Eq, Show)
 makeLenses ''Chunk
 
@@ -40,46 +42,41 @@ chunkTopPieces (Chunk r ss _) = fmap (Piece r) ss
 chunkHasTopPiece :: Chunk -> Piece -> Bool
 chunkHasTopPiece (Chunk r ss _) (Piece r' s) = r == r' && s `elem` ss
 
-chunkIsEntireRegion :: M.Map RegionId [Shape] -> Chunk -> Bool
-chunkIsEntireRegion m (Chunk r ss _) = null $ (r ^. regionShapes \\ ss) \\ (m ^?! ix (r ^. regionId))
+-- chunkIsEntireRegion :: M.Map RegionId [Shape] -> Chunk -> Bool
+-- chunkIsEntireRegion m (Chunk r ss _) = null $ (r ^. regionShapes \\ ss) \\ (m ^. ix (r ^. regionId))
 
-pieceToSingletonChunk :: Piece -> Chunk
-pieceToSingletonChunk (Piece r s) = Chunk r [s] []
+mapHasPiece :: M.Map RegionId [Shape] -> Piece -> Bool
+mapHasPiece m (Piece r s) = case M.lookup (r^.regionId) m of
+                              Just ss -> s `elem` ss
+                              Nothing -> False
 
--- Fuse columns that are adjacent
-fuseChunks :: M.Map RegionId [Shape] -> Chunk -> Chunk -> Chunk
-fuseChunks _ (Chunk r _ _) (Chunk r' _ _) | r /= r' = error "Can't fuse chunks of different regions"
-fuseChunks m (Chunk r ss cs) (Chunk _ ss' cs') = Chunk r (nub $ ss ++ ss') incomplete
-  where subchunks = groupBy ((==) `on` _chunkRegion) (cs ++ cs')
-        fused = fmap (foldl1 (fuseChunks m)) subchunks
-        incomplete = filter (not . chunkIsEntireRegion m) fused
+-- Remember a depth so we don't explore upwards
+explorePiece' :: Universe -> Region -> M.Map RegionId [Shape] -> [(Int, Piece)] -> (M.Map RegionId [Shape], [(Int, Piece)])
+explorePiece' _ _ m []     = (m, [])
+explorePiece' u r m ((d, p):ps)
+  | d < 0                           = explorePiece' u r m ps -- We are back at the top level
+  | p ^. pieceRegion == r && d > 0  = explorePiece' u r m ps -- We have looped -- TODO: do we just ignore it?
+  | mapHasPiece m p                 = explorePiece' u r m ps -- We have already seen this piece
+  | otherwise                       = explorePiece' u r m' (parents ++ ps ++ children)
+  where children = fmap (d+1,) $ childPieces u p
+        parents  = fmap (d-1,) $ habitat u p
+        m'       = m & at (p^.pieceRegion.regionId) . non [] %~ ((p ^. pieceShape):)
 
-pieceSeen :: MonadState (M.Map RegionId [Shape]) m => Piece -> m Bool
-pieceSeen p = do
-  seen <- use $ ix (p ^. pieceRegion . regionId)
-  return $ p ^. pieceShape `elem` seen
+explorePiece :: Universe -> Piece -> M.Map RegionId [Shape]
+explorePiece u p = fst $ explorePiece' u (p ^. pieceRegion) M.empty [(0,p)]
 
-pieceChunk' :: MonadState (M.Map RegionId [Shape]) m => Universe -> Piece -> m Chunk
-pieceChunk' u p = do
-  let rid = p ^. pieceRegion . regionId
-  at rid . non [] %= ((p ^. pieceShape):)
-  unseen <- filterM pieceSeen $ childPieces u p
+deleteIncomplete :: Universe -> M.Map RegionId [Shape] -> M.Map RegionId [Shape]
+deleteIncomplete u m = M.filterWithKey isIncomplete m
+  where isIncomplete rid ss = not $ null $ u ^?! universeRegions . ix rid . regionShapes \\ ss
 
-  if null unseen then
-    return $ pieceToSingletonChunk p
-  else do
-    childchunks <- traverse (pieceChunk' u) unseen
-    let topLevelPieces = nub $ childchunks ^.. traverse . to chunkTopPieces . traverse . to (habitat u) . traverse
-    newTopLevelPieces <- filterM pieceSeen $ topLevelPieces
-    siblingcolumns <- traverse (pieceChunk' u) newTopLevelPieces
-
-    let selfcolumn = Chunk (p^.pieceRegion) ([p^.pieceShape]) childchunks
-
-    m <- get
-    return $ foldl1 (fuseChunks m) (selfcolumn:siblingcolumns)
+-- TODO: maybe each region needs to store this kind of adjacency information
+identifyIslands :: Universe -> RegionId -> [Shape] -> [[Shape]]
+identifyIslands u rid ss = regionCollectAdjacentShapes u (u ^?! universeRegions . ix rid) ss
 
 pieceChunk :: Universe -> Piece -> Chunk
-pieceChunk u p = evalState (pieceChunk' u p) M.empty
+pieceChunk u p = Chunk r (m ^?! ix (r ^. regionId)) (M.mapWithKey (identifyIslands u) (deleteIncomplete u m))
+  where m = explorePiece u p
+        r = p ^. pieceRegion
 
 -- --------------------------------------------------------------------------------
 -- -- Fusing
@@ -144,32 +141,30 @@ fuseInhabitantRegions u r = go u [r ^. regionId]
 -- --------------------------------------------------------------------------------
 -- -- Splitting
 
--- canPushChunk :: Universe -> Direction -> Chunk -> Bool
--- canPushChunk u d c = not (oob || any (isInhabited u) fr)
---   where (fr, oob) = fringe u d c
+canPushChunk :: Universe -> Direction -> Chunk -> Bool
+canPushChunk u d c = not (oob || any (isInhabited u) fr)
+  where (fr, oob) = fringe u d c
 
--- -- These are unsafe if used on their own:
--- erasePiece :: Universe -> Piece -> Universe
--- erasePiece (Universe rs) (Piece r s) = Universe $ M.adjust (regionEraseShape s) (r ^. regionId) rs
-
--- eraseChunk :: Universe -> Chunk -> Universe
--- eraseChunk (Universe rs) (Chunk r ss) = Universe $ M.adjust (regionEraseShapes ss) (r ^. regionId) rs
-
--- splitChunkIntoRegion :: Universe -> Chunk -> (Region, Universe)
--- splitChunkIntoRegion u@(Universe m) c
+-- Recursively isolate the subchunks before isolating the top level
+-- isolateChunk :: Universe -> Chunk -> (Region, Universe)
+-- isolateChunk u c
 --   = if isWholeRegion then
 --       (region, u)
 --     else
---       (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ m)
+--       (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ u' ^. universeRegions)
 --   where region = c ^. chunkRegion
 --         remainingShapes = region ^. regionShapes \\ c ^. chunkShapes
 --         isWholeRegion = length remainingShapes == 0
+
+--         u' = foldl (\u c -> snd $ isolateChunk u c) u (c ^. chunkSubChunks)
+
 --         newId = newRegionId u
 --         newRegion = region { _regionId = newId, _regionShapes = c ^. chunkShapes }
 --         remainingRegion = region { _regionShapes = remainingShapes }
+
 --         adjustParent r
 --           = if r ^. regionParentId == region ^. regionId &&
---                head (habitat u r) `elem` chunkPieces c then
+--                head (habitat u' r) `elem` chunkTopPieces c then
 --               r & regionParentId .~ newId
 --             else
 --               r

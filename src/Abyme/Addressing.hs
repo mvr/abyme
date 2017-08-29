@@ -29,18 +29,21 @@ module Abyme.Addressing (
   habitat,
   fringe,
   halo,
+  neighbourhood,
   uninhabited,
+
+  regionCollectAdjacentShapes,
 
   nudgeLocation,
   nudgeSquare
 ) where
 
 import Control.Lens hiding (contains, children)
-import Data.List (nub)
+import Data.List (nub, intersect)
 import Data.Maybe (catMaybes, isJust)
 import Linear
 
-import Abyme.Util (posDivMod, levelScale, fromJustOrDie)
+import Abyme.Util (unionize, posDivMod, levelScale, fromJustOrDie)
 import Abyme.Direction
 import Abyme.Polyomino
 import Abyme.Universe
@@ -110,11 +113,17 @@ atPiece (Piece r s) = singular $ universeRegions . ix (r ^. regionId) . regionSh
 -- --------------------------------------------------------------------------------
 -- HasSquares
 
--- Here childRegions and childPieces are any children that intersect
+-- TODO: A lot of these could be smarter / more efficient
+
+-- Here constituentPieces is any piece that this `a` is a part of,
+-- and childRegions and childPieces are any children that intersect
 -- `a` at all, the children don't have to be completely contained
 
 class Eq a => HasSquares a where
   constituentSquares :: Universe -> a -> [Square]
+
+  constituentPieces :: Universe -> a -> [Piece]
+  constituentPieces u a = nub $ fmap (_squarePiece) $ constituentSquares u a
 
   childRegions :: Universe -> a -> [Region]
   childRegions u a = nub $ fmap (_pieceRegion . _squarePiece) $ catMaybes $ fmap (inhabitant u) (constituentLocations u a)
@@ -124,14 +133,21 @@ class Eq a => HasSquares a where
 
 instance HasSquares Square where
   constituentSquares _ s = [s]
+  constituentPieces _ s = [s ^. squarePiece]
 
 instance HasSquares Piece where
   constituentSquares _ p = fmap (\s -> Square p s) (p ^. pieceShape . shapePolyomino . polyominoSquares)
+  constituentPieces _ p = [p]
 
 instance HasSquares Region where
   constituentSquares u r = concat $ fmap (constituentSquares u) pieces
     where pieces = fmap (Piece r) (r ^. regionShapes)
+
+  constituentPieces _ r = regionPieces r
+
   childRegions u r = u ^.. universeRegions . traverse . filtered (\c -> r^.regionId == c^.regionParentId)
+
+-- instance HasSquares a => HasSquares [a] where -- ??
 
 constituentLocations :: HasSquares a => Universe -> a -> [Location]
 constituentLocations u a = do
@@ -164,8 +180,16 @@ halo uni a = nub $ u ++ d ++ l ++ r
         (l, _) = fringe uni LEft a
         (r, _) = fringe uni RIght a
 
+neighbourhood :: HasSquares a => Universe -> a -> [Piece]
+neighbourhood u a = nub $ constituentPieces u a ++ neighbouring
+  where neighbouring = fmap (\s -> s ^. squarePiece) $ catMaybes $ fmap (inhabitant u) (halo u a)
+
 uninhabited :: HasSquares a => Universe -> a -> Bool
 uninhabited u a = null (childRegions u a)
+
+regionCollectAdjacentShapes :: Universe -> Region -> [Shape] -> [[Shape]]
+regionCollectAdjacentShapes u r ss = fmap (fmap _pieceShape) $ unionize $ fmap (\p -> neighbourhood u p `intersect` pieces) pieces
+  where pieces = fmap (Piece r) ss
 
 -- --------------------------------------------------------------------------------
 -- -- Nudging
