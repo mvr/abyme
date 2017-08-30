@@ -4,17 +4,20 @@ import Control.Lens
 import Data.List (tails)
 
 import Abyme.Universe
+import Abyme.Addressing
 
 -- TODO: return a descriptive error
 -- TODO: check ids of key and value match
--- TODO: check every square is sitting validly on parent region
 -- TODO: harder? check universe is connected
 
 pairs :: [a] -> [(a, a)]
 pairs l = [(x,y) | (x:ys) <- tails l, y <- ys]
 
-validateRegion :: Region -> Bool
-validateRegion (Region rid pid _ ssh) = rid /= pid && all (not . uncurry shapeIntersects) (pairs ssh)
+validateRegion :: Universe -> Region -> Bool
+validateRegion u r@(Region rid pid _ ssh) = idsUnequal && shapesDontIntersect && everythingSitsOnSomething
+  where idsUnequal = rid /= pid
+        shapesDontIntersect = all (not . uncurry shapeIntersects) (pairs ssh)
+        everythingSitsOnSomething = all (\s -> Just s == inhabitant u (squareLocation u s)) (constituentSquares u r)
 
 validateUniverse :: Universe -> Bool
-validateUniverse u = all validateRegion (u ^.. universeRegions . traverse)
+validateUniverse u = all (validateRegion u) (u ^.. universeRegions . traverse)
