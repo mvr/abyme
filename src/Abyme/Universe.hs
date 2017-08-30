@@ -3,6 +3,7 @@ module Abyme.Universe where
 
 import Control.Lens hiding (contains)
 import Data.List (delete, (\\))
+import qualified Data.List.NonEmpty as NE (fromList)
 import Data.Semigroup
 import qualified Data.Map.Strict as M
 import Linear
@@ -60,9 +61,12 @@ regionEraseShapes ss r = r & regionShapes %~ (\\ ss)
 instance Semigroup Shape where
   (Shape p ss) <> (Shape p' ss') = Shape p $ ss <> polyOffset ss' p'
 
--- TODO:
--- regionCompositePoly :: Region -> Polyomino
--- regionCompositePoly =
+regionCompositePoly :: Region -> Polyomino
+regionCompositePoly r = sconcat $ NE.fromList $ fmap shapePolyWithOffset $ r ^. regionShapes
+
+-- It always should be
+regionIsConnected :: Region -> Bool
+regionIsConnected = polyIsConnected . regionCompositePoly
 
 newRegionId :: Universe -> RegionId
 newRegionId (Universe rs) = RegionId $ 1 + (getRegionId $ fst $ M.findMax rs)

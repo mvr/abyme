@@ -112,8 +112,9 @@ removeRegion u r = u & universeRegions . at (r ^. regionId) .~ Nothing
 
 pieceRemovableSquares :: Universe -> Piece -> [Square]
 pieceRemovableSquares _u (Piece _ (Shape _ (Polyomino [_a]))) = [] -- We can't leave an empty shape
-pieceRemovableSquares u p = filter (uninhabited u) nonBridges
-  where nonBridges = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
+pieceRemovableSquares u p = filter (uninhabited u) nonRegionBridges
+  where nonInternalBridges = fmap (Square p) $ polyRemovableSquares (p ^. pieceShape ^. shapePolyomino)
+        nonRegionBridges = filter (\s -> regionIsConnected $ regionRemoveSquare (p ^. pieceRegion) s) nonInternalBridges
 
 allRemovableSquares :: Universe -> [Square]
 allRemovableSquares u = do
@@ -121,6 +122,14 @@ allRemovableSquares u = do
   region <- allRegions
   pieces <- regionPieces region
   pieceRemovableSquares u pieces
+
+regionRemoveSquare :: Region -> Square -> Region
+regionRemoveSquare r s = r & singular (regionShapes
+                                       . traverse
+                                       . filtered (== (s ^. squarePiece . pieceShape)))
+                             . shapePolyomino
+                             . polyominoSquares
+                             %~ delete (s ^. squareCoordinates)
 
 removeSquare :: Universe -> Square -> Universe
 removeSquare u s = u & atPiece (s ^. squarePiece) . shapePolyomino . polyominoSquares %~ delete (s ^. squareCoordinates)
