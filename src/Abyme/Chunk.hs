@@ -7,6 +7,7 @@ module Abyme.Chunk (
   fuseInhabitantRegions,
   canPushChunk,
   explorePiece,
+  isolateChunk,
 --  pushChunk,
 ) where
 
@@ -41,9 +42,6 @@ chunkTopPieces (Chunk r ss _) = fmap (Piece r) ss
 
 chunkHasTopPiece :: Chunk -> Piece -> Bool
 chunkHasTopPiece (Chunk r ss _) (Piece r' s) = r == r' && s `elem` ss
-
--- chunkIsEntireRegion :: M.Map RegionId [Shape] -> Chunk -> Bool
--- chunkIsEntireRegion m (Chunk r ss _) = null $ (r ^. regionShapes \\ ss) \\ (m ^. ix (r ^. regionId))
 
 mapHasPiece :: M.Map RegionId [Shape] -> Piece -> Bool
 mapHasPiece m (Piece r s) = case M.lookup (r^.regionId) m of
@@ -145,34 +143,42 @@ canPushChunk :: Universe -> Direction -> Chunk -> Bool
 canPushChunk u d c = not (oob || any (isInhabited u) fr)
   where (fr, oob) = fringe u d c
 
--- Recursively isolate the subchunks before isolating the top level
--- isolateChunk :: Universe -> Chunk -> (Region, Universe)
--- isolateChunk u c
---   = if isWholeRegion then
---       (region, u)
---     else
---       (newRegion, Universe $ fmap adjustParent $ M.insert (region ^. regionId) remainingRegion $ M.insert newId newRegion $ u' ^. universeRegions)
---   where region = c ^. chunkRegion
---         remainingShapes = region ^. regionShapes \\ c ^. chunkShapes
---         isWholeRegion = length remainingShapes == 0
+-- We need to be careful here, we cannot trust a supplied Region
+-- because some of its data may have been modified by earlier
+-- isolations
+-- TODO: May be possible to do all at once, but whatever
+isolateShapes :: Universe -> RegionId -> [Shape] -> (Region, Universe)
+isolateShapes u rid ss =
+  if null remainingShapes then
+    (region, u)
+  else
+    (newRegion, newu)
+  where region = u ^?! universeRegions . ix rid
+        remainingShapes = region ^. regionShapes \\ ss
 
---         u' = foldl (\u c -> snd $ isolateChunk u c) u (c ^. chunkSubChunks)
+        newId = newRegionId u
+        newRegion = region { _regionId = newId, _regionShapes = ss }
+        remainingRegion = region { _regionShapes = remainingShapes }
 
---         newId = newRegionId u
---         newRegion = region { _regionId = newId, _regionShapes = c ^. chunkShapes }
---         remainingRegion = region { _regionShapes = remainingShapes }
+        adjustParent c =
+          if c ^. regionParentId == rid
+             && head (habitat u c) ^. pieceShape `elem` ss then
+            c & regionParentId .~ newId
+          else
+            c
 
---         adjustParent r
---           = if r ^. regionParentId == region ^. regionId &&
---                head (habitat u' r) `elem` chunkTopPieces c then
---               r & regionParentId .~ newId
---             else
---               r
+        newu = Universe $ fmap adjustParent $ M.insert rid remainingRegion $ M.insert newId newRegion $ u ^. universeRegions
 
--- newSplitChunkIntoRegion :: Universe -> Chunk -> (Region, Universe)
--- newSplitChunkIntoRegion = undefined
---   where
+chunkChildShapes :: Chunk -> [(RegionId, [Shape])]
+chunkChildShapes (Chunk r _ m) = concatMap (\(r, ss) -> fmap (r,) ss) $ (M.toList m')
+  where m' = m & at (r ^. regionId) .~ Nothing
 
+-- There is probably a nicer way to do this, we need to do the top
+-- level last so we can return its new region
+isolateChunk :: Universe -> Chunk -> (Region, Universe)
+isolateChunk u c = isolateShapes childrenDone (c ^. chunkRegion . regionId) (c ^. chunkShapes)
+  where childrenDone = foldl doChild u (chunkChildShapes c)
+        doChild u' (rid, ss) = snd $ isolateShapes u' rid ss
 
 -- pushRegion :: Universe -> Direction -> Region -> Universe
 -- pushRegion u d r = u & universeRegions . ix (r ^. regionId) . regionPosition +~ directionToVector d
