@@ -37,9 +37,11 @@ compareRegionData (Region _ _ pos shs) (Region _ _ pos' shs')
 compareRegion' :: Universe -> [Region] -> [Region] -> Region -> Region -> Ordering
 compareRegion' u r1seen r2seen r1 r2 = (r1 `compareRegionData` r2)
                                        <> (length r1Children `compare` length r2Children)
-                                       <> mconcat (fmap subcompare $ zip r1Children r2Children)
+                                       <> mconcat (fmap subcompare $ zip sortedr1Children sortedr2Children)
   where r1Children = childRegions u r1 \\ r1seen
         r2Children = childRegions u r2 \\ r2seen
+        sortedr1Children = sortBy (compareRegion' u (r1:r1seen) r2seen) r1Children
+        sortedr2Children = sortBy (compareRegion' u r1seen (r2:r2seen)) r2Children
         subcompare (r1', r2') = compareRegion' u (r1:r1seen) (r2:r2seen) r1' r2'
 
 compareRegion :: Universe -> Region -> Region -> Ordering
