@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Universe where
 
@@ -24,7 +25,7 @@ import Abyme.Polyomino
 -- * Keep track of which shapes are on the edge of their region?
 
 newtype RegionId = RegionId { getRegionId :: Integer }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Enum)
 
 data Shape = Shape
   {

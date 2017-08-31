@@ -143,42 +143,45 @@ canPushChunk :: Universe -> Direction -> Chunk -> Bool
 canPushChunk u d c = not (oob || any (isInhabited u) fr)
   where (fr, oob) = fringe u d c
 
--- We need to be careful here, we cannot trust a supplied Region
--- because some of its data may have been modified by earlier
--- isolations
--- TODO: May be possible to do all at once, but whatever
-isolateShapes :: Universe -> RegionId -> [Shape] -> (Region, Universe)
-isolateShapes u rid ss =
-  if null remainingShapes then
-    (region, u)
-  else
-    (newRegion, newu)
+-- This just fills in the missing parts of the region from the Chunk
+bitsToShapes :: Universe -> RegionId -> [[Shape]] -> [[Shape]]
+bitsToShapes u rid ss = ss ++ regionCollectAdjacentShapes u region missing
   where region = u ^?! universeRegions . ix rid
-        remainingShapes = region ^. regionShapes \\ ss
+        missing = region ^. regionShapes \\ concat ss
 
-        newId = newRegionId u
-        newRegion = region { _regionId = newId, _regionShapes = ss }
-        remainingRegion = region { _regionShapes = remainingShapes }
+lookupRemap m p = M.findWithDefault (p ^. pieceRegion . regionId) (p ^. pieceRegion . regionId, p ^. pieceShape) m
 
-        adjustParent c =
-          if c ^. regionParentId == rid
-             && head (habitat u c) ^. pieceShape `elem` ss then
-            c & regionParentId .~ newId
-          else
-            c
+constructUpdates :: Universe -> Chunk -> (M.Map RegionId Region, M.Map (RegionId, Shape) RegionId)
+constructUpdates u (Chunk _ _ m) = (regionMap, idRemap)
+  where shapes = concatMap (\(r, ss) -> fmap (r,) ss) $ M.toList $ M.mapWithKey (bitsToShapes u) m
+        newIds = zip shapes [newRegionId u .. ]
 
-        newu = Universe $ fmap adjustParent $ M.insert rid remainingRegion $ M.insert newId newRegion $ u ^. universeRegions
+        idRemap =  M.fromList $ concatMap (\((oldrid, ss), newrid) -> fmap (\s -> ((oldrid, s), newrid)) ss) newIds
 
-chunkChildShapes :: Chunk -> [(RegionId, [Shape])]
-chunkChildShapes (Chunk r _ m) = concatMap (\(r, ss) -> fmap (r,) ss) $ (M.toList m')
-  where m' = m & at (r ^. regionId) .~ Nothing
+        buildRegion ((oldrid, ss), newrid)
+          = (newrid, oldr { _regionId = newrid,
+                            _regionParentId = lookupRemap idRemap (head $ habitat u $ Piece oldr $ head ss),
+                            _regionShapes = ss } )
+          where oldr = u ^?! universeRegions . ix oldrid
+
+        regionMap = M.fromList $ fmap buildRegion newIds
+
+-- chunkChildShapes :: Chunk -> [(RegionId, [Shape])]
+-- chunkChildShapes (Chunk r _ m) = concatMap (\(r, ss) -> fmap (r,) ss) $ (M.toList m)
 
 -- There is probably a nicer way to do this, we need to do the top
 -- level last so we can return its new region
 isolateChunk :: Universe -> Chunk -> (Region, Universe)
-isolateChunk u c = isolateShapes childrenDone (c ^. chunkRegion . regionId) (c ^. chunkShapes)
-  where childrenDone = foldl doChild u (chunkChildShapes c)
-        doChild u' (rid, ss) = snd $ isolateShapes u' rid ss
+isolateChunk u c = (newu ^?! universeRegions . ix newFocusId , newu)
+  where (newRegions, idRemap) = constructUpdates u c
+
+        oldIds = M.keys (c ^. chunkSubChunks)
+        oldDeleted = M.filterWithKey (\k _ -> k `notElem` oldIds) (u ^. universeRegions)
+        adjustParent r = r & regionParentId .~ lookupRemap idRemap (head $ habitat u r)
+
+        newu = Universe $ M.union (fmap adjustParent oldDeleted) newRegions
+
+        newFocusId = lookupRemap idRemap (head $ constituentPieces u c)
 
 -- pushRegion :: Universe -> Direction -> Region -> Universe
 -- pushRegion u d r = u & universeRegions . ix (r ^. regionId) . regionPosition +~ directionToVector d
