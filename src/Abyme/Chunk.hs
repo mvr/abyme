@@ -43,38 +43,40 @@ chunkTopPieces (Chunk r ss _) = fmap (Piece r) ss
 chunkHasTopPiece :: Chunk -> Piece -> Bool
 chunkHasTopPiece (Chunk r ss _) (Piece r' s) = r == r' && s `elem` ss
 
-mapHasPiece :: M.Map RegionId [Shape] -> Piece -> Bool
+mapHasPiece :: M.Map RegionId [(Int, Shape)] -> Piece -> Bool
 mapHasPiece m (Piece r s) = case M.lookup (r^.regionId) m of
-                              Just ss -> s `elem` ss
+                              Just ss -> s `elem` (fmap snd ss)
                               Nothing -> False
 
 -- Remember a depth so we don't explore upwards
-explorePiece' :: Universe -> Region -> M.Map RegionId [Shape] -> [(Int, Piece)] -> (M.Map RegionId [Shape], [(Int, Piece)])
-explorePiece' _ _ m []     = (m, [])
+explorePiece' :: Universe -> Region -> M.Map RegionId [(Int, Shape)] -> [(Int, Piece)] -> (M.Map RegionId [(Int, Shape)], [(Int, Piece)])
+explorePiece' _ _ m [] = (m, [])
 explorePiece' u r m ((d, p):ps)
-  | d < 0                           = explorePiece' u r m ps -- We are back at the top level
-  | p ^. pieceRegion == r && d > 0  = explorePiece' u r m ps -- We have looped -- TODO: do we just ignore it?
-  | mapHasPiece m p                 = explorePiece' u r m ps -- We have already seen this piece
-  | otherwise                       = explorePiece' u r m' (parents ++ ps ++ children)
+  | d < 0              = explorePiece' u r m ps -- We are back at the top level
+  | mapHasPiece m p    = explorePiece' u r m ps -- We have already seen this piece
+  | otherwise          = explorePiece' u r m' (parents ++ ps ++ children)
   where children = fmap (d+1,) $ childPieces u p
         parents  = fmap (d-1,) $ habitat u p
-        m'       = m & at (p^.pieceRegion.regionId) . non [] %~ ((p ^. pieceShape):)
+        m'       = m & at (p^.pieceRegion.regionId) . non [] %~ ((d, p ^. pieceShape):)
 
-explorePiece :: Universe -> Piece -> M.Map RegionId [Shape]
+explorePiece :: Universe -> Piece -> (M.Map RegionId [(Int, Shape)])
 explorePiece u p = fst $ explorePiece' u (p ^. pieceRegion) M.empty [(0,p)]
 
-deleteIncomplete :: Universe -> M.Map RegionId [Shape] -> M.Map RegionId [Shape]
-deleteIncomplete u m = M.filterWithKey isIncomplete m
-  where isIncomplete rid ss = not $ null $ u ^?! universeRegions . ix rid . regionShapes \\ ss
+deleteComplete :: Universe -> M.Map RegionId [[Shape]] -> M.Map RegionId [[Shape]]
+deleteComplete u m = M.filterWithKey isIncomplete m
+  where isIncomplete rid [ss] = not $ null $ u ^?! universeRegions . ix rid . regionShapes \\ ss
+        isIncomplete rid _    = True
 
 -- TODO: maybe each region needs to store this kind of adjacency information
-identifyIslands :: Universe -> RegionId -> [Shape] -> [[Shape]]
-identifyIslands u rid ss = regionCollectAdjacentShapes u (u ^?! universeRegions . ix rid) ss
+identifyIslands :: Universe -> RegionId -> [(Int, Shape)] -> [[Shape]]
+identifyIslands u rid ss = concatMap doLevel $ fmap (fmap snd) $ groupBy ((==) `on` fst) ss
+  where doLevel ss' = regionCollectAdjacentShapes u (u ^?! universeRegions . ix rid) ss'
 
 pieceChunk :: Universe -> Piece -> Chunk
-pieceChunk u p = Chunk r (m ^?! ix (r ^. regionId)) (M.mapWithKey (identifyIslands u) (deleteIncomplete u m))
-  where m = explorePiece u p
-        r = p ^. pieceRegion
+pieceChunk u p = Chunk r top (deleteComplete u $ M.mapWithKey (identifyIslands u) m)
+  where r = p ^. pieceRegion
+        m = explorePiece u p
+        top = fmap snd $ filter (\(d, _) -> d == 0) $ (m ^?! ix (r ^. regionId))
 
 -- --------------------------------------------------------------------------------
 -- -- Fusing
@@ -169,8 +171,6 @@ constructUpdates u (Chunk _ _ m) = (regionMap, idRemap)
 -- chunkChildShapes :: Chunk -> [(RegionId, [Shape])]
 -- chunkChildShapes (Chunk r _ m) = concatMap (\(r, ss) -> fmap (r,) ss) $ (M.toList m)
 
--- There is probably a nicer way to do this, we need to do the top
--- level last so we can return its new region
 isolateChunk :: Universe -> Chunk -> (Region, Universe)
 isolateChunk u c = (newu ^?! universeRegions . ix newFocusId , newu)
   where (newRegions, idRemap) = constructUpdates u c

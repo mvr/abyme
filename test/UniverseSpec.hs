@@ -40,7 +40,7 @@ spec = do
           u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1),
                                                         (RegionId {getRegionId = 2}, r2) ]}
       it "finds the chunk for s11" $
-        pieceChunk u (Piece r1 s11) === Chunk r1 [s11] (M.fromList [ (RegionId {getRegionId = 1}, [[s11]]) ])
+        pieceChunk u (Piece r1 s11) === Chunk r1 [s11] (M.fromList [ (RegionId {getRegionId = 1}, [[s12], [s11]]) ])
       it "finds the chunk for s21" $
         pieceChunk u (Piece r2 s21) === Chunk r2 [s21] M.empty
 
@@ -55,7 +55,7 @@ spec = do
         pieceChunk u (Piece r1 s11) === Chunk r1 [s11] M.empty
 
       it "explores s21 correctly" $
-        explorePiece u (Piece r2 s21) === M.fromList [(RegionId 1, [s11]), (RegionId 2, [s22, s21]) ]
+        explorePiece u (Piece r2 s21) === M.fromList [(RegionId 1, [(1, s11)]), (RegionId 2, [(0, s22), (0,s21)]) ]
       it "finds the chunk for s21" $
         pieceChunk u (Piece r2 s21) === Chunk r2 [s22, s21] M.empty
 
