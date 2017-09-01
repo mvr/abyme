@@ -13,7 +13,7 @@ module Abyme.Chunk (
 
 import Control.Lens hiding (contains)
 import Control.Monad.State
-import Data.List (nub, find, (\\), groupBy, delete)
+import Data.List (nub, find, (\\), groupBy, delete, sortOn)
 import Data.Function (on)
 import Data.Maybe (catMaybes)
 import qualified Data.Map.Strict as M
@@ -71,7 +71,7 @@ deleteComplete u m = M.filterWithKey isIncomplete m
 
 -- TODO: maybe each region needs to store this kind of adjacency information
 identifyIslands :: Universe -> RegionId -> [(Int, Shape)] -> [[Shape]]
-identifyIslands u rid ss = concatMap doLevel $ fmap (fmap snd) $ groupBy ((==) `on` fst) ss
+identifyIslands u rid ss = concatMap doLevel $ fmap (fmap snd) $ groupBy ((==) `on` fst) $ sortOn fst $ ss
   where doLevel ss' = regionCollectAdjacentShapes u (u ^?! universeRegions . ix rid) ss'
 
 pieceChunk :: Universe -> Piece -> Chunk
