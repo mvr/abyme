@@ -117,6 +117,22 @@ spec = do
           p = Piece r2 monomino
       in checkSplitting u p
 
+    it "works for tricky example 4" $
+      let r1 = Region {_regionId = RegionId {getRegionId = 1}, _regionParentId = RegionId {getRegionId = 2}, _regionPosition = V2 0 0, _regionShapes = [
+                          monomino,
+                          Shape {_shapePosition = V2 0 0, _shapePolyomino = Polyomino {_polyominoSquares = [V2 1 0,V2 2 0,V2 3 0,V2 4 0]}}]}
+
+          r2 = Region {_regionId = RegionId {getRegionId = 2}, _regionParentId = RegionId {getRegionId = 1}, _regionPosition = V2 0 0, _regionShapes = [
+                          monomino,
+                          monomino {_shapePosition = V2 1 0 },
+                          monomino {_shapePosition = V2 2 0 } ]}
+
+          u = Universe {_universeRegions = M.fromList [ (RegionId {getRegionId = 1}, r1), (RegionId {getRegionId = 2}, r2)]}
+
+          p = Piece r1 monomino
+      in checkSplitting u p
+
+
     prop "splitting then unsplitting is identity" $ \u -> do
       p <- randomPiece u
       return $ checkSplitting u p

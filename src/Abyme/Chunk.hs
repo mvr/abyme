@@ -13,7 +13,7 @@ module Abyme.Chunk (
 
 import Control.Lens hiding (contains)
 import Control.Monad.State
-import Data.List (nub, find, (\\), groupBy)
+import Data.List (nub, find, (\\), groupBy, delete)
 import Data.Function (on)
 import Data.Maybe (catMaybes)
 import qualified Data.Map.Strict as M
@@ -43,24 +43,26 @@ chunkTopPieces (Chunk r ss _) = fmap (Piece r) ss
 chunkHasTopPiece :: Chunk -> Piece -> Bool
 chunkHasTopPiece (Chunk r ss _) (Piece r' s) = r == r' && s `elem` ss
 
-mapHasPiece :: M.Map RegionId [(Int, Shape)] -> Piece -> Bool
+mapHasPiece :: M.Map RegionId [(Int, Shape)] -> Piece -> Maybe Int
 mapHasPiece m (Piece r s) = case M.lookup (r^.regionId) m of
-                              Just ss -> s `elem` (fmap snd ss)
-                              Nothing -> False
+    Just ss -> fmap fst $ find (\(d, s') -> s == s') ss
+    Nothing -> Nothing
 
 -- Remember a depth so we don't explore upwards
-explorePiece' :: Universe -> Region -> M.Map RegionId [(Int, Shape)] -> [(Int, Piece)] -> (M.Map RegionId [(Int, Shape)], [(Int, Piece)])
-explorePiece' _ _ m [] = (m, [])
-explorePiece' u r m ((d, p):ps)
-  | d < 0              = explorePiece' u r m ps -- We are back at the top level
-  | mapHasPiece m p    = explorePiece' u r m ps -- We have already seen this piece
-  | otherwise          = explorePiece' u r m' (parents ++ ps ++ children)
+explorePiece' :: Universe -> M.Map RegionId [(Int, Shape)] -> [(Int, Piece)] -> (M.Map RegionId [(Int, Shape)], [(Int, Piece)])
+explorePiece' _ m [] = (m, [])
+explorePiece' u m ((d, p):ps)
+  | d < 0      = explorePiece' u m ps -- We are back at the top level
+  | Just d' <- mapHasPiece m p,
+    d' <= d    = explorePiece' u m ps -- We have already seen this piece
+  | otherwise  = explorePiece' u m' (parents ++ ps ++ children)
   where children = fmap (d+1,) $ childPieces u p
         parents  = fmap (d-1,) $ habitat u p
-        m'       = m & at (p^.pieceRegion.regionId) . non [] %~ ((d, p ^. pieceShape):)
+        s        = p ^. pieceShape
+        m'       = m & at (p^.pieceRegion.regionId) . non [] %~ ((d, s):) . filter (\(d', s') -> s' /= s)
 
 explorePiece :: Universe -> Piece -> (M.Map RegionId [(Int, Shape)])
-explorePiece u p = fst $ explorePiece' u (p ^. pieceRegion) M.empty [(0,p)]
+explorePiece u p = fst $ explorePiece' u M.empty [(0,p)]
 
 deleteComplete :: Universe -> M.Map RegionId [[Shape]] -> M.Map RegionId [[Shape]]
 deleteComplete u m = M.filterWithKey isIncomplete m
