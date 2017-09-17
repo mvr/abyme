@@ -19,13 +19,17 @@ library
   exposed-modules:     Abyme.Util
                      , Abyme.Polyomino 
                      , Abyme.Direction
+
                      , Abyme.Universe
                      , Abyme.Addressing
                      , Abyme.Chunk
                      , Abyme.Universe.Validate
                      , Abyme.Universe.Generate
-                     , Abyme.Universe.Explore
-                     , Abyme.Universe.Normalise
+                     -- , Abyme.Universe.Explore
+                     -- , Abyme.Universe.Normalise
+
+                     , Abyme.Shapey.Universe
+                     , Abyme.Shapey.Universe.Generate
                      
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

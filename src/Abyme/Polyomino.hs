@@ -46,3 +46,6 @@ polyRemoveSquare (Polyomino ss) pos = Polyomino $ delete pos ss
 
 polyRemovableSquares :: Polyomino -> [V2 Integer]
 polyRemovableSquares p = filter (polyIsConnected . polyRemoveSquare p) (p ^. polyominoSquares)
+
+polyDiv :: Polyomino -> Polyomino
+polyDiv (Polyomino ps) = Polyomino $ nub $ fmap (fst . posDivMod) ps
