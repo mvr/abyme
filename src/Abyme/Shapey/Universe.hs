@@ -45,6 +45,12 @@ data Location = Location
   } deriving (Eq, Show, Ord)
 makeLenses ''Location
 
+newShapeId :: Universe -> ShapeId
+newShapeId (Universe rs) = ShapeId $ 1 + (getShapeId $ fst $ M.findMax rs)
+
+atShape :: Shape -> Lens' Universe Shape
+atShape s = singular $ universeShapes . ix (s ^. shapeId)
+
 lookupShape :: Universe -> ShapeId -> Shape
 lookupShape u sid = fromJustOrDie "Couldn't find shape" $ M.lookup sid (u ^. universeShapes)
 
@@ -104,6 +110,14 @@ class Eq a => HasSquares a where
   childShapes :: Universe -> a -> [Shape]
   childShapes u a = nub $ fmap (_squareShape) $ catMaybes $ fmap (inhabitant u) (constituentLocations u a)
 
+instance HasSquares Square where
+  constituentSquares _ s = [s]
+  constituentShapes _ s = [s ^. squareShape]
+
+instance HasSquares Shape where
+  constituentSquares _ s = fmap (\p -> Square s p) (s ^. shapePolyomino . polyominoSquares)
+  constituentShapes _ s = [s]
+
 constituentLocations :: HasSquares a => Universe -> a -> [Location]
 constituentLocations u a = do
   s <- constituentSquares u a
@@ -115,6 +129,51 @@ allSubpositions = do
   x <- [0 .. levelScale - 1]
   y <- [0 .. levelScale - 1]
   return $ V2 x y
+
+contains :: HasSquares a => Universe -> a -> Square -> Bool
+contains u a s = s `elem` (constituentSquares u a)
+
+locations :: HasSquares a => Universe -> a -> [Location]
+locations u a = fmap (squareLocation u) (constituentSquares u a)
+
+inhabits :: HasSquares a => Universe -> a -> Location -> Bool
+inhabits u a l = l `elem` (locations u a)
+
+habitat :: HasSquares a => Universe -> a -> [Shape]
+habitat u a = nub $ fmap (\l -> l ^. locationSquare . squareShape) (locations u a)
+
+-- Bool records if we hit OoB
+fringe :: HasSquares a => Universe -> Direction -> a -> ([Location], Bool)
+fringe u d a = (filter (not . inhabits u a) justs, length allMaybes /= length justs)
+  where allMaybes = fmap (nudgeLocation u d) $ locations u a
+        justs = catMaybes allMaybes
+
+halo :: HasSquares a => Universe -> a -> [Location]
+halo uni a = nub $ u ++ d ++ l ++ r
+  where (u, _) = fringe uni Up a
+        (d, _) = fringe uni Down a
+        (l, _) = fringe uni LEft a
+        (r, _) = fringe uni RIght a
+
+fringeWithOriginal :: HasSquares a => Universe -> Direction -> a -> [(Square, Location)]
+fringeWithOriginal u d a = filter (\(s, l) -> not $ inhabits u a l) justs
+  where allMaybes = fmap (\s -> (s,) <$> nudgeLocation u d (squareLocation u s)) $ constituentSquares u a
+        justs = catMaybes allMaybes
+
+haloWithOriginal :: HasSquares a => Universe -> a -> [(Direction, Square, Location)]
+haloWithOriginal uni a = u ++ d ++ l ++ r
+  where u = fmap (mark Up)    $ fringeWithOriginal uni Up a
+        d = fmap (mark Down)  $ fringeWithOriginal uni Down a
+        l = fmap (mark LEft)  $ fringeWithOriginal uni LEft a
+        r = fmap (mark RIght) $ fringeWithOriginal uni RIght a
+        mark d (l, l') = (d, l, l')
+
+neighbourhood :: HasSquares a => Universe -> a -> [Shape]
+neighbourhood u a = nub $ constituentShapes u a ++ neighbouring
+  where neighbouring = fmap (\s -> s ^. squareShape) $ catMaybes $ fmap (inhabitant u) (halo u a)
+
+uninhabited :: HasSquares a => Universe -> a -> Bool
+uninhabited u a = null (childShapes u a)
 
 -- --------------------------------------------------------------------------------
 -- -- Nudging
