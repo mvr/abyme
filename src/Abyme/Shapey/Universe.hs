@@ -7,7 +7,8 @@ module Abyme.Shapey.Universe where
 import           Control.Lens
 import qualified Data.Map.Strict as M
 import           Data.List (nub)
-import           Data.Maybe (isJust, catMaybes)
+import           Data.Maybe (isJust, catMaybes, maybeToList)
+import           Control.Monad (guard)
 import           Linear
 
 import           Abyme.Util
@@ -156,9 +157,11 @@ halo uni a = nub $ u ++ d ++ l ++ r
         (r, _) = fringe uni RIght a
 
 fringeWithOriginal :: HasSquares a => Universe -> Direction -> a -> [(Square, Location)]
-fringeWithOriginal u d a = filter (\(s, l) -> not $ inhabits u a l) justs
-  where allMaybes = fmap (\s -> (s,) <$> nudgeLocation u d (squareLocation u s)) $ constituentSquares u a
-        justs = catMaybes allMaybes
+fringeWithOriginal u d a = do
+  s <- constituentSquares u a
+  l <- maybeToList $ nudgeLocation u d (squareLocation u s)
+  guard $ not $ inhabits u a l
+  return (s, l)
 
 haloWithOriginal :: HasSquares a => Universe -> a -> [(Direction, Square, Location)]
 haloWithOriginal uni a = u ++ d ++ l ++ r
