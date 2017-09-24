@@ -75,6 +75,7 @@ squareLocationOn :: Universe -> Square -> (ShapeId, V2 Integer) -> Maybe Locatio
 squareLocationOn u s (pid, shapePos) = do
   let (p', subp) = posDivMod (s^.squarePosition + shapePos)
       newShape = lookupShape u pid
+  guard $ shapeHasPosition newShape p'
   return $ Location (Square newShape p') subp
 
 squareLocation :: Universe -> Square -> Location
