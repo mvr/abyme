@@ -25,8 +25,8 @@ library
                      , Abyme.Regiony.Chunk
                      , Abyme.Regiony.Universe.Validate
                      , Abyme.Regiony.Universe.Generate
+                     , Abyme.Regiony.Universe.Normalise
                      -- , Abyme.Regiony.Universe.Explore
-                     -- , Abyme.Regiony.Universe.Normalise
 
                      , Abyme.Shapey.Universe
                      , Abyme.Shapey.Universe.Generate

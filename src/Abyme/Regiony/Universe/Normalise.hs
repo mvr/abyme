@@ -1,4 +1,4 @@
-module Abyme.Universe.Normalise where
+module Abyme.Regiony.Universe.Normalise where
 
 import Control.Lens
 import Data.List (sort, sortBy, (\\))
@@ -6,8 +6,8 @@ import Data.Semigroup ((<>))
 import Linear
 
 import Abyme.Polyomino
-import Abyme.Universe
-import Abyme.Addressing
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Addressing
 
 -- This should be a normal form
 -- Uh oh, would I have to check graph isomorphism?
