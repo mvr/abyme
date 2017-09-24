@@ -52,6 +52,9 @@ newShapeId (Universe rs) = ShapeId $ 1 + (getShapeId $ fst $ M.findMax rs)
 atShape :: Shape -> Lens' Universe Shape
 atShape s = singular $ universeShapes . ix (s ^. shapeId)
 
+locationShape :: Lens' Location Shape
+locationShape = locationSquare . squareShape
+
 lookupShape :: Universe -> ShapeId -> Shape
 lookupShape u sid = fromJustOrDie "Couldn't find shape" $ M.lookup sid (u ^. universeShapes)
 
@@ -80,8 +83,11 @@ squareLocation u s = case catMaybes $ fmap (squareLocationOn u s) (s ^. squareSh
                        [sh] -> sh
                        _  -> error "A square is sitting on multiple things"
 
+locationToPosition :: Location -> V2 Integer
+locationToPosition (Location (Square _ p) subp) = (levelScale *^ p) + subp
+
 locationToPositionOn :: Location -> V2 Integer -> V2 Integer
-locationToPositionOn (Location (Square s p) subp) spos = levelScale *^ (p - spos) + subp
+locationToPositionOn l spos = locationToPosition l - (levelScale *^ spos)
 
 shapeHasPosition :: Shape -> V2 Integer -> Bool
 shapeHasPosition s p = polyContainsPoint (s ^. shapePolyomino) p
@@ -93,7 +99,7 @@ inhabitant u l = case catMaybes maybes of
                    _  -> error "Location has two inhabitants"
   where checkShape (s, spos) = let lpos = locationToPositionOn l spos in
                                if shapeHasPosition s lpos then Just (Square s lpos) else Nothing
-        maybes = fmap checkShape $ u ^.. shapeChildrenWithPosition (l ^. locationSquare . squareShape)
+        maybes = fmap checkShape $ u ^.. shapeChildrenWithPosition (l ^. locationShape)
 
 footprintOn :: Shape -> Shape -> Polyomino
 footprintOn s p = let pos = fromJustOrDie "Footprint not parent" $ shapePositionOn s p in
@@ -141,7 +147,7 @@ inhabits :: HasSquares a => Universe -> a -> Location -> Bool
 inhabits u a l = l `elem` (locations u a)
 
 habitat :: HasSquares a => Universe -> a -> [Shape]
-habitat u a = nub $ fmap (\l -> l ^. locationSquare . squareShape) (locations u a)
+habitat u a = nub $ fmap (\l -> l ^. locationShape) (locations u a)
 
 -- Bool records if we hit OoB
 fringe :: HasSquares a => Universe -> Direction -> a -> ([Location], Bool)
