@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Abyme.Chunk (
+module Abyme.Regiony.Chunk (
   Chunk(..),
   pieceChunk,
   fuseInhabitantRegions,
@@ -20,9 +20,9 @@ import qualified Data.Map.Strict as M
 import Linear
 
 import Abyme.Direction
-import Abyme.Universe
-import Abyme.Addressing
 import Abyme.Util (levelScale, unionize, fromJustOrDie)
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Addressing
 
 -- --------------------------------------------------------------------------------
 -- -- Chunks

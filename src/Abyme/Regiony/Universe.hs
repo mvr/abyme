@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Abyme.Universe where
+module Abyme.Regiony.Universe where
 
 import Control.Lens hiding (contains)
 import Data.List (delete, (\\))

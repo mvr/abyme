@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Abyme.Universe.Generate where
+module Abyme.Regiony.Universe.Generate where
 
 import Data.List (delete, nub)
 import qualified Data.Map.Strict as M
@@ -14,9 +14,9 @@ import Test.QuickCheck.Arbitrary
 
 import Abyme.Util
 import Abyme.Polyomino
-import Abyme.Universe
-import Abyme.Addressing
-import Abyme.Chunk
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Addressing
+import Abyme.Regiony.Chunk
 
 monomino :: Shape
 monomino = Shape (V2 0 0) (Polyomino [V2 0 0])
@@ -156,12 +156,10 @@ instance Arbitrary Polyomino where
 instance Arbitrary Shape where
   arbitrary = Shape <$> arbitrary <*> arbitrary
 
--- instance Arbitrary Region where
-
 instance Arbitrary Universe where
   arbitrary = sized $ \n -> do
     if n == 0 then
-      return $ minimal
+      return minimal
     else do
       u <- resize (n - 1) arbitrary
       growByOne u

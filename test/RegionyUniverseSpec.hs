@@ -1,4 +1,4 @@
-module UniverseSpec (spec) where
+module RegionyUniverseSpec (spec) where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -9,11 +9,11 @@ import qualified Data.Map.Strict as M
 import Linear
 
 import Abyme.Polyomino
-import Abyme.Universe
-import Abyme.Universe.Generate
-import Abyme.Universe.Normalise
-import Abyme.Addressing
-import Abyme.Chunk
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Universe.Generate
+import Abyme.Regiony.Universe.Normalise
+import Abyme.Regiony.Addressing
+import Abyme.Regiony.Chunk
 
 spec :: Spec
 spec = do

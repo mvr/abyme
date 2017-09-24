@@ -1,12 +1,12 @@
-module GenerateSpec (spec) where
+module RegionyGenerateSpec (spec) where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
-import Abyme.Universe
-import Abyme.Universe.Generate ()
-import Abyme.Universe.Validate
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Universe.Generate ()
+import Abyme.Regiony.Universe.Validate
 
 spec :: Spec
 spec = describe "generator" $ do

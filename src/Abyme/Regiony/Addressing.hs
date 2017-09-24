@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Abyme.Addressing (
+module Abyme.Regiony.Addressing (
   Piece(..),
   pieceRegion,
   pieceShape,
@@ -46,7 +46,7 @@ import Linear
 import Abyme.Util (unionize, posDivMod, levelScale, fromJustOrDie)
 import Abyme.Direction
 import Abyme.Polyomino
-import Abyme.Universe
+import Abyme.Regiony.Universe
 
 -- --------------------------------------------------------------------------------
 -- -- Addressing

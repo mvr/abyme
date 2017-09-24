@@ -1,11 +1,11 @@
-module Abyme.Universe.Validate where
+module Abyme.Regiony.Universe.Validate where
 
 import Control.Lens
 import Data.List (tails)
 
 import Abyme.Polyomino
-import Abyme.Universe
-import Abyme.Addressing
+import Abyme.Regiony.Universe
+import Abyme.Regiony.Addressing
 
 -- TODO: return a descriptive error
 -- TODO: check ids of key and value match

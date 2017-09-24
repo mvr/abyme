@@ -20,13 +20,13 @@ library
                      , Abyme.Polyomino 
                      , Abyme.Direction
 
-                     , Abyme.Universe
-                     , Abyme.Addressing
-                     , Abyme.Chunk
-                     , Abyme.Universe.Validate
-                     , Abyme.Universe.Generate
-                     -- , Abyme.Universe.Explore
-                     -- , Abyme.Universe.Normalise
+                     , Abyme.Regiony.Universe
+                     , Abyme.Regiony.Addressing
+                     , Abyme.Regiony.Chunk
+                     , Abyme.Regiony.Universe.Validate
+                     , Abyme.Regiony.Universe.Generate
+                     -- , Abyme.Regiony.Universe.Explore
+                     -- , Abyme.Regiony.Universe.Normalise
 
                      , Abyme.Shapey.Universe
                      , Abyme.Shapey.Universe.Generate
@@ -66,9 +66,9 @@ test-suite abyme-test
   hs-source-dirs:       test
   ghc-options:          -Wall
   main-is:              Spec.hs
-  other-modules:        UniverseSpec
-                      , GenerateSpec
-                      , NormaliseSpec
+  other-modules:        RegionyUniverseSpec
+                      , RegionyGenerateSpec
+                      , RegionyNormaliseSpec
   build-depends:        base
                       , abyme
                       , hspec
