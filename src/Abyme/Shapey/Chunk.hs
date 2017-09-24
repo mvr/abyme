@@ -63,8 +63,8 @@ canPushChunk :: Universe -> Direction -> Chunk -> Bool
 canPushChunk u d c = not (oob || any (isInhabited u) fr)
   where (fr, oob) = fringe u d c
 
-pushSingleShape :: Universe -> Direction -> Shape -> Universe
-pushSingleShape u d s = u & atShape s . shapeParentIds .~ (newParents & traverse . _2 +~ directionToVector d)
+pushSingleShape :: Universe -> Direction -> Shape -> Shape
+pushSingleShape u d s = s & shapeParentIds .~ (newParents & traverse . _2 +~ directionToVector d)
   where newParents = nub $ do
           sq <- constituentSquares u s
           l' <- maybeToList $ nudgeLocation u d $ squareLocation u sq
@@ -73,5 +73,8 @@ pushSingleShape u d s = u & atShape s . shapeParentIds .~ (newParents & traverse
               parentPos = locationToPosition l' - pos
           return (newParent ^. shapeId, parentPos)
 
+-- Do them all simultaneously, hopefully this doesn't break things
 pushChunk :: Universe -> Direction -> Chunk -> Universe
-pushChunk u d c = undefined
+pushChunk u d c = u & universeShapes %~ (M.union newShapeMap)
+  where newShapes = fmap (pushSingleShape u d) (c ^. chunkTopShapes)
+        newShapeMap = M.fromList $ fmap (\s -> (s ^. shapeId, s)) newShapes
