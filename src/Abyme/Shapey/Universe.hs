@@ -97,8 +97,8 @@ inhabitant u l = case catMaybes maybes of
                    []  -> Nothing
                    [s] -> Just s
                    _  -> error "Location has two inhabitants"
-  where checkShape (s, spos) = let lpos = locationToPositionOn l spos in
-                               if shapeHasPosition s lpos then Just (Square s lpos) else Nothing
+  where checkShape (s, spos) = let lpos = locationToPosition l in
+                               if shapeHasPosition s (lpos - spos) then Just (Square s (lpos - spos)) else Nothing
         maybes = fmap checkShape $ u ^.. shapeChildrenWithPosition (l ^. locationShape)
 
 footprintOn :: Shape -> Shape -> Polyomino
