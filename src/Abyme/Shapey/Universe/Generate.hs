@@ -34,9 +34,8 @@ potentialNewSquares :: Universe -> Shape -> [((ShapeId, V2 Integer), V2 Integer)
 potentialNewSquares u s = do
   (d, s, l') <- haloWithOriginal u s
   guard (not $ isInhabited u l')
-  let l = squareLocation u s
-      pos = directionToVector d + s ^. squarePosition
-      newparent = l' ^. locationSquare . squareShape
+  let pos = directionToVector d + s ^. squarePosition
+      newparent = l' ^. locationShape
       parentPos = locationToPosition l' - pos
   return $ ((newparent ^. shapeId, parentPos), pos)
 

@@ -29,7 +29,9 @@ library
                      -- , Abyme.Regiony.Universe.Explore
 
                      , Abyme.Shapey.Universe
+                     , Abyme.Shapey.Chunk
                      , Abyme.Shapey.Universe.Generate
+                     , Abyme.Shapey.Universe.Validate
                      
   -- other-extensions:    
   build-depends:       base >=4.9 && <4.10

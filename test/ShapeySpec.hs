@@ -2,15 +2,16 @@ module ShapeySpec (spec) where
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import Test.QuickCheck.Property
+import Test.QuickCheck
 
-import Control.Lens
+import Control.Lens hiding (elements)
 import qualified Data.Map.Strict as M
 import Linear
 
 import Abyme.Polyomino
 import Abyme.Shapey.Universe
 import Abyme.Shapey.Universe.Generate
+import Abyme.Shapey.Universe.Validate
 
 spec :: Spec
 spec = do
@@ -41,3 +42,11 @@ spec = do
                       _squarePosition = V2 0 0}
 
         in Just s === inhabitant u (squareLocation u s)
+
+  describe "generator" $ do
+    prop "generates valid universes" $ \u ->
+      validateUniverse u
+
+    prop "shrinks universes to valid universes" $ \u ->
+      let shrinks = shrink u in
+      not (null shrinks) ==> forAll (elements shrinks) $ validateUniverse
