@@ -37,9 +37,9 @@ chunkHasTopPiece :: Chunk -> Shape -> Bool
 chunkHasTopPiece (Chunk ss _) s = s `elem` ss
 
 -- Remember a depth so we don't explore upwards
-exploreShape' :: Universe -> [(Shape, Int)] -> [(Shape, Int)] -> ([(Shape, Int)], [(Shape, Int)])
-exploreShape' _ m [] = (m, [])
-exploreShapen' u m ((s, d):rest)
+exploreShape' :: Universe -> [(Shape, Int)] -> [(Shape, Int)] -> [(Shape, Int)]
+exploreShape' _ m [] = m
+exploreShape' u m ((s, d):rest)
   | d < 0      = exploreShape' u m rest -- We are back at the top level
   | Just d' <- lookup s m,
     d' <= d    = exploreShape' u m rest -- We have already seen this piece
@@ -49,7 +49,7 @@ exploreShapen' u m ((s, d):rest)
         m'       = ((s, d):) $ deleteBy ((==) `on` fst) (s, d) m
 
 exploreShape :: Universe -> Shape -> [(Shape, Int)]
-exploreShape u p = fst $ exploreShape' u [] [(p, 0)]
+exploreShape u p = exploreShape' u [] [(p, 0)]
 
 shapeChunk :: Universe -> Shape -> Chunk
 shapeChunk u s = Chunk (fmap fst top) (fmap fst rest)
