@@ -8,10 +8,15 @@ import Control.Lens hiding (elements)
 import qualified Data.Map.Strict as M
 import Linear
 
+import Abyme.Direction
 import Abyme.Polyomino
 import Abyme.Shapey.Universe
+import Abyme.Shapey.Chunk
 import Abyme.Shapey.Universe.Generate
 import Abyme.Shapey.Universe.Validate
+
+randomChunk :: Universe -> Gen Chunk
+randomChunk u = shapeChunk u <$> randomShape u
 
 spec :: Spec
 spec = do
@@ -19,6 +24,14 @@ spec = do
     prop "square occupies its location" $ \u -> do
       s <- randomSquare u
       return $ Just s === inhabitant u (squareLocation u s)
+
+    prop "location can be nudged and back" $ \u -> do
+      s <- randomSquare u
+      d <- arbitrary
+      let l = squareLocation u s
+      return $ case nudgeLocation u d l of
+        Nothing -> True
+        Just l' -> nudgeLocation u (directionOpposite d) l' == Just l
 
     describe "tricky examples" $ do
       it "works for example 1" $
@@ -50,3 +63,24 @@ spec = do
     prop "shrinks universes to valid universes" $ \u ->
       let shrinks = shrink u in
       not (null shrinks) ==> forAll (elements shrinks) $ validateUniverse
+
+  describe "chunk" $ do
+    prop "shape is member of its chunk" $ \u -> do
+      s <- randomShape u
+
+      return $ s `elem` shapeChunk u s ^. chunkTopShapes
+
+  -- It's possible these will only work if we're moving the loop
+  describe "movement" $ do
+    prop "result of a move is valid" $ \u -> do
+      d <- arbitrary
+      c <- randomChunk u
+
+      return $ canPushChunk u d c ==> validateUniverse (pushChunk u d c)
+
+    prop "after moving can move back" $ \u -> do
+      d <- arbitrary
+      c <- randomChunk u
+
+      let (u', c') = pushChunkWithResult u d c
+      return $ canPushChunk u d c ==> canPushChunk u' (directionOpposite d) c'

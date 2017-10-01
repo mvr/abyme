@@ -125,6 +125,9 @@ instance Arbitrary (V2 Integer) where
     y <- choose (-m, m)
     return $ V2 x y
 
+instance Arbitrary Direction where
+  arbitrary = elements [Up, Down, LEft, RIght]
+
 -- This is dumb and slow
 instance Arbitrary Polyomino where
   arbitrary = attempt `suchThat` polyIsConnected

@@ -3,10 +3,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Abyme.Shapey.Chunk (
   Chunk(..),
+  chunkTopShapes,
+  chunkSubChunks,
+
   shapeChunk,
   canPushChunk,
   exploreShape,
---  pushChunk,
+  pushChunk,
+  pushChunkWithResult,
 ) where
 
 import Control.Lens hiding (contains)
@@ -78,3 +82,9 @@ pushChunk :: Universe -> Direction -> Chunk -> Universe
 pushChunk u d c = u & universeShapes %~ (M.union newShapeMap)
   where newShapes = fmap (pushSingleShape u d) (c ^. chunkTopShapes)
         newShapeMap = M.fromList $ fmap (\s -> (s ^. shapeId, s)) newShapes
+
+pushChunkWithResult :: Universe -> Direction -> Chunk -> (Universe, Chunk)
+pushChunkWithResult u d c = (u', shapeChunk u' s')
+  where u' = pushChunk u d c
+        anId = c ^. chunkTopShapes . to head . shapeId
+        s' = lookupShape u' anId
