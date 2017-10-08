@@ -61,6 +61,9 @@ lookupShape u sid = fromJustOrDie "Couldn't find shape" $ M.lookup sid (u ^. uni
 shapeHasParent :: Shape -> Shape -> Bool
 shapeHasParent s p = any (\(sid, _) -> sid == p ^. shapeId ) (s ^. shapeParentIds)
 
+shapeParents :: Universe -> Shape -> [Shape]
+shapeParents u s = fmap (lookupShape u) (s ^.. shapeParentIds . traverse . to fst)
+
 shapePositionOn :: Shape -> Shape -> Maybe (V2 Integer)
 shapePositionOn s p = lookup (p ^. shapeId) (s ^. shapeParentIds)
 
@@ -123,7 +126,7 @@ instance HasSquares Square where
   constituentShapes _ s = [s ^. squareShape]
 
 instance HasSquares Shape where
-  constituentSquares _ s = fmap (\p -> Square s p) (s ^. shapePolyomino . polyominoSquares)
+  constituentSquares _ s = fmap (Square s) (s ^. shapePolyomino . polyominoSquares)
   constituentShapes _ s = [s]
 
 constituentLocations :: HasSquares a => Universe -> a -> [Location]

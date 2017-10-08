@@ -11,6 +11,8 @@ module Abyme.Shapey.Chunk (
   exploreShape,
   pushChunk,
   pushChunkWithResult,
+
+  chunkParent,
 ) where
 
 import Control.Lens hiding (contains)
@@ -60,8 +62,8 @@ shapeChunk u s = Chunk (fmap fst top) (fmap fst rest)
   where m = exploreShape u s
         (top, rest) = partition (\(_, d) -> d == 0) m
 
--- -- --------------------------------------------------------------------------------
--- -- -- Fusing
+-- --------------------------------------------------------------------------------
+-- -- Pushing
 
 canPushChunk :: Universe -> Direction -> Chunk -> Bool
 canPushChunk u d c = not (oob || any (isInhabited u) fr)
@@ -88,3 +90,10 @@ pushChunkWithResult u d c = (u', shapeChunk u' s')
   where u' = pushChunk u d c
         anId = c ^. chunkTopShapes . to head . shapeId
         s' = lookupShape u' anId
+
+-- --------------------------------------------------------------------------------
+-- -- Zooming
+
+-- There must be a cleverer way to do this...
+chunkParent :: Universe -> Chunk -> Chunk
+chunkParent u c = shapeChunk u $ c ^. chunkTopShapes . to (squareLocation u . head . constituentSquares u . head) . locationShape
