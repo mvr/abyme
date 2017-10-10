@@ -29,7 +29,7 @@ makeLenses ''Shape
 data Universe = Universe
   {
     _universeShapes :: M.Map ShapeId Shape
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 makeLenses ''Universe
 
 data Square = Square

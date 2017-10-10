@@ -11,7 +11,7 @@ data GameState = GameState
   {
     _gameUniverse :: Universe,
     _gameActiveChunk :: Chunk
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 makeLenses ''GameState
 
 data GameAction = Move Direction | Zoom deriving (Eq, Show)

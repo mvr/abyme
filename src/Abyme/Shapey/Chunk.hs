@@ -33,7 +33,7 @@ import Abyme.Shapey.Universe
 data Chunk = Chunk {
   _chunkTopShapes :: [Shape],
   _chunkSubChunks :: [Shape]
-} deriving (Eq, Show)
+} deriving (Eq, Show, Ord)
 makeLenses ''Chunk
 
 instance HasSquares Chunk where
