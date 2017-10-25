@@ -3,7 +3,8 @@
 
 extends Node2D
 
-const Util = preload("res://Util.gd").new()
+const util_script = preload("res://src/Util.gd")
+var Util = util_script.new()
 
 ################################################################################
 ### Vars
@@ -31,6 +32,11 @@ var current_move_time = 0
 ################################################################################
 ### Setup
 
+# Convenience
+export(NodePath) var starting_parent_path = null
+export(Vector2)  var starting_position_parent = Vector2(0, 0)
+export(bool)     var starting_player = false
+
 func _ready():
 	# Add to shape group
 	# self.add_to_group("shapes")
@@ -46,11 +52,9 @@ func _ready():
 	self.set_process(true)
 
 func poly_from_tilemap(tilemap):
-	# TODO: array of vec2
-
+	return tilemap.get_used_cells() # TODO: Is this actually doing the right thing?
 
 func find_children(all_shapes):
-#	var all_shapes = get_tree().get_nodes_in_group("shapes")
 	var child_shapes = []
 	for b in all_shapes:
 		if b.parent_positions.has(self):
@@ -60,20 +64,23 @@ func find_children(all_shapes):
 func set_child_shapes(all_shapes):
 	self.child_shapes = self.find_children(all_shapes)
 
-func set_parent_shapes(all_shapes):
-	self.parent_positions = null # TODO
+func set_starting_parent():
+	self.parent_positions[get_node(self.starting_parent_path)] = self.starting_parent_position
 
 ################################################################################
 ### Relationships
 
 func child_shapes():
-	# TODO
+	return self.child_shapes
 
 func parent_shapes():
-	# TODO
+	return self.parent_positions.keys()
 
 func child_shapes_with_position():
-	# TODO
+	var r = {}
+	for c in self.child_shapes:
+		r[c] = c.parent_positions[self]
+	return r
 
 func has_position(position):
 	return self.poly.find(position) != -1
@@ -114,45 +121,6 @@ class Square:
 			return l
 		else:
 			breakpoint # A square is not sitting on exactly one parent
-
-	func
-
-	# func adjacent(move_vect):
-	# 	return adjacent_recurse(move_vect, self.shape)
-
-	# func adjacent_recurse(move_vect, original):
-	# 	var newpos = self.position + move_vect
-
-	# 	if newpos.x < 0:
-	# 		newpos.x = Constants.shape_size - 1
-	# 	elif newpos.x >= Constants.shape_size:
-	# 		newpos.x = 0
-	# 	elif newpos.y < 0:
-	# 		newpos.y = Constants.shape_size - 1
-	# 	elif newpos.y >= Constants.shape_size:
-	# 		newpos.y = 0
-	# 	else:
-	# 		return get_script().new(self.shape, newpos)
-
-	# 	# We left the shape
-
-	# 	if self.shape.parent_shape == original:
-	# 		return null
-
-	# 	var newsquare = self.shape.own_position().adjacent_recurse(move_vect, original)
-
-	# 	if newsquare == null:
-	# 		return null
-
-	# 	var newshape = newsquare.shape_at()
-
-	# 	if newshape == null:
-	# 		return null
-
-	# 	return get_script().new(newshape, newpos)
-
-	# func is_underlying_walkable():
-	# 	return not self.get_tile_id() == Constants.TILE_WALL
 
 class Location:
 	var square = null
