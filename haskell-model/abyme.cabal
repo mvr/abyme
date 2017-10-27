@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 library 
   hs-source-dirs:      src
   default-language:    Haskell2010
-  ghc-options:         -Wall
+--  ghc-options:         -Wall
   exposed-modules:     Abyme.Util
                      , Abyme.Polyomino 
                      , Abyme.Direction
@@ -66,7 +66,7 @@ test-suite abyme-test
   type:                 exitcode-stdio-1.0
   default-language:     Haskell2010
   hs-source-dirs:       test
-  ghc-options:          -Wall
+--  ghc-options:          -Wall
   main-is:              Spec.hs
   other-modules:        RegionyUniverseSpec
                       , RegionyGenerateSpec
