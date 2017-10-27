@@ -1,0 +1,6 @@
+[package]
+name = "abyme"
+version = "0.1.0"
+authors = ["Mitchell Riley <mitchell.v.riley@gmail.com>"]
+
+[dependencies]

@@ -1,0 +1,5 @@
+/.dir-locals.el
+
+/target/
+Cargo.lock
+**/*.rs.bk
