@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Mitchell Riley <mitchell.v.riley@gmail.com>"]
 
 [dependencies]
+gfx = "0.16"
+gfx_window_glutin = "*"
+glutin = "*"
