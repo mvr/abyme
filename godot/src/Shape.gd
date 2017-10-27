@@ -1,19 +1,18 @@
+tool
 ################################################################################
 ### Imports
 
 extends Node2D
-
-const util_script = preload("res://src/Util.gd")
-var Util = util_script.new()
+const Util = preload("Util.gd")
 
 ################################################################################
 ### Vars
 
 # Gameplay
-# onready var tilemap = self.get_node("TileMap")
-onready var poly = self.poly_from_tilemap(self.get_node("TileMap"))
+onready var tilemap = self.get_node("TileMap")
+onready var poly = self.poly_from_tilemap(tilemap)
 
-var scale = 2
+var zoom_scale = 2
 
 var parent_positions = {}
 var child_shapes = []
@@ -101,8 +100,8 @@ class Square:
 
 	func _location_on(parent):
 		var pos_on  = self.parent_positions[parent]
-		var new_pos = Util.pos_div(parent.scale, self.position + pos_on)
-		var sub_pos = Util.pos_mod(parent.scale, self.position + pos_on)
+		var new_pos = Util.pos_div(parent.zoom_scale, self.position + pos_on)
+		var sub_pos = Util.pos_mod(parent.zoom_scale, self.position + pos_on)
 
 		if parent.has_posotion(new_pos):
 			return Location.new(Square.new(parent, new_pos), sub_pos) # TODO: this probably won't work
@@ -132,7 +131,7 @@ class Location:
 
 	# Relative to shape origin
 	func as_position():
-		return (self.square.shape.scale * self.square.position) + self.subpos
+		return (self.square.shape.zoom_scale * self.square.position) + self.subpos
 
 	func _check_child(child, cpos):
 		var lpos = self.as_position()
@@ -162,6 +161,27 @@ class Location:
 
 ################################################################################
 ### Drawing
+
+func editor_draw():
+	print("in editor draw")
+	var squareSize = self.tilemap.get_cell_size()
+	for p in poly:
+		var rect = Rect2(p * squareSize, squareSize)
+		self.draw_rect(rect, self.fill_color)
+
+		var ul = p * squareSize
+		var ur = ul + Vector2(squareSize.x, 0)
+		var bl = ul + Vector2(0, squareSize.y)
+		var br = ul + squareSize
+		self.draw_line(ul, ur, self.outline_color)
+		self.draw_line(ur, br, self.outline_color)
+		self.draw_line(br, bl, self.outline_color)
+		self.draw_line(bl, ul, self.outline_color)
+	# TODO: outline
+
+func _draw():
+	if self.get_tree().is_editor_hint():
+		self.editor_draw()
 
 # func get_self_rect():
 # 	var pos = tilemap.get_global_pos()
