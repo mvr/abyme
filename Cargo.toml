@@ -7,3 +7,4 @@ authors = ["Mitchell Riley <mitchell.v.riley@gmail.com>"]
 gfx = "0.16"
 gfx_window_glutin = "*"
 glutin = "*"
+cgmath = "*"

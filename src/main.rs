@@ -4,13 +4,17 @@ extern crate gfx;
 extern crate gfx_window_glutin;
 extern crate glutin;
 
-// use gfx::traits::FactoryExt;
+// Rust's import system feels so janky, why do I have to import this
+// here for it to be available in polyomino.rs?
+extern crate cgmath;
+
 use gfx::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
 mod graphics_defs;
 mod director;
+mod polyomino;
 mod shape;
 use graphics_defs::*;
 use director::*;
@@ -29,7 +33,9 @@ pub fn main() {
         gfx_glutin::init::<ColorFormat, DepthFormat>(builder, context, &events_loop);
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-    let director: Director<_> = Director::new(factory);
+
+    let game_state = GameState::new();
+    let director: Director<_> = Director::new(game_state, factory);
 
     let mut running = true;
     while running {
