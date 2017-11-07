@@ -34,8 +34,8 @@ pub fn main() {
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
 
-    let game_state = GameState::new();
-    let director: Director<_> = Director::new(game_state, factory);
+    let game_state = GameState::minimal();
+    let director: Director<_> = Director::new(&game_state, &mut factory);
 
     let mut running = true;
     while running {
