@@ -42,8 +42,8 @@ pub struct Universe {
 }
 
 impl Universe {
-    pub fn unsafe_shape_at(&self, id: &ShapeId) -> &Shape {
-        self.shapes.get(id).unwrap()
+    pub fn unsafe_shape_at(&self, id: ShapeId) -> &Shape {
+        self.shapes.get(&id).unwrap()
     }
 
     pub fn minimal() -> Universe {
@@ -98,7 +98,7 @@ impl<'a> Location<'a> {
 
 pub struct GameState {
     pub universe: Universe,
-    pub player_chunk: ShapeId,
+    pub player_chunk_id: ShapeId,
 }
 
 impl GameState {
@@ -107,7 +107,10 @@ impl GameState {
 
         GameState {
             universe: u,
-            player_chunk: ShapeId(1),
+            player_chunk_id: ShapeId(1),
         }
+    }
+    pub fn player_chunk(&self) -> &Shape {
+        self.universe.unsafe_shape_at(self.player_chunk_id)
     }
 }
