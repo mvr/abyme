@@ -188,28 +188,28 @@ fn generate_bordered_square(
         );
 
     use director::VertexType::*;
-    let (mut fv, mut fi) = generate_quad(ll, lr, ur, ul, FillVertex);
+    let (fv, fi) = generate_quad(ll, lr, ur, ul, FillVertex);
 
-    let (mut bv, mut bi) = generate_quad(ll, lr, ilr, ill, OutlineVertex); // TODO adjust indices
-    let (mut rv, mut ri) = generate_quad(lr, ur, iur, ilr, OutlineVertex);
-    let (mut tv, mut ti) = generate_quad(ur, ul, iul, iur, OutlineVertex);
-    let (mut lv, mut li) = generate_quad(ul, ll, ill, iul, OutlineVertex);
+    let (bv, bi) = generate_quad(ll, lr, ilr, ill, OutlineVertex); // TODO adjust indices
+    let (rv, ri) = generate_quad(lr, ur, iur, ilr, OutlineVertex);
+    let (tv, ti) = generate_quad(ur, ul, iul, iur, OutlineVertex);
+    let (lv, li) = generate_quad(ul, ll, ill, iul, OutlineVertex);
 
     let mut vertices = vec![];
 
-    vertices.append(&mut fv);
-    vertices.append(&mut bv);
-    vertices.append(&mut rv);
-    vertices.append(&mut tv);
-    vertices.append(&mut lv);
+    vertices.extend(fv);
+    vertices.extend(bv);
+    vertices.extend(rv);
+    vertices.extend(tv);
+    vertices.extend(lv);
 
     let mut indices = vec![];
 
-    indices.append(&mut fi);
-    indices.append(&mut bi.iter().map(|&x| x + 4).collect());
-    indices.append(&mut ri.iter().map(|&x| x + 8).collect());
-    indices.append(&mut ti.iter().map(|&x| x + 12).collect());
-    indices.append(&mut li.iter().map(|&x| x + 16).collect());
+    indices.extend(fi);
+    indices.extend(bi.iter().map(|&x| x + 4));
+    indices.extend(ri.iter().map(|&x| x + 8));
+    indices.extend(ti.iter().map(|&x| x + 12));
+    indices.extend(li.iter().map(|&x| x + 16));
 
     (vertices, indices)
 }
