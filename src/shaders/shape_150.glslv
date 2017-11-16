@@ -2,6 +2,7 @@
 
 in vec2 a_Pos;
 in uint a_VertexType;
+uniform ivec2 i_Resolution;
 uniform vec3 i_FillColor;
 uniform vec3 i_OutlineColor;
 out vec4 v_Color;
@@ -15,5 +16,9 @@ void main() {
     } else {
         v_Color = vec4(i_OutlineColor, 1.0);
     }
-    gl_Position = vec4(a_Pos, 0.0, 1.0);
+
+    float ratio = float(i_Resolution.y) / float(i_Resolution.x); // This should just be a constant/uniform
+
+    gl_Position = vec4(a_Pos.x * ratio, a_Pos.y, 0.0, 1.0);
+
 }

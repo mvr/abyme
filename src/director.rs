@@ -26,6 +26,7 @@ gfx_defines! {
 
     pipeline shape_pipe {
         vbuf: gfx::VertexBuffer<ShapeVertex> = (),
+        resolution: gfx::Global<[i32; 2]> = "i_Resolution",
         fill_color: gfx::Global<[f32; 3]> = "i_FillColor",
         outline_color: gfx::Global<[f32; 3]> = "i_OutlineColor",
         out: gfx::RenderTarget<ColorFormat> = "Target0",
@@ -35,6 +36,7 @@ gfx_defines! {
 // const WHITE: [f32; 3] = [1.0, 1.0, 1.0];
 
 pub struct Director<'a, R: gfx::Resources> {
+    pub resolution: [u32; 2],
     shape_pso: PipelineState<R, shape_pipe::Meta>,
     // shape_vertex_buffer:
     // shape_slice: Slice<R>,
@@ -43,7 +45,7 @@ pub struct Director<'a, R: gfx::Resources> {
 }
 
 impl<'a, R: gfx::Resources> Director<'a, R> {
-    pub fn new<F: gfx::traits::Factory<R>>(u: &'a GameState, factory: &mut F) -> Director<'a, R> {
+    pub fn new<F: gfx::traits::Factory<R>>(u: &'a GameState, factory: &mut F, resolution: [u32; 2]) -> Director<'a, R> {
         // TODO: will one day have to make this choose the right
         // shaders for the platform.
         let shape_pso = factory
@@ -66,6 +68,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             shape_pso: shape_pso,
             // shape_vertex_buffer: vertex_buffer,
             // shape_slice: slice,
+            resolution: resolution,
             game_state: u,
             precomputed_polyomino_meshes: c,
         }
@@ -100,11 +103,12 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         let mut indices = vec![];
 
         for pos in &p.squares {
-            let (ref mut newverts, ref mut newindices) =
+            let (newverts, newindices) =
                 generate_bordered_square(pos.cast(), 0.5, 0.02);
 
-            vertices.append(newverts);
-            indices.append(newindices);
+            vertices.extend(newverts);
+            let offset = indices.len() as u16;
+            indices.extend(newindices.iter().map(|&x| x + offset));
         }
 
         factory.create_vertex_buffer_with_slice(&vertices, &*indices)
@@ -124,6 +128,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         let data = shape_pipe::Data {
             vbuf: vb.clone(),
             out: target.clone(),
+            resolution: [self.resolution[0] as i32, self.resolution[1] as i32],
             fill_color: [1.0, 1.0, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
@@ -190,7 +195,7 @@ fn generate_bordered_square(
     use director::VertexType::*;
     let (fv, fi) = generate_quad(ll, lr, ur, ul, FillVertex);
 
-    let (bv, bi) = generate_quad(ll, lr, ilr, ill, OutlineVertex); // TODO adjust indices
+    let (bv, bi) = generate_quad(ll, lr, ilr, ill, OutlineVertex);
     let (rv, ri) = generate_quad(lr, ur, iur, ilr, OutlineVertex);
     let (tv, ti) = generate_quad(ur, ul, iul, iur, OutlineVertex);
     let (lv, li) = generate_quad(ul, ll, ill, iul, OutlineVertex);

@@ -24,9 +24,10 @@ const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
 pub fn main() {
     let mut events_loop = glutin::EventsLoop::new();
+    let resolution = [1024, 768];
     let builder = glutin::WindowBuilder::new()
         .with_title("Abyme".to_string())
-        .with_dimensions(800, 800);
+        .with_dimensions(resolution[0], resolution[1]);
     let context = glutin::ContextBuilder::new().with_vsync(true);
 
     let (window, mut device, mut factory, mut main_color_view, mut main_depth) =
@@ -35,7 +36,7 @@ pub fn main() {
 
 
     let game_state = GameState::minimal();
-    let director: Director<_> = Director::new(&game_state, &mut factory);
+    let mut director: Director<_> = Director::new(&game_state, &mut factory, resolution);
 
     let mut running = true;
     while running {
@@ -55,8 +56,9 @@ pub fn main() {
                         ..
                     } |
                     Closed => running = false,
-                    Resized(_, _) => {
+                    Resized(w, h) => {
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
+                        director.resolution = [w, h];
                     }
                     _ => (),
                 }
