@@ -11,27 +11,21 @@ pub struct ShapeId(u32);
 #[derive(Debug, Clone)]
 pub struct Shape {
     // Gameplay:
-    pub id: ShapeId,
-    pub parent_ids: Vec<(ShapeId, Vector2<i16>)>,
+    id: ShapeId,
+    parent_ids: Vec<(ShapeId, Vector2<i16>)>,
     pub polyomino: Polyomino,
     pub zoom_scale: i16,
 
     // Drawing:
+    pub fill_color: [f32; 3],
+    pub outline_color: [f32; 3],
 }
 
-pub enum BorderType {
-    Interior,
-    Exterior,
-}
-pub struct BorderSegment(Vector2<i16>, Vector2<i16>, BorderType);
+
 
 impl Shape {
     fn has_position(&self, p: &Vector2<i16>) -> bool {
         self.polyomino.has_position(p)
-    }
-
-    fn borders(&self) -> Vec<BorderSegment> {
-        unimplemented!()
     }
 }
 
@@ -54,12 +48,16 @@ impl Universe {
             parent_ids: vec![(id2, Vector2::new(0, 0))],
             polyomino: Polyomino::monomino(),
             zoom_scale: 2,
+            fill_color: [1.0, 1.0, 1.0],
+            outline_color: [0.5, 0.5, 0.5],
         };
         let shape2 = Shape {
             id: id2,
             parent_ids: vec![(id1, Vector2::new(0, 0))],
             polyomino: Polyomino::monomino(),
             zoom_scale: 2,
+            fill_color: [1.0, 1.0, 1.0],
+            outline_color: [0.5, 0.5, 0.5],
         };
 
         let mut shapes = HashMap::new();

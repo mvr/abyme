@@ -45,7 +45,11 @@ pub struct Director<'a, R: gfx::Resources> {
 }
 
 impl<'a, R: gfx::Resources> Director<'a, R> {
-    pub fn new<F: gfx::traits::Factory<R>>(u: &'a GameState, factory: &mut F, resolution: [u32; 2]) -> Director<'a, R> {
+    pub fn new<F: gfx::traits::Factory<R>>(
+        u: &'a GameState,
+        factory: &mut F,
+        resolution: [u32; 2],
+    ) -> Director<'a, R> {
         // TODO: will one day have to make this choose the right
         // shaders for the platform.
         let shape_pso = factory
@@ -103,8 +107,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         let mut indices = vec![];
 
         for pos in &p.squares {
-            let (newverts, newindices) =
-                generate_bordered_square(pos.cast(), 0.5, 0.02);
+            let (newverts, newindices) = generate_bordered_square(pos.cast(), 0.5, 0.02);
 
             vertices.extend(newverts);
             let offset = indices.len() as u16;
@@ -115,25 +118,36 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
     }
 
 
-    pub fn draw<C: gfx::CommandBuffer<R>>(
+    fn draw_shape<C: gfx::CommandBuffer<R>>(
         &self,
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
+        shape: &Shape,
     ) -> () {
         // for (_, s) in &self.game_state.universe.shapes {
         // }
-        let s = &self.game_state.player_chunk();
-        let &(ref vb, ref slice) = self.precomputed_polyomino_meshes.get(&s.polyomino).unwrap();
+
+        let &(ref vb, ref slice) = self.precomputed_polyomino_meshes
+            .get(&shape.polyomino)
+            .unwrap();
 
         let data = shape_pipe::Data {
             vbuf: vb.clone(),
             out: target.clone(),
             resolution: [self.resolution[0] as i32, self.resolution[1] as i32],
-            fill_color: [1.0, 1.0, 1.0],
-            outline_color: [0.5, 0.5, 0.5],
+            fill_color: shape.fill_color,
+            outline_color: shape.outline_color,
         };
 
         encoder.draw(&slice, &self.shape_pso, &data);
+    }
+
+    pub fn draw<C: gfx::CommandBuffer<R>>(
+        &self,
+        encoder: &mut gfx::Encoder<R, C>,
+        target: &gfx::handle::RenderTargetView<R, ColorFormat>,
+    ) -> () {
+        self.draw_shape(encoder, target, &self.game_state.player_chunk());
     }
 }
 
@@ -156,7 +170,7 @@ fn generate_quad(
         // For fill
         ShapeVertex {
             pos: ll,
-            vertex_type: vt as u32
+            vertex_type: vt as u32,
         },
         ShapeVertex {
             pos: lr,
@@ -186,11 +200,15 @@ fn generate_bordered_square(
     size: f32,
     border_width: f32,
 ) -> (Vec<ShapeVertex>, Vec<u16>) {
-    let (ll, lr, ur, ul) = rect_vertices([offset[0], offset[1]], [offset[0] + size, offset[1] + size]);
+    let (ll, lr, ur, ul) =
+        rect_vertices([offset[0], offset[1]], [offset[0] + size, offset[1] + size]);
     let (ill, ilr, iur, iul) = rect_vertices(
-            [offset[0] + border_width, offset[1] + border_width],
-            [offset[0] + size - border_width, offset[1] + size - border_width],
-        );
+        [offset[0] + border_width, offset[1] + border_width],
+        [
+            offset[0] + size - border_width,
+            offset[1] + size - border_width,
+        ],
+    );
 
     use director::VertexType::*;
     let (fv, fi) = generate_quad(ll, lr, ur, ul, FillVertex);
