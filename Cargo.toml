@@ -8,3 +8,5 @@ gfx = "0.16"
 gfx_window_glutin = "*"
 glutin = "*"
 cgmath = "*"
+
+maplit = "*"

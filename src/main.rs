@@ -7,6 +7,7 @@ extern crate glutin;
 // Rust's import system feels so janky, why do I have to import this
 // here for it to be available in polyomino.rs?
 extern crate cgmath;
+#[macro_use] extern crate maplit;
 
 use gfx::Device;
 use gfx_window_glutin as gfx_glutin;

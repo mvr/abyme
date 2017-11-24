@@ -21,8 +21,8 @@ impl Polyomino {
     //     Polyomino { squares: vec![Vector2::new(0,0)] }
     // }
 
-    pub fn has_position(&self, p: &Vector2<i16>) -> bool {
-        self.squares.contains(p)
+    pub fn has_position(&self, p: Vector2<i16>) -> bool {
+        self.squares.contains(&p)
     }
 
     fn borders(&self) -> Vec<BorderSegment> {
