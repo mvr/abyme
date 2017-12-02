@@ -1,6 +1,8 @@
 extern crate cgmath;
 
 use std::collections::HashMap;
+use std::collections::HashSet;
+use std::collections::VecDeque;
 use cgmath::*;
 
 use polyomino::*;
@@ -27,6 +29,10 @@ pub struct Shape {
 impl Shape {
     pub fn has_position(&self, p: Vector2<i16>) -> bool {
         self.polyomino.has_position(p)
+    }
+
+    pub fn has_parent(&self, parent: &Shape) -> bool {
+        self.parent_ids.contains_key(&parent.id)
     }
 
     pub fn position_on(&self, parent: &Shape) -> Vector2<i16> {
@@ -68,9 +74,23 @@ impl Universe {
         Universe { shapes: shapes }
     }
 
-    pub fn parents_of(&self, shape: &Shape) -> Vec<&Shape> {
-        shape.parent_ids.keys().map(|id| &self.shapes[id]).collect()
+    pub fn parents_of<'a>(&'a self, shape: &'a Shape) -> impl Iterator<Item = &'a Shape> + 'a {
+        shape.parent_ids.keys().map(move |id| &self.shapes[id])
     }
+
+    pub fn parents_of_id<'a>(&'a self, shape_id: ShapeId) -> impl Iterator<Item = &'a Shape> {
+        self.parents_of(&self.shapes[&shape_id])
+    }
+
+    pub fn children_of<'a>(&'a self, parent: &'a Shape) -> impl Iterator<Item = &'a Shape> {
+        self.shapes.values().filter(move |s| s.has_parent(parent))
+    }
+    pub fn children_of_id<'a>(&'a self, parent_id: ShapeId) -> impl Iterator<Item = &'a Shape> {
+        self.shapes.values().filter(move |s| {
+            s.parent_ids.contains_key(&parent_id)
+        })
+    }
+
 
     pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, Vector2<i16>)> {
         shape
@@ -78,14 +98,6 @@ impl Universe {
             .iter()
             .map(|(id, pos)| (&self.shapes[id], *pos))
             .collect()
-    }
-
-    pub fn chunk_of(&self, shape: &Shape) -> Chunk {
-        unimplemented!();
-    }
-
-    pub fn parent_of(&self, chunk: &Chunk) -> Chunk {
-        unimplemented!();
     }
 }
 
@@ -113,8 +125,8 @@ impl<'a> Square<'a> {
     }
 
     fn location(&self) -> Location {
-        // TODO: This sort of sanity checking obviously slower, probably doesn't matter
-        let locations: Vec<Location> = self.shape
+        // TODO: This sort of sanity checking is slower, probably doesn't matter
+        let mut locations: Vec<Location> = self.shape
             .parent_ids
             .keys()
             .filter_map(|s| self.location_on(*s))
@@ -122,7 +134,7 @@ impl<'a> Square<'a> {
 
         match locations.len() {
             0 => panic!("A square is not sitting on a location!"),
-            1 => locations[0],
+            1 => locations.pop().unwrap(),
             _ => panic!("A square is sitting on multiple locations!"),
         }
     }
@@ -137,7 +149,7 @@ impl<'a> Location<'a> {
     pub fn inhabitant(&self) -> Option<Square> {
         let c = self.to_coordinate();
 
-        let inhabitants: Vec<Square> = self.square
+        let mut inhabitants: Vec<Square> = self.square
             .universe
             .parents_with_position_of(self.square.shape)
             .into_iter()
@@ -165,7 +177,75 @@ impl<'a> Location<'a> {
 }
 
 pub struct Chunk {
-    pub shape_ids: Vec<ShapeId>,
+    pub top_shape_ids: HashSet<ShapeId>,
+    pub lower_shape_ids: HashSet<ShapeId>,
+}
+
+impl Chunk {
+    // Should empty chunks be 'valid'?
+    pub fn empty() -> Chunk {
+        Chunk {
+            top_shape_ids: hashset!{},
+            lower_shape_ids: hashset!{},
+        }
+    }
+}
+
+type ExploreResult = HashMap<ShapeId, u16>;
+
+impl Universe {
+    fn explore_step(&self, result: &mut ExploreResult, queue: &mut VecDeque<(ShapeId, u16)>) -> () {
+        while !queue.is_empty() {
+            let (s, i) = queue.pop_front().unwrap();
+
+            let needs_update: bool = match result.get(&s) {
+                None => true,
+                Some(i2) => i < *i2,
+            };
+
+            if !needs_update {
+                continue;
+            }
+
+            result.insert(s, i);
+
+            if i > 0 {
+                for p in self.parents_of_id(s) {
+                    queue.push_front((p.id, i - 1));
+                }
+            }
+
+            for p in self.children_of_id(s) {
+                queue.push_back((p.id, i + 1));
+            }
+        }
+    }
+
+    fn explore(&self, shape_ids: impl Iterator<Item=ShapeId>) -> ExploreResult {
+        let mut result = HashMap::new();
+        let mut queue = VecDeque::new();
+
+        for sid in shape_ids {
+            queue.push_back((sid, 0));
+        }
+
+        self.explore_step(&mut result, &mut queue);
+
+        result
+    }
+
+    fn explore_result_to_chunk(result: ExploreResult) -> Chunk {
+        unimplemented!();
+    }
+
+    pub fn chunk_of(&self, shape: &Shape) -> Chunk {
+        Universe::explore_result_to_chunk(self.explore(Some(shape.id).into_iter()))
+    }
+
+    pub fn parent_of(&self, chunk: &Chunk) -> Chunk {
+        // TODO: This is stupid
+        Universe::explore_result_to_chunk(self.explore(chunk.top_shape_ids.clone().into_iter()))
+    }
 }
 
 pub struct GameState {
@@ -179,10 +259,10 @@ impl GameState {
 
         GameState {
             universe: u,
-            player_chunk: Chunk { shape_ids: vec![ShapeId(1)] },
+            player_chunk: Chunk {
+                top_shape_ids: hashset![ShapeId(1)],
+                lower_shape_ids: hashset![],
+            },
         }
     }
-    // pub fn player_chunk(&self) -> &Shape {
-    //     &self.universe.shapes[&self.player_chunk_id]
-    // }
 }
