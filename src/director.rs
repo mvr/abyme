@@ -1,6 +1,7 @@
 extern crate gfx;
 
 use std::collections::HashMap;
+use std::collections::VecDeque;
 
 use gfx::Slice;
 use gfx::handle::Buffer;
@@ -33,7 +34,93 @@ gfx_defines! {
     }
 }
 
-// const WHITE: [f32; 3] = [1.0, 1.0, 1.0];
+// Two pieces: a Delta, a walk from one shape to another
+// Chosen "origin" shape,
+// Path to a different shape
+// Path can be given by a count of times to go up to a parent,
+// then a list of ShapeIds, each a child of the last.
+
+// And a ContinuousDelta is one of these, followed by a local position +
+// zoom amount
+
+// #[derive(Clone)]
+// struct Delta {
+//     start: ShapeId,
+//     parent_times: u16,
+//     child_path: VecDeque<ShapeId>,
+// }
+
+// #[derive(Clone)]
+// struct ContinuousDelta {
+//     delta: Delta,
+//     scale: f32,
+//     translation: Vector2<f32>,
+// }
+
+#[derive(Clone)]
+enum Monotone {
+    Up { start: ShapeId, distance: u16 },
+    Down {
+        start: ShapeId,
+        child_path: VecDeque<ShapeId>,
+    },
+}
+
+#[derive(Clone)]
+struct ScreenTransform {
+    scale: f32,
+    translation: Vector2<f32>,
+}
+
+#[derive(Clone)]
+struct CameraState {
+    delta_to_goal: Monotone,
+    transform: ScreenTransform,
+}
+
+#[derive(Clone)]
+struct TransformTracker {
+    shape_id: ShapeId,
+    transform: ScreenTransform,
+}
+
+struct BBox {
+    ll: Vector2<f32>,
+    ur: Vector2<f32>,
+}
+
+impl BBox {
+    fn max_dim(&self) -> f32 {
+        (self.ur.x - self.ll.x).max(self.ur.y - self.ll.y)
+    }
+}
+
+impl TransformTracker {
+    // TODO: This will have to adjust for movement in progress
+    fn transform_to_child_chunk(parent: &Chunk, child: &Chunk) -> ScreenTransform {
+        //let p = child.position_on(parent);
+        unimplemented!();
+    }
+
+    pub fn zoom_out(&self, universe: &Universe) -> TransformTracker {
+        let &TransformTracker {
+            shape_id,
+            ref transform,
+        } = self;
+
+        TransformTracker {
+            shape_id: unimplemented!(), // universe.parent_of(shape_id),
+            transform: unimplemented!(),
+        }
+    }
+    pub fn zoom_in_to(&self, universe: &Universe) -> TransformTracker {
+        unimplemented!();
+    }
+
+    pub fn transform_for_constituent() -> ScreenTransform {
+        unimplemented!();
+    }
+}
 
 pub struct Director<'a, R: gfx::Resources> {
     pub resolution: [u32; 2],
@@ -85,7 +172,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
     ) -> HashMap<Polyomino, (Buffer<R, ShapeVertex>, Slice<R>)> {
         let mut result = HashMap::new();
 
-        for (_, s) in &gs.universe.shapes {
+        for s in gs.universe.shapes.values() {
             if result.contains_key(&s.polyomino) {
                 continue;
             }
@@ -118,18 +205,13 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
     }
 
 
-    fn draw_shape<C: gfx::CommandBuffer<R>>(
+    fn draw_single_shape<C: gfx::CommandBuffer<R>>(
         &self,
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
         shape: &Shape,
     ) -> () {
-        // for (_, s) in &self.game_state.universe.shapes {
-        // }
-
-        let &(ref vb, ref slice) = self.precomputed_polyomino_meshes
-            .get(&shape.polyomino)
-            .unwrap();
+        let (ref vb, ref slice) = self.precomputed_polyomino_meshes[&shape.polyomino];
 
         let data = shape_pipe::Data {
             vbuf: vb.clone(),
@@ -139,7 +221,19 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             outline_color: shape.outline_color,
         };
 
-        encoder.draw(&slice, &self.shape_pso, &data);
+        encoder.draw(slice, &self.shape_pso, &data);
+    }
+
+    fn draw_recurse<C: gfx::CommandBuffer<R>>(
+        &self,
+        encoder: &mut gfx::Encoder<R, C>,
+        target: &gfx::handle::RenderTargetView<R, ColorFormat>,
+        //        current_transform: Transform,
+        depth: u32,
+        max_depth: u32,
+    ) -> () {
+        unimplemented!();
+        // self.draw_single_shape(encoder, target, &self.game_state.player_chunk);
     }
 
     pub fn draw<C: gfx::CommandBuffer<R>>(
@@ -147,7 +241,8 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
     ) -> () {
-        self.draw_shape(encoder, target, &self.game_state.player_chunk());
+        unimplemented!();
+        // self.draw_single_shape(encoder, target, self.game_state.player_chunk);
     }
 }
 

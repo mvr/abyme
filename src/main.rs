@@ -14,6 +14,7 @@ use gfx::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
+mod types;
 mod graphics_defs;
 mod director;
 mod polyomino;

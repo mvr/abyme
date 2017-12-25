@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::collections::VecDeque;
 use cgmath::*;
 
+use types::*;
 use polyomino::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -16,10 +17,10 @@ pub struct Shape {
     id: ShapeId,
 
     //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
-    parent_ids: HashMap<ShapeId, Vector2<i16>>,
+    parent_ids: HashMap<ShapeId, IVec2>,
 
     pub polyomino: Polyomino,
-    pub zoom_scale: i16,
+    pub zoom_scale: i32,
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -27,7 +28,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn has_position(&self, p: Vector2<i16>) -> bool {
+    pub fn has_position(&self, p: IVec2) -> bool {
         self.polyomino.has_position(p)
     }
 
@@ -35,7 +36,7 @@ impl Shape {
         self.parent_ids.contains_key(&parent.id)
     }
 
-    pub fn position_on(&self, parent: &Shape) -> Vector2<i16> {
+    pub fn position_on(&self, parent: &Shape) -> IVec2 {
         self.parent_ids[&parent.id]
     }
 }
@@ -92,7 +93,7 @@ impl Universe {
     }
 
 
-    pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, Vector2<i16>)> {
+    pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, IVec2)> {
         shape
             .parent_ids
             .iter()
@@ -104,7 +105,7 @@ impl Universe {
 pub struct Square<'a> {
     pub universe: &'a Universe,
     pub shape: &'a Shape,
-    pub position: Vector2<i16>,
+    pub position: IVec2,
 }
 
 impl<'a> Square<'a> {
@@ -142,7 +143,7 @@ impl<'a> Square<'a> {
 
 pub struct Location<'a> {
     pub square: Square<'a>,
-    pub subposition: Vector2<i16>,
+    pub subposition: IVec2,
 }
 
 impl<'a> Location<'a> {
@@ -171,24 +172,22 @@ impl<'a> Location<'a> {
         }
     }
 
-    fn to_coordinate(&self) -> Vector2<i16> {
+    fn to_coordinate(&self) -> IVec2 {
         (self.square.position * self.square.shape.zoom_scale) + self.subposition
     }
 }
 
+// This stores offsets of each shape in the chunk
+
+// TODO: these offsets may be too small, need a vec of offsets, one
+// for each level (that can be converted to a normal form, if we want)
+#[derive(Clone)]
 pub struct Chunk {
-    pub top_shape_ids: HashSet<ShapeId>,
-    pub lower_shape_ids: HashSet<ShapeId>,
+    pub top_shape_ids: HashSet<(ShapeId, IVec2)>,
+    pub lower_shape_ids: HashSet<(ShapeId, IVec2)>,
 }
 
 impl Chunk {
-    // Should empty chunks be 'valid'?
-    pub fn empty() -> Chunk {
-        Chunk {
-            top_shape_ids: hashset!{},
-            lower_shape_ids: hashset!{},
-        }
-    }
 }
 
 type ExploreResult = HashMap<ShapeId, u16>;
@@ -221,7 +220,7 @@ impl Universe {
         }
     }
 
-    fn explore(&self, shape_ids: impl Iterator<Item=ShapeId>) -> ExploreResult {
+    fn explore(&self, shape_ids: impl Iterator<Item = ShapeId>) -> Chunk {
         let mut result = HashMap::new();
         let mut queue = VecDeque::new();
 
@@ -231,20 +230,25 @@ impl Universe {
 
         self.explore_step(&mut result, &mut queue);
 
-        result
-    }
+        let top = result.iter().filter_map(
+            |(s, d)| if *d == 0 { Some(*s) } else { None },
+        ).collect();
+        let lower = result.iter().filter_map(
+            |(s, d)| if *d > 0 { Some(*s) } else { None },
+        ).collect();
 
-    fn explore_result_to_chunk(result: ExploreResult) -> Chunk {
-        unimplemented!();
+        Chunk {
+            top_shape_ids: top,
+            lower_shape_ids: lower
+        }
     }
 
     pub fn chunk_of(&self, shape: &Shape) -> Chunk {
-        Universe::explore_result_to_chunk(self.explore(Some(shape.id).into_iter()))
+        self.explore(Some(shape.id).into_iter())
     }
 
     pub fn parent_of(&self, chunk: &Chunk) -> Chunk {
-        // TODO: This is stupid
-        Universe::explore_result_to_chunk(self.explore(chunk.top_shape_ids.clone().into_iter()))
+        self.explore(chunk.top_shape_ids.clone().into_iter())
     }
 }
 
@@ -260,6 +264,7 @@ impl GameState {
         GameState {
             universe: u,
             player_chunk: Chunk {
+                origin_id: ShapeId(1),
                 top_shape_ids: hashset![ShapeId(1)],
                 lower_shape_ids: hashset![],
             },
