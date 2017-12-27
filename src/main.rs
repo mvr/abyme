@@ -1,5 +1,6 @@
 #![feature(universal_impl_trait)]
 #![feature(conservative_impl_trait)]
+#![feature(nll)]
 
 #[macro_use] extern crate gfx;
 extern crate gfx_window_glutin;
