@@ -40,6 +40,13 @@ impl Shape {
         self.parent_ids[&parent.id]
     }
 }
+impl PartialEq for Shape {
+    fn eq(&self, other: &Shape) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for Shape { }
 
 fn build_fill_mesh() -> () {}
 
