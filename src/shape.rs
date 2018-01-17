@@ -190,17 +190,21 @@ impl<'a> Location<'a> {
 // for each level (that can be converted to a normal form, if we want)
 #[derive(Clone)]
 pub struct Chunk {
-    pub origin_id: ShapeId,
-    pub top_shape_ids: HashSet<(ShapeId, IVec2)>,
-    pub lower_shape_ids: HashSet<(ShapeId, IVec2)>,
+//    pub origin_id: ShapeId,
+    // pub top_shape_ids: HashSet<(ShapeId, IVec2)>,
+    // pub lower_shape_ids: HashSet<(ShapeId, IVec2)>,
+
+    pub top_shape_ids: HashSet<ShapeId>,
+    pub lower_shape_ids: HashSet<ShapeId>,
 }
 
 impl Chunk {
 }
 
+type ExploreResult = HashMap<ShapeId, u16>;
+type ExploreQueue = VecDeque<(ShapeId, u16)>;
+
 impl Universe {
-    type ExploreResult = HashMap<ShapeId, u16>;
-    type ExploreQueue = HashMap<ShapeId, IVec2, u16>;
     fn explore_step(&self, result: &mut ExploreResult, queue: &mut ExploreQueue) -> () {
         while !queue.is_empty() {
             let (s, i) = queue.pop_front().unwrap();
@@ -272,7 +276,7 @@ impl GameState {
         GameState {
             universe: u,
             player_chunk: Chunk {
-                origin_id: ShapeId(1),
+//                origin_id: ShapeId(1),
                 top_shape_ids: hashset![ShapeId(1)],
                 lower_shape_ids: hashset![],
             },

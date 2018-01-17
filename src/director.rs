@@ -66,61 +66,50 @@ enum Monotone {
     },
 }
 
-#[derive(Clone)]
-struct ScreenTransform {
-    scale: f32,
-    translation: Vector2<f32>,
-}
+// #[derive(Clone)]
+// struct ScreenTransform {
+//     scale: f32,
+//     translation: Vector2<f32>,
+// }
 
-#[derive(Clone)]
-struct CameraState {
-    delta_to_goal: Monotone,
-    transform: ScreenTransform,
-}
+// #[derive(Clone)]
+// struct CameraState {
+//     delta_to_goal: Monotone,
+//     transform: ScreenTransform,
+// }
 
-#[derive(Clone)]
-struct TransformTracker {
-    shape_id: ShapeId,
-    transform: ScreenTransform,
-}
+// #[derive(Clone)]
+// struct TransformTracker {
+//     shape_id: ShapeId,
+//     transform: ScreenTransform,
+// }
 
-struct BBox {
-    ll: Vector2<f32>,
-    ur: Vector2<f32>,
-}
+// impl TransformTracker {
+//     // TODO: This will have to adjust for movement in progress
+//     fn transform_to_child_chunk(parent: &Chunk, child: &Chunk) -> ScreenTransform {
+//         //let p = child.position_on(parent);
+//         unimplemented!();
+//     }
 
-impl BBox {
-    fn max_dim(&self) -> f32 {
-        (self.ur.x - self.ll.x).max(self.ur.y - self.ll.y)
-    }
-}
+//     pub fn zoom_out(&self, universe: &Universe) -> TransformTracker {
+//         let &TransformTracker {
+//             shape_id,
+//             ref transform,
+//         } = self;
 
-impl TransformTracker {
-    // TODO: This will have to adjust for movement in progress
-    fn transform_to_child_chunk(parent: &Chunk, child: &Chunk) -> ScreenTransform {
-        //let p = child.position_on(parent);
-        unimplemented!();
-    }
+//         TransformTracker {
+//             shape_id: unimplemented!(), // universe.parent_of(shape_id),
+//             transform: unimplemented!(),
+//         }
+//     }
+//     pub fn zoom_in_to(&self, universe: &Universe) -> TransformTracker {
+//         unimplemented!();
+//     }
 
-    pub fn zoom_out(&self, universe: &Universe) -> TransformTracker {
-        let &TransformTracker {
-            shape_id,
-            ref transform,
-        } = self;
-
-        TransformTracker {
-            shape_id: unimplemented!(), // universe.parent_of(shape_id),
-            transform: unimplemented!(),
-        }
-    }
-    pub fn zoom_in_to(&self, universe: &Universe) -> TransformTracker {
-        unimplemented!();
-    }
-
-    pub fn transform_for_constituent() -> ScreenTransform {
-        unimplemented!();
-    }
-}
+//     pub fn transform_for_constituent() -> ScreenTransform {
+//         unimplemented!();
+//     }
+// }
 
 pub struct Director<'a, R: gfx::Resources> {
     pub resolution: [u32; 2],

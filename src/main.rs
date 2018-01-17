@@ -1,3 +1,4 @@
+#![feature(match_default_bindings)]
 #![feature(universal_impl_trait)]
 #![feature(conservative_impl_trait)]
 #![feature(nll)]
@@ -16,10 +17,13 @@ use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
 mod types;
+mod vast2;
+mod bbox;
 mod graphics_defs;
 mod director;
 mod polyomino;
 mod shape;
+
 use graphics_defs::*;
 use director::*;
 use shape::*;
