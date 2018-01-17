@@ -1,14 +1,14 @@
 extern crate cgmath;
 
-use std::collections::HashMap;
-use std::collections::HashSet;
+use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use cgmath::*;
 
 use types::*;
+use delta::*;
 use polyomino::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ShapeId(u32);
 
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct Shape {
     id: ShapeId,
 
     //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
-    parent_ids: HashMap<ShapeId, IVec2>,
+    parent_ids: BTreeMap<ShapeId, IVec2>,
 
     pub polyomino: Polyomino,
     pub zoom_scale: i32,
@@ -36,8 +36,21 @@ impl Shape {
         self.parent_ids.contains_key(&parent.id)
     }
 
+    pub fn first_parent_id(&self) -> ShapeId {
+        let (&first_key, _) = self.parent_ids.iter().next().unwrap();
+        first_key
+    }
+
     pub fn position_on(&self, parent: &Shape) -> IVec2 {
         self.parent_ids[&parent.id]
+    }
+
+    pub fn delta_to_parent(&self, parent: &Shape) -> Delta {
+        unimplemented!();
+    }
+
+    pub fn delta_to_child(&self, child: &Shape) -> Delta {
+        unimplemented!();
     }
 }
 impl PartialEq for Shape {
@@ -51,7 +64,7 @@ impl Eq for Shape { }
 fn build_fill_mesh() -> () {}
 
 pub struct Universe {
-    pub shapes: HashMap<ShapeId, Shape>, // Should probably just be a Vec
+    pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
 }
 
 impl Universe {
@@ -60,7 +73,7 @@ impl Universe {
         let id2 = ShapeId(2);
         let shape1 = Shape {
             id: id1,
-            parent_ids: hashmap!{ id2 => Vector2::new(0, 0) },
+            parent_ids: btreemap!{ id2 => Vector2::new(0, 0) },
             polyomino: Polyomino::monomino(),
             zoom_scale: 2,
             fill_color: [1.0, 1.0, 1.0],
@@ -68,14 +81,14 @@ impl Universe {
         };
         let shape2 = Shape {
             id: id2,
-            parent_ids: hashmap!{ id1 => Vector2::new(0, 0) },
+            parent_ids: btreemap!{ id1 => Vector2::new(0, 0) },
             polyomino: Polyomino::monomino(),
             zoom_scale: 2,
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
         };
 
-        let mut shapes = HashMap::new();
+        let mut shapes = BTreeMap::new();
         shapes.insert(id1, shape1);
         shapes.insert(id2, shape2);
 
@@ -190,77 +203,78 @@ impl<'a> Location<'a> {
 // for each level (that can be converted to a normal form, if we want)
 #[derive(Clone)]
 pub struct Chunk {
-//    pub origin_id: ShapeId,
-    // pub top_shape_ids: HashSet<(ShapeId, IVec2)>,
-    // pub lower_shape_ids: HashSet<(ShapeId, IVec2)>,
-
-    pub top_shape_ids: HashSet<ShapeId>,
-    pub lower_shape_ids: HashSet<ShapeId>,
+    pub origin_id: ShapeId,
+    pub top_shape_ids: BTreeMap<ShapeId, IVec2>,
+    pub lower_shape_ids: BTreeMap<ShapeId, Delta>,
 }
 
 impl Chunk {
 }
 
-type ExploreResult = HashMap<ShapeId, u16>;
-type ExploreQueue = VecDeque<(ShapeId, u16)>;
+type ExploreResult = BTreeMap<ShapeId, Delta>;
+type ExploreQueue = VecDeque<(ShapeId, Delta)>;
 
 impl Universe {
     fn explore_step(&self, result: &mut ExploreResult, queue: &mut ExploreQueue) -> () {
         while !queue.is_empty() {
-            let (s, i) = queue.pop_front().unwrap();
+            let (sid, delta) = queue.pop_front().unwrap();
+            let s = self.shapes.get(&sid).unwrap();
 
-            let needs_update: bool = match result.get(&s) {
+            let needs_update: bool = match result.get(&sid) {
                 None => true,
-                Some(i2) => i < *i2,
+                Some(existing) => delta.zdelta < existing.zdelta,
             };
 
             if !needs_update {
                 continue;
             }
 
-            result.insert(s, i);
+            result.insert(sid, delta.clone());
 
-            if i > 0 {
-                for p in self.parents_of_id(s) {
-                    queue.push_front((p.id, i - 1));
+            if delta.zdelta > 0 {
+                for p in self.parents_of_id(sid) {
+                    queue.push_front((p.id, &delta + &s.delta_to_parent(p)));
                 }
             }
 
-            for p in self.children_of_id(s) {
-                queue.push_back((p.id, i + 1));
+            for c in self.children_of_id(sid) {
+                queue.push_back((c.id, &delta + &s.delta_to_child(c)));
             }
         }
     }
 
-    fn explore(&self, shape_ids: impl Iterator<Item = ShapeId>) -> Chunk {
-        let mut result = HashMap::new();
+    fn explore(&self, shape_id: ShapeId) -> Chunk {
+        let mut result = BTreeMap::new();
         let mut queue = VecDeque::new();
 
-        for sid in shape_ids {
-            queue.push_back((sid, 0));
-        }
+        queue.push_back((shape_id, Delta::zero()));
 
         self.explore_step(&mut result, &mut queue);
 
         let top = result.iter().filter_map(
-            |(s, d)| if *d == 0 { Some(*s) } else { None },
+            |(s, d)| if d.zdelta == 0 { Some((*s, d.to_vec2())) } else { None },
         ).collect();
         let lower = result.iter().filter_map(
-            |(s, d)| if *d > 0 { Some(*s) } else { None },
+            |(s, d)| if d.zdelta > 0 { Some((*s, d.clone())) } else { None }, // More copying than necessary?
         ).collect();
 
         Chunk {
+            origin_id: shape_id,
             top_shape_ids: top,
             lower_shape_ids: lower
         }
     }
 
+    // fn explore_parent_of(&self, shape_ids: BTreeMap<ShapeId, IVec2>) -> Chunk {
+    // }
+
     pub fn chunk_of(&self, shape: &Shape) -> Chunk {
-        self.explore(Some(shape.id).into_iter())
+        self.explore(shape.id)
     }
 
     pub fn parent_of(&self, chunk: &Chunk) -> Chunk {
-        self.explore(chunk.top_shape_ids.clone().into_iter())
+        let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
+        self.explore(origin_parent_id)
     }
 }
 
@@ -276,9 +290,9 @@ impl GameState {
         GameState {
             universe: u,
             player_chunk: Chunk {
-//                origin_id: ShapeId(1),
-                top_shape_ids: hashset![ShapeId(1)],
-                lower_shape_ids: hashset![],
+                origin_id: ShapeId(1),
+                top_shape_ids: btreemap![ShapeId(1) => Vector2::new(0, 0)],
+                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_down()],
             },
         }
     }
