@@ -17,7 +17,7 @@ use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
 mod types;
-mod vast2;
+mod delta;
 mod bbox;
 mod graphics_defs;
 mod director;
