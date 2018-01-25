@@ -20,7 +20,7 @@ pub struct Shape {
     parent_ids: BTreeMap<ShapeId, IVec2>,
 
     pub polyomino: Polyomino,
-    pub zoom_scale: i32,
+//     pub zoom_scale: i32, // TODO: keep constnat?
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -75,7 +75,6 @@ impl Universe {
             id: id1,
             parent_ids: btreemap!{ id2 => Vector2::new(0, 0) },
             polyomino: Polyomino::monomino(),
-            zoom_scale: 2,
             fill_color: [1.0, 1.0, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
@@ -83,7 +82,6 @@ impl Universe {
             id: id2,
             parent_ids: btreemap!{ id1 => Vector2::new(0, 0) },
             polyomino: Polyomino::monomino(),
-            zoom_scale: 2,
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
         };
@@ -132,8 +130,8 @@ impl<'a> Square<'a> {
     fn location_on(&self, parent_id: ShapeId) -> Option<Location> {
         let pos_on = self.shape.parent_ids.get(&parent_id)?;
         let new_shape = &self.universe.shapes[&parent_id];
-        let new_pos = (self.position + pos_on) / new_shape.zoom_scale;
-        let new_subp = (self.position + pos_on) % new_shape.zoom_scale;
+        let new_pos = (self.position + pos_on) / (zoom_scale as i32);
+        let new_subp = (self.position + pos_on) % (zoom_scale as i32);
 
         Some(Location {
             square: Square {
@@ -193,7 +191,7 @@ impl<'a> Location<'a> {
     }
 
     fn to_coordinate(&self) -> IVec2 {
-        (self.square.position * self.square.shape.zoom_scale) + self.subposition
+        (self.square.position * (zoom_scale as i32)) + self.subposition
     }
 }
 
