@@ -290,7 +290,7 @@ impl GameState {
             player_chunk: Chunk {
                 origin_id: ShapeId(1),
                 top_shape_ids: btreemap![ShapeId(1) => Vector2::new(0, 0)],
-                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_down()],
+                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
             },
         }
     }
