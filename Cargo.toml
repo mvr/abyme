@@ -8,7 +8,7 @@ gfx = "0.16"
 gfx_window_glutin = "*"
 glutin = "*"
 
-cgmath = "*"
+euclid = "*"
 lyon = "*"
 
 maplit = "*"
