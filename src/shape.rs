@@ -1,8 +1,8 @@
-extern crate cgmath;
+extern crate euclid;
 
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-use cgmath::*;
+use euclid::*;
 
 use types::*;
 use delta::*;
@@ -17,10 +17,10 @@ pub struct Shape {
     id: ShapeId,
 
     //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
-    parent_ids: BTreeMap<ShapeId, IVec2>,
+    parent_ids: BTreeMap<ShapeId, ChildPoint>,
 
     pub polyomino: Polyomino,
-//     pub zoom_scale: i32, // TODO: keep constnat?
+//     pub zoom_scale: i32, // TODO: keep constant?
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -28,7 +28,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn has_position(&self, p: IVec2) -> bool {
+    pub fn has_position(&self, p: UPoint) -> bool {
         self.polyomino.has_position(p)
     }
 
@@ -41,7 +41,7 @@ impl Shape {
         first_key
     }
 
-    pub fn position_on(&self, parent: &Shape) -> IVec2 {
+    pub fn position_on(&self, parent: &Shape) -> ChildPoint {
         self.parent_ids[&parent.id]
     }
 
@@ -73,14 +73,14 @@ impl Universe {
         let id2 = ShapeId(2);
         let shape1 = Shape {
             id: id1,
-            parent_ids: btreemap!{ id2 => Vector2::new(0, 0) },
+            parent_ids: btreemap!{ id2 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [1.0, 1.0, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
         let shape2 = Shape {
             id: id2,
-            parent_ids: btreemap!{ id1 => Vector2::new(0, 0) },
+            parent_ids: btreemap!{ id1 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
@@ -111,7 +111,7 @@ impl Universe {
     }
 
 
-    pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, IVec2)> {
+    pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, ChildPoint)> {
         shape
             .parent_ids
             .iter()
@@ -123,7 +123,7 @@ impl Universe {
 pub struct Square<'a> {
     pub universe: &'a Universe,
     pub shape: &'a Shape,
-    pub position: IVec2,
+    pub position: UPoint,
 }
 
 impl<'a> Square<'a> {

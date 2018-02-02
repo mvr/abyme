@@ -7,7 +7,7 @@ use gfx::Slice;
 use gfx::handle::Buffer;
 use gfx::traits::FactoryExt;
 use gfx::pso::PipelineState;
-use cgmath::*;
+use euclid::*;
 
 use graphics_defs::*;
 use polyomino::*;
