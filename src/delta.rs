@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::ops::{Add, Neg};
+use num::Integer;
 
 use types::*;
 
@@ -28,6 +29,12 @@ impl Delta {
 
     pub fn zero() -> Delta {
         Delta::new(UVec::new(0, 0))
+    }
+
+    fn div_vec(v: UVec) -> UVec {
+        v.x = v.x.div_floor(&(zoom_scale as i32));
+        v.y = v.y.div_floor(&(zoom_scale as i32));
+        v
     }
 
     fn normalize(&mut self) {
