@@ -1,6 +1,10 @@
 use std::collections::VecDeque;
 use std::ops::{Add, Neg};
+use num::bigint::BigInt;
 use num::Integer;
+use num::Zero;
+
+use euclid::*;
 
 use types::*;
 
@@ -14,38 +18,43 @@ use types::*;
 pub struct Delta {
     pub zdelta: i16, // How far DOWN the target is
 
-    pub coord_offset: i16, // How far DOWN the coords start
-    pub coords: VecDeque<UVec>,
+    // TODO: maybe find a faster bigint
+    pub coords: TypedVector2D<BigInt, UniverseSpace>,
 }
 
 impl Delta {
-    pub fn new(top: UVec) -> Delta {
+    // TODO: from
+    // pub fn new(top: UVec) -> Delta {
+    //     Delta {
+    //         zdelta: 0,
+    //         coords: TypedVector2D::new(BigInt::from(top.x), BigInt::from(top.y)),
+    //     }
+    // }
+
+    pub fn zero() -> Delta {
         Delta {
             zdelta: 0,
-            coord_offset: 0,
-            coords: VecDeque::from(vec![top]),
+            coords: TypedVector2D::new(BigInt::zero(), BigInt::zero())
         }
     }
 
-    pub fn zero() -> Delta {
-        Delta::new(UVec::new(0, 0))
-    }
-
-    fn div_vec(v: UVec) -> UVec {
-        v.x = v.x.div_floor(&(zoom_scale as i32));
-        v.y = v.y.div_floor(&(zoom_scale as i32));
+    fn div_vec<T : Integer + From<u32>, U>(v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+        v.x = v.x.div_floor(&T::from(zoom_scale));
+        v.y = v.y.div_floor(&T::from(zoom_scale));
         v
     }
 
-    fn normalize(&mut self) {
-        // Delete 0s from front and end, adjusting coord_offset
-        // appropriately
-
-        unimplemented!();
+    fn mult_vec<T : Integer + From<u32>, U>(v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+        v.x = v.x * (T::from(zoom_scale));
+        v.y = v.y * (T::from(zoom_scale));
+        v
     }
 
+
     pub fn shift_target_down(mut self) -> Delta {
-        self.coords.push_back(UVec::new(0, 0));
+        self.coords.x = self.coords.x * (BigInt::from(zoom_scale));
+        self.coords.y = self.coords.y * (BigInt::from(zoom_scale));
+
         self.zdelta += 1;
         self
     }
@@ -54,41 +63,14 @@ impl Delta {
         self.clone().shift_target_down()
     }
 
-    pub fn truncate_target_up(mut self) -> Delta {
-        unimplemented!();
 
-        // This is wrong: Doesn't mod the last coord
-        // self.coords.pop_back();
-        // self.zdelta -= 1;
-        // self
+    pub fn truncate_target_up(&mut self) -> () {
+        self.coords.x = self.coords.x.div_floor(&BigInt::from(zoom_scale));
+        self.coords.y = self.coords.y.div_floor(&BigInt::from(zoom_scale));
+
+        self.zdelta -= 1;
     }
 
-    pub fn truncate_target_up_ref(&self) -> Delta {
-        self.clone().truncate_target_up()
-    }
-
-    pub fn to_vec2(&self) -> UVec {
-        // TODO: Detect overflow
-
-        let mut res = UVec::new(0, 0);
-
-        for (i, v) in self.coords.iter().enumerate() {
-            res += UVec::new(
-                v.x * zoom_scale.pow(i as u32) as i32,
-                v.y * zoom_scale.pow(i as u32) as i32,
-            );
-        }
-
-        if self.coord_offset < 0 {
-            let extra_power = (-self.coord_offset) as u32;
-            res = UVec::new(
-                res.x * zoom_scale.pow(extra_power) as i32,
-                res.y * zoom_scale.pow(extra_power) as i32,
-            );
-        }
-
-        res
-    }
 }
 
 impl PartialEq for Delta {
@@ -99,10 +81,10 @@ impl PartialEq for Delta {
 
 impl Eq for Delta {}
 
-impl Add for Delta {
+impl<'a> Add<&'a Delta> for &'a Delta {
     type Output = Delta;
 
-    fn add(self, other: Delta) -> Delta {
+    fn add(self, other: &Delta) -> Delta {
         unimplemented!();
     }
 }
