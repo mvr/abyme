@@ -1,8 +1,6 @@
-use std::collections::VecDeque;
 use std::ops::{Add, Neg};
 use num::bigint::BigInt;
-use num::Integer;
-use num::Zero;
+use num::{Integer, Zero, ToPrimitive};
 
 use euclid::*;
 
@@ -71,11 +69,15 @@ impl Delta {
         self.zdelta -= 1;
     }
 
+    pub fn to_uvec(&self) -> UVec {
+        UVec::new(self.coords.x.to_i32().unwrap(), self.coords.y.to_i32().unwrap())
+    }
+
 }
 
 impl PartialEq for Delta {
     fn eq(&self, other: &Delta) -> bool {
-        unimplemented!();
+        self.zdelta == other.zdelta && self.coords == other.coords
     }
 }
 
@@ -85,23 +87,21 @@ impl<'a> Add<&'a Delta> for &'a Delta {
     type Output = Delta;
 
     fn add(self, other: &Delta) -> Delta {
-        unimplemented!();
+        assert!(self.zdelta == other.zdelta);
+
+        Delta {
+            zdelta: self.zdelta,
+            coords: TypedVector2D::new(self.coords.x + other.coords.x, self.coords.y + other.coords.y),
+        }
     }
 }
-
-// impl<'a, 'b> Add<&'b Delta> for &'a Delta {
-//     type Output = Delta;
-
-//     fn add(self, other: &'b Delta) -> Delta {
-//         unimplemented!();
-//     }
-// }
 
 impl Neg for Delta {
     type Output = Delta;
 
     fn neg(mut self) -> Delta {
-        self.coords.iter_mut().map(|c| c.neg());
+        self.coords.x = -self.coords.x;
+        self.coords.y = -self.coords.y;
         self
     }
 }
