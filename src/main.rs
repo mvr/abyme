@@ -3,12 +3,15 @@
 #![feature(conservative_impl_trait)]
 #![feature(nll)]
 
+extern crate num;
+
 #[macro_use] extern crate gfx;
 extern crate gfx_window_glutin;
 extern crate glutin;
+extern crate lyon;
 
 // Rust's import system feels so janky, why do I have to import this
-// here for it to be available in polyomino.rs?
+// here for it to be available elsewhere?
 extern crate euclid;
 #[macro_use] extern crate maplit;
 
@@ -16,13 +19,15 @@ use gfx::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
-mod types;
-mod delta;
-mod graphics_defs;
-mod director;
-mod polyomino;
-mod shape;
+// mod types;
+// mod delta;
+// mod graphics_defs;
+// mod mesh_gen;
+// mod director;
+// mod polyomino;
+// mod shape;
 
+use gameplay_constants::*;
 use graphics_defs::*;
 use director::*;
 use shape::*;
