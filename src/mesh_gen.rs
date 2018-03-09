@@ -98,7 +98,7 @@ pub struct MeshStore {
 // ALWAYS COUNTER-CLOCKWISE
 
 impl MeshStore {
-    const tolerance: f32 = 0.02; // TODO: what should this be?
+    const TOLERANCE: f32 = 0.02; // TODO: what should this be?
 
     pub fn new() -> MeshStore {
         MeshStore { poly_meshes: MeshCollection::new() }
@@ -131,7 +131,7 @@ impl MeshStore {
 
         let interior_counts = StrokeTessellator::new().tessellate_path(
             interior_grid_path.path_iter(),
-            &StrokeOptions::tolerance(MeshStore::tolerance).with_line_cap(LineCap::Round),
+            &StrokeOptions::tolerance(MeshStore::TOLERANCE).with_line_cap(LineCap::Round),
             &mut grid_adder,
         );
 
@@ -142,7 +142,7 @@ impl MeshStore {
 
         let exterior_counts = StrokeTessellator::new().tessellate_path(
             perimeter_grid_path.path_iter(),
-            &StrokeOptions::tolerance(MeshStore::tolerance).with_line_cap(LineCap::Round),
+            &StrokeOptions::tolerance(MeshStore::TOLERANCE).with_line_cap(LineCap::Round),
             &mut grid_adder,
         );
         grid_adder.finalise_add();

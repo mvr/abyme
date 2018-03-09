@@ -10,7 +10,7 @@ pub struct Polyomino {
     pub squares: Vec<UPoint>,
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copygi, Hash, Eq, PartialEq)]
 pub enum GridSegmentType {
     Perimeter,
     Internal,

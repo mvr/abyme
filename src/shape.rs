@@ -217,7 +217,7 @@ impl Universe {
     fn explore_step(&self, result: &mut ExploreResult, queue: &mut ExploreQueue) -> () {
         while !queue.is_empty() {
             let (sid, delta) = queue.pop_front().unwrap();
-            let s = self.shapes.get(&sid).unwrap();
+            let s = &self.shapes[&sid];
 
             let needs_update: bool = match result.get(&sid) {
                 None => true,

@@ -1,5 +1,3 @@
-// extern crate euclid;
-
 use num::Integer;
 
 use euclid::*;
