@@ -4,6 +4,8 @@ use num::Integer;
 
 use euclid::*;
 
+use gameplay_constants::*;
+
 pub struct UniverseSpace;
 pub struct ChildSpace;
 
@@ -14,7 +16,6 @@ pub type ChildPoint = TypedPoint2D<i32, ChildSpace>;
 
 // pub type FVec = TypedVector<f32>;
 
-pub const zoom_scale: u32 = 2;
 
 pub mod vectors {
     use types::*;
@@ -27,14 +28,14 @@ pub mod vectors {
     #[inline]
     pub fn truncate_up(v: ChildVec) -> UVec {
         UVec::new(
-            v.x.div_floor(&(zoom_scale as i32)),
-            v.y.div_floor(&(zoom_scale as i32)),
+            v.x.div_floor(&(ZOOM_SCALE as i32)),
+            v.y.div_floor(&(ZOOM_SCALE as i32)),
         )
     }
 
     #[inline]
     pub fn mod_up(v: ChildVec) -> ChildVec {
-        ChildVec::new(v.x % zoom_scale as i32, v.y % zoom_scale as i32)
+        ChildVec::new(v.x % ZOOM_SCALE as i32, v.y % ZOOM_SCALE as i32)
     }
 
     #[inline]
@@ -44,7 +45,7 @@ pub mod vectors {
 
     #[inline]
     pub fn shift_down(v: UVec) -> ChildVec {
-        ChildVec::new(v.x * (zoom_scale as i32), v.y * (zoom_scale as i32))
+        ChildVec::new(v.x * (ZOOM_SCALE as i32), v.y * (ZOOM_SCALE as i32))
     }
 
     #[inline]
