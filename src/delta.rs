@@ -4,6 +4,7 @@ use num::{Integer, Zero, ToPrimitive};
 
 use euclid::*;
 
+use gameplay_constants::*;
 use types::*;
 
 // A "vector" in the world, possibly going up or down levels
@@ -36,22 +37,22 @@ impl Delta {
         }
     }
 
-    fn div_vec<T : Integer + From<u32>, U>(v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
-        v.x = v.x.div_floor(&T::from(zoom_scale));
-        v.y = v.y.div_floor(&T::from(zoom_scale));
+    fn div_vec<T : Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+        v.x = v.x.div_floor(&T::from(ZOOM_SCALE));
+        v.y = v.y.div_floor(&T::from(ZOOM_SCALE));
         v
     }
 
-    fn mult_vec<T : Integer + From<u32>, U>(v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
-        v.x = v.x * (T::from(zoom_scale));
-        v.y = v.y * (T::from(zoom_scale));
+    fn mult_vec<T : Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+        v.x = v.x * (T::from(ZOOM_SCALE));
+        v.y = v.y * (T::from(ZOOM_SCALE));
         v
     }
 
 
     pub fn shift_target_down(mut self) -> Delta {
-        self.coords.x = self.coords.x * (BigInt::from(zoom_scale));
-        self.coords.y = self.coords.y * (BigInt::from(zoom_scale));
+        self.coords.x = self.coords.x * (BigInt::from(ZOOM_SCALE));
+        self.coords.y = self.coords.y * (BigInt::from(ZOOM_SCALE));
 
         self.zdelta += 1;
         self
@@ -63,8 +64,8 @@ impl Delta {
 
 
     pub fn truncate_target_up(&mut self) -> () {
-        self.coords.x = self.coords.x.div_floor(&BigInt::from(zoom_scale));
-        self.coords.y = self.coords.y.div_floor(&BigInt::from(zoom_scale));
+        self.coords.x = self.coords.x.div_floor(&BigInt::from(ZOOM_SCALE));
+        self.coords.y = self.coords.y.div_floor(&BigInt::from(ZOOM_SCALE));
 
         self.zdelta -= 1;
     }
@@ -91,7 +92,7 @@ impl<'a> Add<&'a Delta> for &'a Delta {
 
         Delta {
             zdelta: self.zdelta,
-            coords: TypedVector2D::new(self.coords.x + other.coords.x, self.coords.y + other.coords.y),
+            coords: TypedVector2D::new(self.coords.x.clone() + other.coords.x.clone(), self.coords.y.clone() + other.coords.y.clone()),
         }
     }
 }
