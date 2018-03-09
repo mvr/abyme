@@ -1,8 +1,7 @@
-extern crate euclid;
+// extern crate euclid;
 
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
-use euclid::*;
 
 use types::*;
 use delta::*;
@@ -20,7 +19,7 @@ pub struct Shape {
     parent_ids: BTreeMap<ShapeId, ChildPoint>,
 
     pub polyomino: Polyomino,
-//     pub zoom_scale: i32, // TODO: keep constant?
+    //     pub zoom_scale: i32, // TODO: keep constant?
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -59,7 +58,7 @@ impl PartialEq for Shape {
     }
 }
 
-impl Eq for Shape { }
+impl Eq for Shape {}
 
 fn build_fill_mesh() -> () {}
 
@@ -105,11 +104,10 @@ impl Universe {
         self.shapes.values().filter(move |s| s.has_parent(parent))
     }
     pub fn children_of_id<'a>(&'a self, parent_id: ShapeId) -> impl Iterator<Item = &'a Shape> {
-        self.shapes.values().filter(move |s| {
-            s.parent_ids.contains_key(&parent_id)
-        })
+        self.shapes
+            .values()
+            .filter(move |s| s.parent_ids.contains_key(&parent_id))
     }
-
 
     pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, ChildPoint)> {
         shape
@@ -130,14 +128,14 @@ impl<'a> Square<'a> {
     fn location_on(&self, parent_id: ShapeId) -> Option<Location> {
         let pos_on = self.shape.parent_ids.get(&parent_id)?;
         let new_shape = &self.universe.shapes[&parent_id];
-        let new_pos = (self.position + pos_on) / (zoom_scale as i32);
-        let new_subp = (self.position + pos_on) % (zoom_scale as i32);
+        let offset = self.position.to_vector() + vectors::coerce_up(pos_on.to_vector());
+        let (new_pos, new_subp) = vectors::split_up(vectors::coerce_down(offset));
 
         Some(Location {
             square: Square {
                 universe: self.universe,
                 shape: new_shape,
-                position: new_pos,
+                position: new_pos.to_point(),
             },
             subposition: new_subp,
         })
@@ -161,7 +159,7 @@ impl<'a> Square<'a> {
 
 pub struct Location<'a> {
     pub square: Square<'a>,
-    pub subposition: IVec2,
+    pub subposition: ChildVec,
 }
 
 impl<'a> Location<'a> {
@@ -172,12 +170,16 @@ impl<'a> Location<'a> {
             .universe
             .parents_with_position_of(self.square.shape)
             .into_iter()
-            .filter(|&(s, pos)| s.has_position(c - pos))
+            .filter(|&(s, pos)| {
+                let cpos = vectors::coerce_up(c - pos.to_vector());
+                s.has_position(cpos.to_point())
+            })
             .map(|(s, pos)| {
+                let cpos = vectors::coerce_up(c - pos.to_vector());
                 Square {
                     universe: self.square.universe,
                     shape: s,
-                    position: c - pos,
+                    position: cpos.to_point(),
                 }
             })
             .collect();
@@ -190,8 +192,8 @@ impl<'a> Location<'a> {
         }
     }
 
-    fn to_coordinate(&self) -> IVec2 {
-        (self.square.position * (zoom_scale as i32)) + self.subposition
+    fn to_coordinate(&self) -> ChildVec {
+        vectors::shift_down(self.square.position.to_vector()) + self.subposition
     }
 }
 
@@ -202,12 +204,11 @@ impl<'a> Location<'a> {
 #[derive(Clone)]
 pub struct Chunk {
     pub origin_id: ShapeId,
-    pub top_shape_ids: BTreeMap<ShapeId, IVec2>,
+    pub top_shape_ids: BTreeMap<ShapeId, UVec>,
     pub lower_shape_ids: BTreeMap<ShapeId, Delta>,
 }
 
-impl Chunk {
-}
+impl Chunk {}
 
 type ExploreResult = BTreeMap<ShapeId, Delta>;
 type ExploreQueue = VecDeque<(ShapeId, Delta)>;
@@ -249,17 +250,33 @@ impl Universe {
 
         self.explore_step(&mut result, &mut queue);
 
-        let top = result.iter().filter_map(
-            |(s, d)| if d.zdelta == 0 { Some((*s, d.to_vec2())) } else { None },
-        ).collect();
-        let lower = result.iter().filter_map(
-            |(s, d)| if d.zdelta > 0 { Some((*s, d.clone())) } else { None }, // More copying than necessary?
-        ).collect();
+        let top = result
+            .iter()
+            .filter_map(|(s, d)| {
+                if d.zdelta == 0 {
+                    Some((*s, d.to_uvec()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let lower = result
+            .iter()
+            .filter_map(
+                |(s, d)| {
+                    if d.zdelta > 0 {
+                        Some((*s, d.clone()))
+                    } else {
+                        None
+                    }
+                }, // More copying than necessary?
+            )
+            .collect();
 
         Chunk {
             origin_id: shape_id,
             top_shape_ids: top,
-            lower_shape_ids: lower
+            lower_shape_ids: lower,
         }
     }
 
@@ -289,7 +306,7 @@ impl GameState {
             universe: u,
             player_chunk: Chunk {
                 origin_id: ShapeId(1),
-                top_shape_ids: btreemap![ShapeId(1) => Vector2::new(0, 0)],
+                top_shape_ids: btreemap![ShapeId(1) => UVec::zero()],
                 lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
             },
         }

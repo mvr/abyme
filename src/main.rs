@@ -1,6 +1,7 @@
 #![feature(match_default_bindings)]
 #![feature(universal_impl_trait)]
 #![feature(conservative_impl_trait)]
+#![feature(slice_patterns)]
 #![feature(nll)]
 
 extern crate num;
@@ -19,18 +20,26 @@ use gfx::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
-// mod types;
-// mod delta;
-// mod graphics_defs;
-// mod mesh_gen;
-// mod director;
-// mod polyomino;
-// mod shape;
+mod gameplay_constants;
+mod types;
+mod graphics_defs;
+
+mod mesh_collector;
+mod mesh_gen;
+
+mod delta;
+
+mod polyomino;
+mod director;
+mod shape;
+
 
 use gameplay_constants::*;
+use types::*;
 use graphics_defs::*;
 use director::*;
 use shape::*;
+use types::*;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 

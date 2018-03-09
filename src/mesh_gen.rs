@@ -42,8 +42,8 @@ impl VertexConstructor<StrokeVertex, GpuShapeVertex> for GridExtraData {
         debug_assert!(!vertex.advancement.is_nan());
 
         let thickness = match self.vertex_type {
-            Interior => poly_interior_grid_thickness,
-            Perimeter => poly_perimeter_grid_thickness,
+            GridVertexType::Interior => POLY_INTERIOR_GRID_THICKNESS,
+            GridVertexType::Perimeter => POLY_PERIMETER_GRID_THICKNESS,
         };
 
         let adjusted_pos = vertex.position + (vertex.normal * thickness);
@@ -83,12 +83,12 @@ pub enum PolyMeshType {
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct PolyMeshId {
-    poly: Polyomino,
-    which: PolyMeshType,
+    pub poly: Polyomino,
+    pub which: PolyMeshType,
 }
 
 pub struct MeshStore {
-    poly_meshes: MeshCollection<PolyMeshId, GpuShapeVertex>,
+    pub poly_meshes: MeshCollection<PolyMeshId, GpuShapeVertex>,
 }
 
 // Reminder:

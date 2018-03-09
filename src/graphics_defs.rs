@@ -13,8 +13,8 @@ gfx_defines! {
     pipeline shape_pipe {
         vbuf: gfx::VertexBuffer<GpuShapeVertex> = (),
         resolution: gfx::Global<[i32; 2]> = "i_Resolution",
-        fill_color: gfx::Global<[f32; 3]> = "i_FillColor",
-        outline_color: gfx::Global<[f32; 3]> = "i_OutlineColor",
+        transform: gfx::Global<[[f32; 3]; 3]> = "i_Transform",
+        color: gfx::Global<[f32; 3]> = "i_Color",
         out: gfx::RenderTarget<ColorFormat> = "Target0",
     }
 }

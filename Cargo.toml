@@ -3,8 +3,8 @@ name = "abyme"
 version = "0.1.0"
 authors = ["Mitchell Riley <mitchell.v.riley@gmail.com>"]
 
-[lib]
-name="abyme_lib"
+# [lib]
+# name="abyme_lib"
 
 [[bin]]
 name = "abyme"

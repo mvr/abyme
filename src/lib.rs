@@ -1,6 +1,7 @@
 #![feature(match_default_bindings)]
 #![feature(universal_impl_trait)]
 #![feature(conservative_impl_trait)]
+#![feature(slice_patterns)]
 #![feature(nll)]
 
 extern crate num;
@@ -16,10 +17,14 @@ extern crate euclid;
 #[macro_use] extern crate maplit;
 
 mod types;
-mod delta;
 mod graphics_defs;
 mod gameplay_constants;
+
+mod mesh_collector;
 mod mesh_gen;
+
+mod delta;
+
 mod director;
 mod polyomino;
 mod shape;

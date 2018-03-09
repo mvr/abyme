@@ -4,85 +4,47 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 
 use gfx::Slice;
+use gfx::shade::ToUniform;
 use gfx::handle::Buffer;
 use gfx::traits::FactoryExt;
 use gfx::pso::PipelineState;
-use euclid::*;
+use euclid::TypedTransform2D;
 
+use types::*;
 use graphics_defs::*;
+use mesh_gen::*;
+use delta::*;
 use polyomino::*;
 use shape::*;
 
-#[derive(Clone, Copy)]
-pub enum VertexType {
-    FillVertex = 0,
-    OutlineVertex,
-}
+pub struct DrawSpace;
+pub struct ScreenSpace;
 
-gfx_defines! {
-    vertex ShapeVertex {
-        pos: [f32; 2] = "a_Pos",
-        vertex_type: u32 = "a_VertexType",
-    }
-
-    pipeline shape_pipe {
-        vbuf: gfx::VertexBuffer<ShapeVertex> = (),
-        resolution: gfx::Global<[i32; 2]> = "i_Resolution",
-        fill_color: gfx::Global<[f32; 3]> = "i_FillColor",
-        outline_color: gfx::Global<[f32; 3]> = "i_OutlineColor",
-        out: gfx::RenderTarget<ColorFormat> = "Target0",
-    }
-}
-
-// Two pieces: a Delta, a walk from one shape to another
-// Chosen "origin" shape,
-// Path to a different shape
-// Path can be given by a count of times to go up to a parent,
-// then a list of ShapeIds, each a child of the last.
-
-// And a ContinuousDelta is one of these, followed by a local position +
-// zoom amount
-
-// #[derive(Clone)]
-// struct Delta {
-//     start: ShapeId,
-//     parent_times: u16,
-//     child_path: VecDeque<ShapeId>,
-// }
-
-// #[derive(Clone)]
-// struct ContinuousDelta {
-//     delta: Delta,
-//     scale: f32,
-//     translation: Vector2<f32>,
-// }
+pub type DrawTransform = TypedTransform2D<f32, UniverseSpace, DrawSpace>;
+pub type CameraTransform = TypedTransform2D<f32, DrawSpace, ScreenSpace>;
 
 #[derive(Clone)]
-enum Monotone {
-    Up { start: ShapeId, distance: u16 },
-    Down {
-        start: ShapeId,
-        child_path: VecDeque<ShapeId>,
-    },
+struct CameraState {
+    transform: CameraTransform,
 }
 
-// #[derive(Clone)]
-// struct ScreenTransform {
-//     scale: f32,
-//     translation: Vector2<f32>,
-// }
+#[derive(Clone)]
+struct TransformTracker {
+    delta: Delta,
+    transform: DrawTransform,
+}
 
-// #[derive(Clone)]
-// struct CameraState {
-//     delta_to_goal: Monotone,
-//     transform: ScreenTransform,
-// }
+pub trait To2dGlTransform {
+    fn to_gl_mat3(&self) -> [[f32; 3]; 3];
+}
 
-// #[derive(Clone)]
-// struct TransformTracker {
-//     shape_id: ShapeId,
-//     transform: ScreenTransform,
-// }
+impl To2dGlTransform for TypedTransform2D<f32, DrawSpace, ScreenSpace> {
+    fn to_gl_mat3(&self) -> [[f32; 3]; 3] {
+        let [m11, m12, m21, m22, m31, m32] = self.to_row_major_array();
+
+        [[m11, m12, 0.0], [m21, m22, 0.0], [m31, m32, 1.0]]
+    }
+}
 
 // impl TransformTracker {
 //     // TODO: This will have to adjust for movement in progress
@@ -117,7 +79,8 @@ pub struct Director<'a, R: gfx::Resources> {
     // shape_vertex_buffer:
     // shape_slice: Slice<R>,
     game_state: &'a GameState,
-    precomputed_polyomino_meshes: HashMap<Polyomino, (Buffer<R, ShapeVertex>, Slice<R>)>,
+    mesh_store: MeshStore,
+    poly_mesh_buffer: Buffer<R, GpuShapeVertex>,
 }
 
 impl<'a, R: gfx::Resources> Director<'a, R> {
@@ -142,7 +105,8 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             )
             .unwrap();
 
-        let c = Director::build_mesh_cache(u, factory);
+        let store = Director::build_mesh_cache(u, factory);
+        let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
 
         Director {
             shape_pso: shape_pso,
@@ -150,67 +114,68 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             // shape_slice: slice,
             resolution: resolution,
             game_state: u,
-            precomputed_polyomino_meshes: c,
+            mesh_store: store,
+            poly_mesh_buffer: pmb,
         }
     }
 
-    // TODO: would be best if this was all packed into one VB
     fn build_mesh_cache<F: gfx::traits::Factory<R>>(
         gs: &'a GameState,
         factory: &mut F,
-    ) -> HashMap<Polyomino, (Buffer<R, ShapeVertex>, Slice<R>)> {
-        let mut result = HashMap::new();
+    ) -> MeshStore {
+        let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
-            if result.contains_key(&s.polyomino) {
-                continue;
-            }
+            // TODO! Reuse mesh for identical polys
+            // if result.contains_key(&s.polyomino) {
+            //     continue;
+            // }
 
-            result.insert(
-                s.polyomino.clone(),
-                Director::build_polyomino_mesh(&s.polyomino, factory),
-            );
+            result.gen_polyomino_mesh(&s.polyomino);
         }
 
         result
     }
 
-    fn build_polyomino_mesh<F: gfx::traits::Factory<R>>(
-        p: &Polyomino,
-        factory: &mut F,
-    ) -> (Buffer<R, ShapeVertex>, Slice<R>) {
-        let mut vertices = vec![];
-        let mut indices = vec![];
-
-        for pos in &p.squares {
-            let (newverts, newindices) = generate_bordered_square(pos.cast(), 0.5, 0.02);
-
-            vertices.extend(newverts);
-            let offset = indices.len() as u16;
-            indices.extend(newindices.iter().map(|&x| x + offset));
-        }
-
-        factory.create_vertex_buffer_with_slice(&vertices, &*indices)
-    }
-
-
-    fn draw_single_shape<C: gfx::CommandBuffer<R>>(
+    fn execute_poly_draw<C: gfx::CommandBuffer<R>>(
         &self,
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
-        shape: &Shape,
+        poly: &Polyomino,
+        transform: &TypedTransform2D<f32, DrawSpace, ScreenSpace>,
+        outline_color: [f32; 3],
+        fill_color: [f32; 3],
     ) -> () {
-        let (ref vb, ref slice) = self.precomputed_polyomino_meshes[&shape.polyomino];
+        let fill_slice = self.mesh_store.poly_meshes.gfx_slice_for(PolyMeshId {
+            poly: poly.clone(),
+            which: PolyMeshType::GridMesh,
+        });
+        let arr_transform = transform.to_gl_mat3();
 
-        let data = shape_pipe::Data {
-            vbuf: vb.clone(),
+        let fill_data = shape_pipe::Data {
+            vbuf: self.poly_mesh_buffer.clone(),
             out: target.clone(),
             resolution: [self.resolution[0] as i32, self.resolution[1] as i32],
-            fill_color: shape.fill_color,
-            outline_color: shape.outline_color,
+            transform: arr_transform,
+            color: fill_color,
         };
 
-        encoder.draw(slice, &self.shape_pso, &data);
+        encoder.draw(&fill_slice, &self.shape_pso, &fill_data);
+
+        let outline_slice = self.mesh_store.poly_meshes.gfx_slice_for(PolyMeshId {
+            poly: poly.clone(),
+            which: PolyMeshType::GridMesh,
+        });
+
+        let outline_data = shape_pipe::Data {
+            vbuf: self.poly_mesh_buffer.clone(),
+            out: target.clone(),
+            resolution: [self.resolution[0] as i32, self.resolution[1] as i32],
+            transform: arr_transform,
+            color: outline_color,
+        };
+
+        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
     }
 
     fn draw_recurse<C: gfx::CommandBuffer<R>>(
@@ -233,90 +198,4 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         unimplemented!();
         // self.draw_single_shape(encoder, target, self.game_state.player_chunk);
     }
-}
-
-// USE MATH COORDINATES
-// X RIGHT
-// Y UP
-// ALWAYS COUNTER-CLOCKWISE
-fn quad_indices(ll: u16, lr: u16, ur: u16, ul: u16) -> [u16; 6] {
-    [ll, lr, ur, ll, ur, ul]
-}
-
-fn generate_quad(
-    ll: [f32; 2],
-    lr: [f32; 2],
-    ur: [f32; 2],
-    ul: [f32; 2],
-    vt: VertexType,
-) -> (Vec<ShapeVertex>, Vec<u16>) {
-    let vertices = vec![
-        // For fill
-        ShapeVertex {
-            pos: ll,
-            vertex_type: vt as u32,
-        },
-        ShapeVertex {
-            pos: lr,
-            vertex_type: vt as u32,
-        },
-        ShapeVertex {
-            pos: ur,
-            vertex_type: vt as u32,
-        },
-        ShapeVertex {
-            pos: ul,
-            vertex_type: vt as u32,
-        },
-    ];
-    let mut indices = vec![];
-    indices.extend_from_slice(&quad_indices(0, 1, 2, 3));
-
-    (vertices, indices)
-}
-
-fn rect_vertices(ll: [f32; 2], ur: [f32; 2]) -> ([f32; 2], [f32; 2], [f32; 2], [f32; 2]) {
-    (ll, [ur[0], ll[1]], ur, [ll[0], ur[1]])
-}
-
-fn generate_bordered_square(
-    offset: Vector2<f32>,
-    size: f32,
-    border_width: f32,
-) -> (Vec<ShapeVertex>, Vec<u16>) {
-    let (ll, lr, ur, ul) =
-        rect_vertices([offset[0], offset[1]], [offset[0] + size, offset[1] + size]);
-    let (ill, ilr, iur, iul) = rect_vertices(
-        [offset[0] + border_width, offset[1] + border_width],
-        [
-            offset[0] + size - border_width,
-            offset[1] + size - border_width,
-        ],
-    );
-
-    use director::VertexType::*;
-    let (fv, fi) = generate_quad(ll, lr, ur, ul, FillVertex);
-
-    let (bv, bi) = generate_quad(ll, lr, ilr, ill, OutlineVertex);
-    let (rv, ri) = generate_quad(lr, ur, iur, ilr, OutlineVertex);
-    let (tv, ti) = generate_quad(ur, ul, iul, iur, OutlineVertex);
-    let (lv, li) = generate_quad(ul, ll, ill, iul, OutlineVertex);
-
-    let mut vertices = vec![];
-
-    vertices.extend(fv);
-    vertices.extend(bv);
-    vertices.extend(rv);
-    vertices.extend(tv);
-    vertices.extend(lv);
-
-    let mut indices = vec![];
-
-    indices.extend(fi);
-    indices.extend(bi.iter().map(|&x| x + 4));
-    indices.extend(ri.iter().map(|&x| x + 8));
-    indices.extend(ti.iter().map(|&x| x + 12));
-    indices.extend(li.iter().map(|&x| x + 16));
-
-    (vertices, indices)
 }
