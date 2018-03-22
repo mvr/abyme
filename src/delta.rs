@@ -1,6 +1,6 @@
-use std::ops::{Add, Neg};
+use std::ops::{Add, Neg, Sub};
 use num::bigint::BigInt;
-use num::{Integer, Zero, ToPrimitive};
+use num::{Integer, ToPrimitive, Zero};
 
 use euclid::*;
 
@@ -33,22 +33,21 @@ impl Delta {
     pub fn zero() -> Delta {
         Delta {
             zdelta: 0,
-            coords: TypedVector2D::new(BigInt::zero(), BigInt::zero())
+            coords: TypedVector2D::new(BigInt::zero(), BigInt::zero()),
         }
     }
 
-    fn div_vec<T : Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+    fn div_vec<T: Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
         v.x = v.x.div_floor(&T::from(ZOOM_SCALE));
         v.y = v.y.div_floor(&T::from(ZOOM_SCALE));
         v
     }
 
-    fn mult_vec<T : Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+    fn mult_vec<T: Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
         v.x = v.x * (T::from(ZOOM_SCALE));
         v.y = v.y * (T::from(ZOOM_SCALE));
         v
     }
-
 
     pub fn shift_target_down(mut self) -> Delta {
         self.coords.x = self.coords.x * (BigInt::from(ZOOM_SCALE));
@@ -61,7 +60,6 @@ impl Delta {
     pub fn shift_target_down_ref(&self) -> Delta {
         self.clone().shift_target_down()
     }
-
 
     pub fn truncate_target_up(&mut self) -> () {
         self.coords.x = self.coords.x.div_floor(&BigInt::from(ZOOM_SCALE));
@@ -84,6 +82,22 @@ impl PartialEq for Delta {
 
 impl Eq for Delta {}
 
+impl Add<Delta> for Delta {
+    type Output = Delta;
+
+    fn add(self, other: Delta) -> Delta {
+        assert!(self.zdelta == other.zdelta);
+
+        Delta {
+            zdelta: self.zdelta,
+            coords: TypedVector2D::new(
+                self.coords.x + other.coords.x,
+                self.coords.y + other.coords.y,
+            ),
+        }
+    }
+}
+
 impl<'a> Add<&'a Delta> for &'a Delta {
     type Output = Delta;
 
@@ -92,7 +106,42 @@ impl<'a> Add<&'a Delta> for &'a Delta {
 
         Delta {
             zdelta: self.zdelta,
-            coords: TypedVector2D::new(self.coords.x.clone() + other.coords.x.clone(), self.coords.y.clone() + other.coords.y.clone()),
+            coords: TypedVector2D::new(
+                self.coords.x.clone() + other.coords.x.clone(),
+                self.coords.y.clone() + other.coords.y.clone(),
+            ),
+        }
+    }
+}
+
+impl Sub<Delta> for Delta {
+    type Output = Delta;
+
+    fn sub(self, other: Delta) -> Delta {
+        assert!(self.zdelta == other.zdelta);
+
+        Delta {
+            zdelta: self.zdelta,
+            coords: TypedVector2D::new(
+                self.coords.x - other.coords.x,
+                self.coords.y - other.coords.y,
+            ),
+        }
+    }
+}
+
+impl<'a> Sub<&'a Delta> for &'a Delta {
+    type Output = Delta;
+
+    fn sub(self, other: &Delta) -> Delta {
+        assert!(self.zdelta == other.zdelta);
+
+        Delta {
+            zdelta: self.zdelta,
+            coords: TypedVector2D::new(
+                self.coords.x.clone() - other.coords.x.clone(),
+                self.coords.y.clone() - other.coords.y.clone(),
+            ),
         }
     }
 }
@@ -104,5 +153,14 @@ impl Neg for Delta {
         self.coords.x = -self.coords.x;
         self.coords.y = -self.coords.y;
         self
+    }
+}
+
+impl From<ChildVec> for Delta {
+    fn from(c: ChildVec) -> Delta {
+        Delta {
+            zdelta: 0,
+            coords: TypedVector2D::new(BigInt::from(c.x), BigInt::from(c.y)),
+        }
     }
 }
