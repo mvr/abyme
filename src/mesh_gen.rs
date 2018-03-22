@@ -4,7 +4,7 @@ use lyon::path::builder::*;
 use lyon::path::default::Path;
 use lyon::tessellation::{FillOptions, FillVertex, LineCap, StrokeOptions, StrokeTessellator,
                          StrokeVertex};
-use lyon::tessellation::geometry_builder::{GeometryBuilder};
+use lyon::tessellation::geometry_builder::GeometryBuilder;
 use lyon::tessellation::basic_shapes::fill_rectangle;
 
 use graphics_defs::*;
@@ -101,7 +101,9 @@ impl MeshStore {
     const TOLERANCE: f32 = 0.02; // TODO: what should this be?
 
     pub fn new() -> MeshStore {
-        MeshStore { poly_meshes: MeshCollection::new() }
+        MeshStore {
+            poly_meshes: MeshCollection::new(),
+        }
     }
 
     fn gen_border_path(p: &Polyomino, sort: GridSegmentType) -> Path {
@@ -118,7 +120,12 @@ impl MeshStore {
 
     pub fn gen_polyomino_mesh(&mut self, poly: &Polyomino) {
         let interior_grid_path = MeshStore::gen_border_path(poly, GridSegmentType::Internal);
-        let mut grid_adder : MeshAdder<PolyMeshId,GpuShapeVertex,StrokeVertex,GridExtraData> = MeshAdder::new(
+        let mut grid_adder: MeshAdder<
+            PolyMeshId,
+            GpuShapeVertex,
+            StrokeVertex,
+            GridExtraData,
+        > = MeshAdder::new(
             &mut self.poly_meshes,
             PolyMeshId {
                 poly: poly.clone(),
@@ -164,5 +171,12 @@ impl MeshStore {
         }
         fill_adder.end_geometry();
         fill_adder.finalise_add();
+    }
+
+    pub fn contains_poly(&self, poly: &Polyomino) -> bool {
+        self.poly_meshes.contains_key(&PolyMeshId {
+            poly: poly.clone(),
+            which: PolyMeshType::GridMesh,
+        })
     }
 }

@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -32,6 +33,15 @@ where IdType: Eq + Hash
             buffer: IndexBuffer::Auto,
         }
     }
+
+    pub fn contains_key<Q: ?Sized>(&self, k: &Q) -> bool
+    where
+        IdType: Borrow<Q>,
+        Q: Hash + Eq,
+    {
+        self.mesh_indices.contains_key(k)
+    }
+
 }
 
 // TODO: This could avoid adding redundant vertices
