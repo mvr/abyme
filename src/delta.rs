@@ -1,5 +1,6 @@
 use std::ops::{Add, Neg, Sub};
 use num::bigint::BigInt;
+use num::pow::pow;
 use num::{Integer, ToPrimitive, Zero};
 
 use euclid::*;
@@ -37,6 +38,10 @@ impl Delta {
         }
     }
 
+    fn add_vec<T: Integer, U>(v: TypedVector2D<T, U>, u: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+        TypedVector2D::new(v.x + u.x, v.y + u.y)
+    }
+
     fn div_vec<T: Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
         v.x = v.x.div_floor(&T::from(ZOOM_SCALE));
         v.y = v.y.div_floor(&T::from(ZOOM_SCALE));
@@ -48,6 +53,14 @@ impl Delta {
         v.y = v.y * (T::from(ZOOM_SCALE));
         v
     }
+
+    fn pow_vec<T: Integer + From<u32> + Clone, U>(mut v: TypedVector2D<T, U>, p: usize) -> TypedVector2D<T, U> {
+        v.x = v.x * pow(T::from(ZOOM_SCALE), p);
+        v.y = v.y * pow(T::from(ZOOM_SCALE), p);
+        v
+    }
+
+
 
     pub fn shift_target_down(mut self) -> Delta {
         self.coords.x = self.coords.x * (BigInt::from(ZOOM_SCALE));
@@ -69,9 +82,20 @@ impl Delta {
     }
 
     pub fn to_uvec(&self) -> UVec {
-        UVec::new(self.coords.x.to_i32().unwrap(), self.coords.y.to_i32().unwrap())
+        UVec::new(
+            self.coords.x.to_i32().unwrap(),
+            self.coords.y.to_i32().unwrap(),
+        )
     }
 
+    // This composes in diagrammatic order
+    // Only makes sense when both zdeltas are positive.
+    pub fn append(self, other: &Delta) -> Delta {
+        let zdelta = self.zdelta + other.zdelta;
+        let coords = Delta::add_vec(Delta::pow_vec(self.coords, other.zdelta as usize), other.coords.clone());
+
+        Delta { zdelta, coords }
+    }
 }
 
 impl PartialEq for Delta {
