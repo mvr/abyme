@@ -38,45 +38,43 @@ impl Delta {
         }
     }
 
-    fn add_vec<T: Integer, U>(v: TypedVector2D<T, U>, u: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
+    fn add_vec<T: Integer, U>(
+        v: TypedVector2D<T, U>,
+        u: TypedVector2D<T, U>,
+    ) -> TypedVector2D<T, U> {
         TypedVector2D::new(v.x + u.x, v.y + u.y)
     }
 
-    fn div_vec<T: Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
-        v.x = v.x.div_floor(&T::from(ZOOM_SCALE));
-        v.y = v.y.div_floor(&T::from(ZOOM_SCALE));
-        v
+    fn sub_vec<T: Integer, U>(
+        v: TypedVector2D<T, U>,
+        u: TypedVector2D<T, U>,
+    ) -> TypedVector2D<T, U> {
+        TypedVector2D::new(v.x - u.x, v.y - u.y)
     }
 
-    fn mult_vec<T: Integer + From<u32>, U>(mut v: TypedVector2D<T, U>) -> TypedVector2D<T, U> {
-        v.x = v.x * (T::from(ZOOM_SCALE));
-        v.y = v.y * (T::from(ZOOM_SCALE));
-        v
+    fn scale_vec<T: Integer + Clone, U>(v: &TypedVector2D<T, U>, amount: T) -> TypedVector2D<T, U> {
+        TypedVector2D::new(amount.clone() * v.x.clone(), amount.clone() * v.y.clone())
     }
 
-    fn pow_vec<T: Integer + From<u32> + Clone, U>(mut v: TypedVector2D<T, U>, p: usize) -> TypedVector2D<T, U> {
-        v.x = v.x * pow(T::from(ZOOM_SCALE), p);
-        v.y = v.y * pow(T::from(ZOOM_SCALE), p);
-        v
+    fn div_vec<T: Integer, U>(v: &TypedVector2D<T, U>, amount: T) -> TypedVector2D<T, U> {
+        TypedVector2D::new(v.x.div_floor(&amount), v.y.div_floor(&amount))
     }
 
+    pub fn shift_target_down(&self) -> Delta {
+        Delta {
+            zdelta: self.zdelta + 1,
+            coords: Delta::scale_vec(&self.coords, BigInt::from(ZOOM_SCALE))
+        }
+    }
 
-
-    pub fn shift_target_down(mut self) -> Delta {
-        self.coords.x = self.coords.x * (BigInt::from(ZOOM_SCALE));
-        self.coords.y = self.coords.y * (BigInt::from(ZOOM_SCALE));
+    pub fn shift_target_down_ref(&mut self) -> () {
+        self.coords = Delta::scale_vec(&self.coords, BigInt::from(ZOOM_SCALE));
 
         self.zdelta += 1;
-        self
-    }
-
-    pub fn shift_target_down_ref(&self) -> Delta {
-        self.clone().shift_target_down()
     }
 
     pub fn truncate_target_up(&mut self) -> () {
-        self.coords.x = self.coords.x.div_floor(&BigInt::from(ZOOM_SCALE));
-        self.coords.y = self.coords.y.div_floor(&BigInt::from(ZOOM_SCALE));
+        self.coords = Delta::div_vec(&self.coords, BigInt::from(ZOOM_SCALE));
 
         self.zdelta -= 1;
     }
@@ -88,11 +86,39 @@ impl Delta {
         )
     }
 
+    pub fn invert(self) -> Delta {
+        Delta {
+            zdelta: -self.zdelta,
+            coords: TypedVector2D::new(-self.coords.x, -self.coords.y),
+        }
+    }
+
     // This composes in diagrammatic order
     // Only makes sense when both zdeltas are positive.
     pub fn append(self, other: &Delta) -> Delta {
+        debug_assert!(other.zdelta >= 0);
+
         let zdelta = self.zdelta + other.zdelta;
-        let coords = Delta::add_vec(Delta::pow_vec(self.coords, other.zdelta as usize), other.coords.clone());
+        let coords = Delta::add_vec(
+            Delta::scale_vec(
+                &self.coords,
+                pow(BigInt::from(ZOOM_SCALE), other.zdelta as usize),
+            ),
+            other.coords.clone(),
+        );
+
+        Delta { zdelta, coords }
+    }
+
+    // This is NOT the same as appending an inverted other
+    pub fn revert(self, other: &Delta) -> Delta {
+        debug_assert!(other.zdelta >= 0);
+
+        let zdelta = self.zdelta - other.zdelta;
+        let coords = Delta::div_vec(
+            &Delta::sub_vec(self.coords.clone(), other.coords.clone()),
+            pow(BigInt::from(ZOOM_SCALE), other.zdelta as usize),
+        );
 
         Delta { zdelta, coords }
     }
