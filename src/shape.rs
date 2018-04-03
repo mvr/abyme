@@ -19,7 +19,6 @@ pub struct Shape {
     parent_ids: BTreeMap<ShapeId, ChildPoint>,
 
     pub polyomino: Polyomino,
-    //     pub zoom_scale: i32, // TODO: keep constant?
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -44,14 +43,15 @@ impl Shape {
         self.parent_ids[&parent.id]
     }
 
-    pub fn delta_to_parent(&self, parent: &Shape) -> Delta {
-        unimplemented!();
+    pub fn delta_from_parent(&self, parent: &Shape) -> Delta {
+        Delta::from(self.position_on(parent).to_vector())
     }
 
     pub fn delta_to_child(&self, child: &Shape) -> Delta {
-        unimplemented!();
+        child.delta_from_parent(self)
     }
 }
+
 impl PartialEq for Shape {
     fn eq(&self, other: &Shape) -> bool {
         self.id == other.id
@@ -202,13 +202,13 @@ impl<'a> Location<'a> {
 // TODO: these offsets may be too small, need a vec of offsets, one
 // for each level (that can be converted to a normal form, if we want)
 #[derive(Clone)]
-pub struct Chunk {
+pub struct TotalChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
     pub lower_shape_ids: BTreeMap<ShapeId, Delta>,
 }
 
-impl Chunk {}
+impl TotalChunk {}
 
 type ExploreResult = BTreeMap<ShapeId, Delta>;
 type ExploreQueue = VecDeque<(ShapeId, Delta)>;
@@ -232,17 +232,17 @@ impl Universe {
 
             if delta.zdelta > 0 {
                 for p in self.parents_of_id(sid) {
-                    queue.push_front((p.id, &delta + &s.delta_to_parent(p)));
+                    queue.push_front((p.id, delta.revert(&s.delta_from_parent(p)))); // TODO: check this logic
                 }
             }
 
             for c in self.children_of_id(sid) {
-                queue.push_back((c.id, &delta + &s.delta_to_child(c)));
+                queue.push_back((c.id, delta.append(&s.delta_to_child(c))));
             }
         }
     }
 
-    fn explore(&self, shape_id: ShapeId) -> Chunk {
+    fn explore(&self, shape_id: ShapeId) -> TotalChunk {
         let mut result = BTreeMap::new();
         let mut queue = VecDeque::new();
 
@@ -273,7 +273,7 @@ impl Universe {
             )
             .collect();
 
-        Chunk {
+        TotalChunk {
             origin_id: shape_id,
             top_shape_ids: top,
             lower_shape_ids: lower,
@@ -283,19 +283,33 @@ impl Universe {
     // fn explore_parent_of(&self, shape_ids: BTreeMap<ShapeId, IVec2>) -> Chunk {
     // }
 
-    pub fn chunk_of(&self, shape: &Shape) -> Chunk {
+    pub fn chunk_of(&self, shape: &Shape) -> TotalChunk {
         self.explore(shape.id)
     }
 
-    pub fn parent_of(&self, chunk: &Chunk) -> Chunk {
+    pub fn parent_of(&self, chunk: &TotalChunk) -> TotalChunk {
         let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
         self.explore(origin_parent_id)
     }
 }
 
+pub struct TopChunk {
+    pub origin_id: ShapeId,
+    pub top_shape_ids: BTreeMap<ShapeId, UVec>,
+}
+
+impl TopChunk {}
+
+impl From<TotalChunk> for TopChunk {
+    fn from(t: TotalChunk) -> TopChunk {
+        let TotalChunk { origin_id, top_shape_ids, .. } = t;
+        TopChunk { origin_id, top_shape_ids }
+    }
+}
+
 pub struct GameState {
     pub universe: Universe,
-    pub player_chunk: Chunk,
+    pub player_chunk: TotalChunk,
 }
 
 impl GameState {
@@ -304,7 +318,7 @@ impl GameState {
 
         GameState {
             universe: u,
-            player_chunk: Chunk {
+            player_chunk: TotalChunk {
                 origin_id: ShapeId(1),
                 top_shape_ids: btreemap![ShapeId(1) => UVec::zero()],
                 lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
