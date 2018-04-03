@@ -95,7 +95,7 @@ impl Delta {
 
     // This composes in diagrammatic order
     // Only makes sense when both zdeltas are positive.
-    pub fn append(self, other: &Delta) -> Delta {
+    pub fn append(&self, other: &Delta) -> Delta {
         debug_assert!(other.zdelta >= 0);
 
         let zdelta = self.zdelta + other.zdelta;
@@ -111,7 +111,7 @@ impl Delta {
     }
 
     // This is NOT the same as appending an inverted other
-    pub fn revert(self, other: &Delta) -> Delta {
+    pub fn revert(&self, other: &Delta) -> Delta {
         debug_assert!(other.zdelta >= 0);
 
         let zdelta = self.zdelta - other.zdelta;
