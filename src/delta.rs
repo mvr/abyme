@@ -114,6 +114,11 @@ impl Delta {
 
         Delta { zdelta, coords }
     }
+
+    // Do maximal movement at level 0, then a residual delta
+    pub fn factor(&self) -> (UVec, Delta) {
+        unimplemented!();
+    }
 }
 
 impl PartialEq for Delta {
