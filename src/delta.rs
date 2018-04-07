@@ -23,14 +23,6 @@ pub struct Delta {
 }
 
 impl Delta {
-    // TODO: from
-    // pub fn new(top: UVec) -> Delta {
-    //     Delta {
-    //         zdelta: 0,
-    //         coords: TypedVector2D::new(BigInt::from(top.x), BigInt::from(top.y)),
-    //     }
-    // }
-
     pub fn zero() -> Delta {
         Delta {
             zdelta: 0,
@@ -208,6 +200,15 @@ impl Neg for Delta {
 
 impl From<ChildVec> for Delta {
     fn from(c: ChildVec) -> Delta {
+        Delta {
+            zdelta: 1,
+            coords: TypedVector2D::new(BigInt::from(c.x), BigInt::from(c.y)),
+        }
+    }
+}
+
+impl From<UVec> for Delta {
+    fn from(c: UVec) -> Delta {
         Delta {
             zdelta: 0,
             coords: TypedVector2D::new(BigInt::from(c.x), BigInt::from(c.y)),
