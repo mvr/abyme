@@ -3,6 +3,8 @@
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 
+use euclid::TypedRect;
+
 use types::*;
 use delta::*;
 use polyomino::*;
@@ -298,7 +300,15 @@ pub struct TopChunk {
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
 }
 
-impl TopChunk {}
+impl TopChunk {
+    pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
+        let poly_bounds: Vec<TypedRect<i32, UniverseSpace>> = self.top_shape_ids
+            .keys()
+            .map(|shape_id| universe.shapes[shape_id].polyomino.bounding_box())
+            .collect();
+        poly_bounds.iter().fold(poly_bounds[0], |a, b| a.union(b))
+    }
+}
 
 impl From<TotalChunk> for TopChunk {
     fn from(t: TotalChunk) -> TopChunk {
