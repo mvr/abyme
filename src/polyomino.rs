@@ -10,7 +10,7 @@ pub struct Polyomino {
     pub squares: Vec<UPoint>,
 }
 
-#[derive(Debug, Clone, Copygi, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum GridSegmentType {
     Perimeter,
     Internal,
@@ -98,5 +98,10 @@ impl Polyomino {
             .iter()
             .map(|&s| TypedRect::new(s, TypedSize2D::new(1, 1)))
             .collect()
+    }
+
+    pub fn bounding_box(&self) -> TypedRect<i32, UniverseSpace> {
+        let rects = self.square_rects();
+        rects.iter().fold(rects[0], |a, b| a.union(b))
     }
 }
