@@ -2,7 +2,8 @@
 
 in vec2 a_Pos;
 in uint a_VertexType;
-uniform ivec2 i_Resolution;
+in uint a_Color;
+in mat3 i_Transform;
 uniform vec3 i_Color;
 out vec4 v_Color;
 
@@ -10,10 +11,10 @@ const uint FillVertex    = 0x00000000u;
 const uint OutlineVertex = 0x00000001u;
 
 void main() {
-    v_Color = vec4(i_FillColor, 1.0);
+    v_Color = vec4(i_Color, 1.0);
 
-    float ratio = float(i_Resolution.y) / float(i_Resolution.x); // TODO: This should just be a constant/uniform
+    vec3 transformed = iTransform * a_Pos;
 
-    gl_Position = vec4(a_Pos.x * ratio, a_Pos.y, 0.0, 1.0);
+    gl_Position = vec4(transformed.x, transformed.y, 0.0, 1.0);
 
 }
