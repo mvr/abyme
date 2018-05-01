@@ -12,6 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 num = "*"
+rug = "*"
 
 gfx = "0.16"
 gfx_window_glutin = "*"

@@ -1,12 +1,10 @@
-use std::ops::{Add, Neg, Sub};
-use num::bigint::BigInt;
-use num::pow::pow;
-use num::{Integer, ToPrimitive, Zero};
+use std::ops::{Add, Neg, Sub, Mul};
+use rug::{Integer, Rational};
+use rug::ops::{DivRounding, Pow};
 
 use euclid::*;
 
-use gameplay_constants::*;
-use types::*;
+use defs::*;
 
 // A "vector" in the world, possibly going up or down levels
 
@@ -19,54 +17,54 @@ pub struct Delta {
     pub zdelta: i16, // How far DOWN the target is
 
     // TODO: maybe find a faster bigint
-    pub coords: TypedVector2D<BigInt, UniverseSpace>,
+    pub coords: TypedVector2D<Integer, UniverseSpace>,
 }
 
 impl Delta {
     pub fn zero() -> Delta {
         Delta {
             zdelta: 0,
-            coords: TypedVector2D::new(BigInt::zero(), BigInt::zero()),
+            coords: TypedVector2D::new(Integer::new(), Integer::new()),
         }
     }
 
-    fn add_vec<T: Integer, U>(
+    fn add_vec<T: Add<T, Output = T>, U>(
         v: TypedVector2D<T, U>,
         u: TypedVector2D<T, U>,
     ) -> TypedVector2D<T, U> {
         TypedVector2D::new(v.x + u.x, v.y + u.y)
     }
 
-    fn sub_vec<T: Integer, U>(
+    fn sub_vec<T: Sub<T, Output = T>, U>(
         v: TypedVector2D<T, U>,
         u: TypedVector2D<T, U>,
     ) -> TypedVector2D<T, U> {
         TypedVector2D::new(v.x - u.x, v.y - u.y)
     }
 
-    fn scale_vec<T: Integer + Clone, U>(v: &TypedVector2D<T, U>, amount: T) -> TypedVector2D<T, U> {
-        TypedVector2D::new(amount.clone() * v.x.clone(), amount.clone() * v.y.clone())
+    fn scale_vec<U>(v: &TypedVector2D<Integer, U>, amount: Integer) -> TypedVector2D<Integer, U> {
+        TypedVector2D::new(amount.clone() * &v.x, amount.clone() * &v.y)
     }
 
-    fn div_vec<T: Integer, U>(v: &TypedVector2D<T, U>, amount: T) -> TypedVector2D<T, U> {
-        TypedVector2D::new(v.x.div_floor(&amount), v.y.div_floor(&amount))
+    fn div_vec<U>(v: &TypedVector2D<Integer, U>, amount: &Integer) -> TypedVector2D<Integer, U> {
+        TypedVector2D::new(v.x.clone().div_floor(amount), v.y.clone().div_floor(amount))
     }
 
     pub fn shift_target_down(&self) -> Delta {
         Delta {
             zdelta: self.zdelta + 1,
-            coords: Delta::scale_vec(&self.coords, BigInt::from(ZOOM_SCALE))
+            coords: Delta::scale_vec(&self.coords, Integer::from(ZOOM_SCALE))
         }
     }
 
     pub fn shift_target_down_ref(&mut self) -> () {
-        self.coords = Delta::scale_vec(&self.coords, BigInt::from(ZOOM_SCALE));
+        self.coords = Delta::scale_vec(&self.coords, Integer::from(ZOOM_SCALE));
 
         self.zdelta += 1;
     }
 
     pub fn truncate_target_up(&mut self) -> () {
-        self.coords = Delta::div_vec(&self.coords, BigInt::from(ZOOM_SCALE));
+        self.coords = Delta::div_vec(&self.coords, &Integer::from(ZOOM_SCALE));
 
         self.zdelta -= 1;
     }
@@ -94,7 +92,7 @@ impl Delta {
         let coords = Delta::add_vec(
             Delta::scale_vec(
                 &self.coords,
-                pow(BigInt::from(ZOOM_SCALE), other.zdelta as usize),
+                Integer::from(ZOOM_SCALE).pow(other.zdelta as u32),
             ),
             other.coords.clone(),
         );
@@ -109,7 +107,7 @@ impl Delta {
         let zdelta = self.zdelta - other.zdelta;
         let coords = Delta::div_vec(
             &Delta::sub_vec(self.coords.clone(), other.coords.clone()),
-            pow(BigInt::from(ZOOM_SCALE), other.zdelta as usize),
+            &Integer::from(ZOOM_SCALE).pow(other.zdelta as u32),
         );
 
         Delta { zdelta, coords }
@@ -207,7 +205,7 @@ impl From<ChildVec> for Delta {
     fn from(c: ChildVec) -> Delta {
         Delta {
             zdelta: 1,
-            coords: TypedVector2D::new(BigInt::from(c.x), BigInt::from(c.y)),
+            coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
         }
     }
 }
@@ -216,7 +214,7 @@ impl From<UVec> for Delta {
     fn from(c: UVec) -> Delta {
         Delta {
             zdelta: 0,
-            coords: TypedVector2D::new(BigInt::from(c.x), BigInt::from(c.y)),
+            coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
         }
     }
 }
