@@ -1,11 +1,11 @@
 use euclid::*;
-
-use types::*;
+use defs::*;
 
 pub mod math {
-    use num::Integer;
-    use types::*;
-    use gameplay_constants::*;
+    use num::Integer as IntegerTrait;
+    use rug;
+    use rug::ops::Pow;
+    use defs::*;
 
     #[inline]
     pub fn coerce_up(v: ChildVec) -> UVec {
@@ -39,11 +39,29 @@ pub mod math {
     pub fn coerce_down(v: UVec) -> ChildVec {
         ChildVec::new(v.x, v.y)
     }
+
+    pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {
+        if scale < 0 {
+            (int * rug::Integer::from(ZOOM_SCALE).pow(-scale as u32)).to_f32()
+        } else if scale == 0 {
+            int.to_f32()
+        } else { // self.zdelta > 0
+            let denom = rug::Integer::from(ZOOM_SCALE).pow(scale as u32);
+            rug::Rational::from((int, denom)).to_f32()
+        }
+    }
 }
+
+// TODO: turn the following into a pub trait TypedRectExt
+// pub trait TypedRectExt<T, U> {
+//     fn center(&self) -> TypedPoint2D<T, U>;
+//     fn transform_to<U2>(&self, other: TypedRect<T, U2>) -> TypedTransform2D<f32, U, U2>;
+//     fn transform_to_fit<U2>(&self, other: TypedRect<T, U2>) -> TypedTransform2D<f32, U, U2>;
+// }
 
 pub mod transform {
     use euclid::*;
-    use types::*;
+    use defs::*;
 
     #[inline]
     pub fn screen_to_gl(
@@ -57,8 +75,8 @@ pub mod transform {
 
     #[inline]
     pub fn rect_to_rect<U, U2>(
-        source: TypedRect<f32, U>,
-        target: TypedRect<f32, U2>,
+        source: &TypedRect<f32, U>,
+        target: &TypedRect<f32, U2>,
     ) -> TypedTransform2D<f32, U, U2> {
         let x_scale = target.size.width / source.size.width;
         let y_scale = target.size.height / source.size.height;
@@ -69,8 +87,8 @@ pub mod transform {
     // TODO: doesn't have to be f32
     #[inline]
     pub fn fit_rect_in<U, U2>(
-        source: TypedRect<f32, U>,
-        target: TypedRect<f32, U2>,
+        source: &TypedRect<f32, U>,
+        target: &TypedRect<f32, U2>,
     ) -> TypedTransform2D<f32, U, U2> {
         let source_ratio = source.size.width / source.size.height;
         let target_ratio = target.size.width / target.size.height;
@@ -85,7 +103,7 @@ pub mod transform {
                 TypedSize2D::new(target.size.width, image_height),
             );
 
-            rect_to_rect(source, image)
+            rect_to_rect(&source, &image)
         } else {
             // source is thinner than target
             let image_width = target.size.height * source_ratio;
@@ -96,7 +114,7 @@ pub mod transform {
                 TypedSize2D::new(image_width, target.size.height),
             );
 
-            rect_to_rect(source, image)
+            rect_to_rect(&source, &image)
         }
     }
 }
