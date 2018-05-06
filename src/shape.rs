@@ -75,7 +75,7 @@ impl Universe {
             id: id1,
             parent_ids: btreemap!{ id2 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 1.0, 1.0],
+            fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
         let shape2 = Shape {

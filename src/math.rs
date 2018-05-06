@@ -45,7 +45,8 @@ pub mod math {
             (int * rug::Integer::from(ZOOM_SCALE).pow(-scale as u32)).to_f32()
         } else if scale == 0 {
             int.to_f32()
-        } else { // self.zdelta > 0
+        } else {
+            // self.zdelta > 0
             let denom = rug::Integer::from(ZOOM_SCALE).pow(scale as u32);
             rug::Rational::from((int, denom)).to_f32()
         }
@@ -80,8 +81,9 @@ pub mod transform {
     ) -> TypedTransform2D<f32, U, U2> {
         let x_scale = target.size.width / source.size.width;
         let y_scale = target.size.height / source.size.height;
-        let translation = TypedVector2D::from_untyped(&(target.origin.to_untyped() - source.origin.to_untyped()));
-        TypedTransform2D::create_scale(x_scale, y_scale).post_translate(translation)
+        TypedTransform2D::create_translation(-source.origin.x, -source.origin.y)
+            .post_scale(x_scale, y_scale)
+            .post_translate(TypedVector2D::from_untyped(&target.origin.to_untyped().to_vector()))
     }
 
     // TODO: doesn't have to be f32
@@ -96,7 +98,8 @@ pub mod transform {
         if source_ratio > target_ratio {
             // source is wider than target, so fills target width
             let image_height = target.size.width / source_ratio;
-            let image_origin_y = (target.origin.y + target.size.height / 2.0) - (image_height / 2.0);
+            let image_origin_y =
+                (target.origin.y + target.size.height / 2.0) - (image_height / 2.0);
 
             let image = TypedRect::new(
                 TypedPoint2D::new(target.origin.x, image_origin_y),

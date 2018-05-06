@@ -8,6 +8,7 @@
 extern crate num;
 extern crate rug;
 
+extern crate gfx_core;
 #[macro_use] extern crate gfx;
 extern crate gfx_window_glutin;
 extern crate glutin;
@@ -30,7 +31,7 @@ mod polyomino;
 mod director;
 mod shape;
 
-use gfx::Device;
+use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
 
@@ -75,8 +76,7 @@ pub fn main() {
                             virtual_keycode: Some(glutin::VirtualKeyCode::Escape), ..
                         },
                         ..
-                    } |
-                    Closed => running = false,
+                    } | CloseRequested => running = false,
                     Resized(w, h) => {
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
                         director.resolution = TypedSize2D::new(w, h);

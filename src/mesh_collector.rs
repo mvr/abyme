@@ -6,7 +6,10 @@ use std::marker::PhantomData;
 use lyon::tessellation::geometry_builder::*;
 use gfx::{Slice, IndexBuffer, Resources};
 
-pub struct MeshCollection<IdType, VertexType> {
+#[derive(Debug)]
+pub struct MeshCollection<IdType, VertexType>
+where IdType: Eq + Hash
+{
     pub vertices: Vec<VertexType>,
     pub all_indices: Vec<Index>,
     pub mesh_indices: HashMap<IdType, (Index, Index)>,
@@ -23,14 +26,14 @@ where IdType: Eq + Hash
         }
     }
 
-    pub fn gfx_slice_for<R: Resources>(&self, id: IdType) -> Slice<R> {
+    pub fn gfx_slice_for<R: Resources>(&self, buffer: &IndexBuffer<R>, id: IdType) -> Slice<R> {
         let (start, end) = self.mesh_indices[&id];
         Slice {
             start: start as u32,
             end: end as u32,
             base_vertex: 0,
             instances: None,
-            buffer: IndexBuffer::Auto,
+            buffer: buffer.clone(),
         }
     }
 
@@ -46,7 +49,10 @@ where IdType: Eq + Hash
 
 // TODO: This could avoid adding redundant vertices
 
-pub struct MeshAdder<'l, IdType: 'l, VertexType: 'l, Input, Ctor> {
+#[derive(Debug)]
+pub struct MeshAdder<'l, IdType: 'l, VertexType: 'l, Input, Ctor>
+where IdType: Eq + Hash
+{
     buffers: &'l mut MeshCollection<IdType, VertexType>,
     new_id: IdType,
     vertex_offset: Index,
@@ -96,6 +102,7 @@ pub trait VertexConstructor<Input, VertexType> {
 impl<'l, IdType, VertexType, Input, Ctor> GeometryBuilder<Input>
     for MeshAdder<'l, IdType, VertexType, Input, Ctor>
 where
+    IdType: Eq + Hash,
     VertexType: 'l + Clone,
     Ctor: VertexConstructor<Input, VertexType>,
 {

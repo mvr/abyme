@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 use std::ops::{Add, Div};
 
 use gfx::Slice;
+use gfx::IndexBuffer;
 use gfx::shade::ToUniform;
 use gfx::handle::Buffer;
 use gfx::traits::FactoryExt;
@@ -144,6 +145,7 @@ pub struct Director<'a, R: gfx::Resources> {
 
     mesh_store: MeshStore,
     poly_mesh_buffer: Buffer<R, GpuShapeVertex>,
+    poly_mesh_index_buffer: IndexBuffer<R>,
     shape_pso: PipelineState<R, shape_pipe::Meta>,
 
     game_state: &'a GameState,
@@ -173,6 +175,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
 
         let store = Director::build_mesh_cache(u, factory);
         let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
+        let pmib = factory.create_index_buffer(&store.poly_meshes.all_indices[..]);
 
         let camera_state = CameraState::new(&resolution, &u);
         let ndc_bounds = TypedRect::new(TypedPoint2D::new(-1.0, -1.0), TypedSize2D::new(2.0, 2.0));
@@ -189,6 +192,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             game_state: u,
             mesh_store: store,
             poly_mesh_buffer: pmb,
+            poly_mesh_index_buffer: pmib,
         }
     }
 
@@ -218,11 +222,15 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
         fill_color: [f32; 3],
         outline_color: [f32; 3],
     ) -> () {
-        let fill_slice = self.mesh_store.poly_meshes.gfx_slice_for(PolyMeshId {
-            poly: poly.clone(),
-            which: PolyMeshType::GridMesh,
-        });
         let arr_transform = (*raw_transform).to_gl_mat3();
+
+        let fill_slice = self.mesh_store.poly_meshes.gfx_slice_for(
+            &self.poly_mesh_index_buffer,
+            PolyMeshId {
+                poly: poly.clone(),
+                which: PolyMeshType::FillMesh,
+            },
+        );
 
         let fill_data = shape_pipe::Data {
             vbuf: self.poly_mesh_buffer.clone(),
@@ -233,10 +241,13 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
 
         encoder.draw(&fill_slice, &self.shape_pso, &fill_data);
 
-        let outline_slice = self.mesh_store.poly_meshes.gfx_slice_for(PolyMeshId {
-            poly: poly.clone(),
-            which: PolyMeshType::GridMesh,
-        });
+        let outline_slice = self.mesh_store.poly_meshes.gfx_slice_for(
+            &self.poly_mesh_index_buffer,
+            PolyMeshId {
+                poly: poly.clone(),
+                which: PolyMeshType::GridMesh,
+            },
+        );
 
         let outline_data = shape_pipe::Data {
             vbuf: self.poly_mesh_buffer.clone(),
