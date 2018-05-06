@@ -14,11 +14,12 @@ path = "src/main.rs"
 num = "*"
 rug = "*"
 
-gfx = "0.16"
+gfx = "0.17"
+gfx_core = "*"
 gfx_window_glutin = "*"
 glutin = "*"
 
-euclid = "*"
-lyon = "*"
+euclid = ">=0.17.2"
+lyon = ">=0.10"
 
 maplit = "*"
