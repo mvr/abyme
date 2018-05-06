@@ -7,8 +7,7 @@ use lyon::tessellation::{FillOptions, FillVertex, LineCap, StrokeOptions, Stroke
 use lyon::tessellation::geometry_builder::GeometryBuilder;
 use lyon::tessellation::basic_shapes::fill_rectangle;
 
-use graphics_defs::*;
-use gameplay_constants::*;
+use defs::*;
 use polyomino::*;
 
 use mesh_collector::*;

@@ -3,7 +3,7 @@ extern crate euclid;
 use euclid::TypedRect;
 use euclid::TypedSize2D;
 
-use types::*;
+use defs::*;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Polyomino {

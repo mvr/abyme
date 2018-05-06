@@ -1,5 +1,5 @@
-use std::ops::{Add, Neg, Sub, Mul};
-use rug::{Integer, Rational};
+use std::ops::{Add, Neg, Sub};
+use rug::{Integer};
 use rug::ops::{DivRounding, Pow};
 
 use euclid::*;
@@ -75,6 +75,17 @@ impl Delta {
             self.coords.x.to_i32().unwrap(),
             self.coords.y.to_i32().unwrap(),
         )
+    }
+
+    // TODO: test
+    pub fn to_scaled_fvec(&self) -> TypedVector2D<f32, UniverseSpace> {
+        TypedVector2D::new(math::scaled_bigint_to_float(&self.coords.x, self.zdelta),
+                           math::scaled_bigint_to_float(&self.coords.y, self.zdelta))
+    }
+
+    pub fn to_scale_transform(&self) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
+        let scale = (ZOOM_SCALE as f32).powi(-self.zdelta as i32);
+        TypedTransform2D::identity().post_translate(self.to_scaled_fvec()).post_scale(scale, scale)
     }
 
     pub fn invert(self) -> Delta {

@@ -5,7 +5,8 @@ use std::collections::VecDeque;
 
 use euclid::TypedRect;
 
-use types::*;
+use defs::*;
+use math::*;
 use delta::*;
 use polyomino::*;
 
@@ -15,10 +16,10 @@ pub struct ShapeId(u32);
 #[derive(Debug)]
 pub struct Shape {
     // Gameplay:
-    id: ShapeId,
+    pub id: ShapeId,
 
     //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
-    parent_ids: BTreeMap<ShapeId, ChildPoint>,
+    pub parent_ids: BTreeMap<ShapeId, ChildPoint>,
 
     pub polyomino: Polyomino,
 
@@ -61,8 +62,6 @@ impl PartialEq for Shape {
 }
 
 impl Eq for Shape {}
-
-fn build_fill_mesh() -> () {}
 
 pub struct Universe {
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
@@ -130,8 +129,8 @@ impl<'a> Square<'a> {
     fn location_on(&self, parent_id: ShapeId) -> Option<Location> {
         let pos_on = self.shape.parent_ids.get(&parent_id)?;
         let new_shape = &self.universe.shapes[&parent_id];
-        let offset = self.position.to_vector() + vectors::coerce_up(pos_on.to_vector());
-        let (new_pos, new_subp) = vectors::split_up(vectors::coerce_down(offset));
+        let offset = self.position.to_vector() + math::coerce_up(pos_on.to_vector());
+        let (new_pos, new_subp) = math::split_up(math::coerce_down(offset));
 
         Some(Location {
             square: Square {
@@ -173,11 +172,11 @@ impl<'a> Location<'a> {
             .parents_with_position_of(self.square.shape)
             .into_iter()
             .filter(|&(s, pos)| {
-                let cpos = vectors::coerce_up(c - pos.to_vector());
+                let cpos = math::coerce_up(c - pos.to_vector());
                 s.has_position(cpos.to_point())
             })
             .map(|(s, pos)| {
-                let cpos = vectors::coerce_up(c - pos.to_vector());
+                let cpos = math::coerce_up(c - pos.to_vector());
                 Square {
                     universe: self.square.universe,
                     shape: s,
@@ -195,7 +194,7 @@ impl<'a> Location<'a> {
     }
 
     fn to_coordinate(&self) -> ChildVec {
-        vectors::shift_down(self.square.position.to_vector()) + self.subposition
+        math::shift_down(self.square.position.to_vector()) + self.subposition
     }
 }
 
@@ -312,14 +311,21 @@ impl TopChunk {
 
 impl From<TotalChunk> for TopChunk {
     fn from(t: TotalChunk) -> TopChunk {
-        let TotalChunk { origin_id, top_shape_ids, .. } = t;
-        TopChunk { origin_id, top_shape_ids }
+        let TotalChunk {
+            origin_id,
+            top_shape_ids,
+            ..
+        } = t;
+        TopChunk {
+            origin_id,
+            top_shape_ids,
+        }
     }
 }
 
 pub struct GameState {
     pub universe: Universe,
-    pub player_chunk: TotalChunk,
+    pub player_chunk: TopChunk,
 }
 
 impl GameState {
@@ -328,11 +334,17 @@ impl GameState {
 
         GameState {
             universe: u,
-            player_chunk: TotalChunk {
+            player_chunk: TopChunk {
                 origin_id: ShapeId(1),
                 top_shape_ids: btreemap![ShapeId(1) => UVec::zero()],
-                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
+                //                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
             },
         }
     }
+}
+
+pub enum MonotonePath {
+    Zero,
+    Up { distance: u32 },
+    Down { path: Vec<ShapeId> },
 }

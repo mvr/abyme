@@ -2,9 +2,11 @@
 #![feature(universal_impl_trait)]
 #![feature(conservative_impl_trait)]
 #![feature(slice_patterns)]
+#![feature(custom_attribute)]
 #![feature(nll)]
 
 extern crate num;
+extern crate rug;
 
 #[macro_use] extern crate gfx;
 extern crate gfx_window_glutin;
@@ -16,13 +18,8 @@ extern crate lyon;
 extern crate euclid;
 #[macro_use] extern crate maplit;
 
-use gfx::Device;
-use gfx_window_glutin as gfx_glutin;
-use glutin::GlContext;
-
-mod gameplay_constants;
-mod types;
-mod graphics_defs;
+mod defs;
+mod math;
 
 mod mesh_collector;
 mod mesh_gen;
@@ -33,22 +30,25 @@ mod polyomino;
 mod director;
 mod shape;
 
+use gfx::Device;
+use gfx_window_glutin as gfx_glutin;
+use glutin::GlContext;
 
-use gameplay_constants::*;
-use types::*;
-use graphics_defs::*;
+use euclid::{TypedSize2D};
+
+use defs::*;
+use math::*;
 use director::*;
 use shape::*;
-use types::*;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
 pub fn main() {
     let mut events_loop = glutin::EventsLoop::new();
-    let resolution = [1024, 768];
+    let resolution = TypedSize2D::new(1024, 768);
     let builder = glutin::WindowBuilder::new()
         .with_title("Abyme".to_string())
-        .with_dimensions(resolution[0], resolution[1]);
+        .with_dimensions(resolution.width, resolution.height);
     let context = glutin::ContextBuilder::new().with_vsync(true);
 
     let (window, mut device, mut factory, mut main_color_view, mut main_depth) =
@@ -79,7 +79,8 @@ pub fn main() {
                     Closed => running = false,
                     Resized(w, h) => {
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
-                        director.resolution = [w, h];
+                        director.resolution = TypedSize2D::new(w, h);
+                        // TODO: recalculate camera
                     }
                     _ => (),
                 }
