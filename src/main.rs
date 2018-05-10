@@ -56,9 +56,7 @@ pub fn main() {
         gfx_glutin::init::<ColorFormat, DepthFormat>(builder, context, &events_loop);
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-
-    let game_state = GameState::minimal();
-    let mut director: Director<_> = Director::new(&game_state, &mut factory, resolution);
+    let mut director: Director<_> = Director::new(&mut factory, resolution);
 
     let mut running = true;
     while running {
@@ -81,6 +79,15 @@ pub fn main() {
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
                         director.resolution = TypedSize2D::new(w, h);
                         // TODO: recalculate camera
+                    },
+
+                    KeyboardInput {
+                        input: glutin::KeyboardInput {
+                            virtual_keycode: Some(glutin::VirtualKeyCode::Space), ..
+                        },
+                        ..
+                    } => {
+                        director.do_zoom()
                     }
                     _ => (),
                 }

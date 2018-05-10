@@ -20,7 +20,7 @@ pub struct Shape {
 
     //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
     pub parent_ids: BTreeMap<ShapeId, ChildPoint>,
-
+    // TODO: instead store a distinguished parent?
     pub polyomino: Polyomino,
 
     // Drawing:
@@ -288,9 +288,9 @@ impl Universe {
         self.explore(shape.id)
     }
 
-    pub fn parent_of(&self, chunk: &TotalChunk) -> TotalChunk {
+    pub fn parent_of(&self, chunk: &TopChunk) -> TopChunk {
         let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
-        self.explore(origin_parent_id)
+        self.explore(origin_parent_id).into()
     }
 }
 
@@ -341,10 +341,33 @@ impl GameState {
             },
         }
     }
+
+    pub fn do_zoom(&mut self) -> () {
+        self.player_chunk = self.universe.parent_of(&self.player_chunk);
+    }
 }
 
 pub enum MonotonePath {
     Zero,
     Up { distance: u32 },
     Down { path: Vec<ShapeId> },
+}
+
+impl MonotonePath {
+    pub fn up_target(&self) -> MonotonePath {
+        use MonotonePath::*;
+        match *self {
+            Zero => Up { distance: 1 },
+            Up { distance } => Up {
+                distance: distance + 1,
+            },
+            Down { ref path } => if path.len() == 1 {
+                Zero
+            } else {
+                let mut new_path = path.clone();
+                new_path.pop();
+                Down { path: new_path }
+            },
+        }
+    }
 }

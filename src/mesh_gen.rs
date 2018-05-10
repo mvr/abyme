@@ -93,12 +93,6 @@ pub struct MeshStore {
     pub poly_meshes: MeshCollection<PolyMeshId, GpuShapeVertex>,
 }
 
-// Reminder:
-// USE MATHS COORDINATES
-// X RIGHT
-// Y UP
-// ALWAYS COUNTER-CLOCKWISE
-
 impl MeshStore {
     const TOLERANCE: f32 = 0.002; // TODO: what should this be?
 

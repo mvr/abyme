@@ -46,6 +46,16 @@ impl CameraState {
         )
     }
 
+    fn target_transform_for(
+        chunk: &TopChunk,
+        game_state: &GameState,
+        bounds: TypedRect<f32, DrawSpace>,
+    ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
+        let chunk_bounds = chunk.bounding_box(&game_state.universe);
+
+        transform::fit_rect_in(&chunk_bounds.to_f32().inflate(1.0, 1.0), &bounds)
+    }
+
     pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, game_state: &GameState) -> CameraState {
         let camera_bounds = TypedRect::new(
             TypedPoint2D::zero(),
@@ -53,10 +63,7 @@ impl CameraState {
         );
 
         let chunk = &game_state.player_chunk;
-        let chunk_bounds = chunk.bounding_box(&game_state.universe);
-
-        let transform =
-            transform::fit_rect_in(&chunk_bounds.to_f32().inflate(1.0, 1.0), &camera_bounds);
+        let transform = CameraState::target_transform_for(&chunk, &game_state, camera_bounds);
 
         CameraState {
             camera_bounds: camera_bounds,
@@ -69,6 +76,17 @@ impl CameraState {
 
             current_to_target_path: MonotonePath::Zero,
         }
+    }
+
+    pub fn do_zoom(&mut self, game_state: &GameState) -> () {
+        self.target_shape = game_state.player_chunk.origin_id;
+        self.target_transform = CameraState::target_transform_for(
+            &game_state.player_chunk,
+            &game_state,
+            self.camera_bounds,
+        );
+
+        self.current_to_target_path = self.current_to_target_path.up_target();
     }
 }
 
@@ -137,7 +155,7 @@ impl LevelTracker {
     pub fn filter_nonvisible(&mut self) -> () {}
 }
 
-pub struct Director<'a, R: gfx::Resources> {
+pub struct Director<R: gfx::Resources> {
     pub resolution: TypedSize2D<u32, ScreenSpace>,
 
     camera_state: CameraState,
@@ -148,15 +166,16 @@ pub struct Director<'a, R: gfx::Resources> {
     poly_mesh_index_buffer: IndexBuffer<R>,
     shape_pso: PipelineState<R, shape_pipe::Meta>,
 
-    game_state: &'a GameState,
+    game_state: GameState,
 }
 
-impl<'a, R: gfx::Resources> Director<'a, R> {
+impl<R: gfx::Resources> Director<R> {
     pub fn new<F: gfx::traits::Factory<R>>(
-        u: &'a GameState,
         factory: &mut F,
         resolution: TypedSize2D<u32, ScreenSpace>,
-    ) -> Director<'a, R> {
+    ) -> Director<R> {
+        let game_state = GameState::minimal();
+
         // TODO: will one day have to make this choose the right
         // shaders for the platform.
         let shape_pso = factory
@@ -173,11 +192,11 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             )
             .unwrap();
 
-        let store = Director::build_mesh_cache(u, factory);
+        let store = Director::build_mesh_cache(&game_state, factory);
         let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
         let pmib = factory.create_index_buffer(&store.poly_meshes.all_indices[..]);
 
-        let camera_state = CameraState::new(&resolution, &u);
+        let camera_state = CameraState::new(&resolution, &game_state);
         let ndc_bounds = TypedRect::new(TypedPoint2D::new(-1.0, -1.0), TypedSize2D::new(2.0, 2.0));
         let draw_space_to_gl = transform::rect_to_rect(&camera_state.camera_bounds, &ndc_bounds);
 
@@ -189,17 +208,14 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             camera_state: camera_state,
             draw_space_to_gl: draw_space_to_gl,
 
-            game_state: u,
+            game_state: game_state,
             mesh_store: store,
             poly_mesh_buffer: pmb,
             poly_mesh_index_buffer: pmib,
         }
     }
 
-    fn build_mesh_cache<F: gfx::traits::Factory<R>>(
-        gs: &'a GameState,
-        factory: &mut F,
-    ) -> MeshStore {
+    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &GameState, factory: &mut F) -> MeshStore {
         let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
@@ -256,7 +272,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             color: outline_color,
         };
 
-        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
+        //        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
     }
 
     fn draw_level<C: gfx::CommandBuffer<R>>(
@@ -291,7 +307,7 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
     ) -> () {
         // TODO: move to defs.rs
         const DISTANCE_UP: u32 = 3;
-        const DISTANCE_DOWN: u32 = 3;
+        const DISTANCE_DOWN: u32 = 8;
 
         let mut l = LevelTracker::from_chunk(&self.game_state.player_chunk);
 
@@ -307,5 +323,10 @@ impl<'a, R: gfx::Resources> Director<'a, R> {
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);
         }
+    }
+
+    pub fn do_zoom(&mut self) -> () {
+        self.game_state.do_zoom();
+        self.camera_state.do_zoom(&self.game_state);
     }
 }
