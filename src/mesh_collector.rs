@@ -73,10 +73,10 @@ where
         let vertex_offset = buffers.vertices.len() as Index;
         let index_offset = buffers.all_indices.len() as Index;
         MeshAdder {
-            buffers: buffers,
+            buffers,
             new_id: id,
-            vertex_offset: vertex_offset,
-            index_offset: index_offset,
+            vertex_offset,
+            index_offset,
             vertex_constructor: ctor,
             _marker: PhantomData,
         }
@@ -112,17 +112,17 @@ where
     }
 
     fn end_geometry(&mut self) -> Count {
-        return Count {
+        Count {
             vertices: self.buffers.vertices.len() as u32 - self.vertex_offset as u32,
             indices: self.buffers.all_indices.len() as u32 - self.index_offset as u32,
-        };
+        }
     }
 
     fn add_vertex(&mut self, v: Input) -> VertexId {
         self.buffers
             .vertices
             .push(self.vertex_constructor.new_vertex(v));
-        return VertexId(self.buffers.vertices.len() as Index - 1 - self.vertex_offset);
+        VertexId(self.buffers.vertices.len() as Index - 1 - self.vertex_offset)
     }
 
     fn add_triangle(&mut self, a: VertexId, b: VertexId, c: VertexId) {

@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use euclid::TypedRect;
 
 use defs::*;
-use math::*;
+use math;
 use delta::*;
 use polyomino::*;
 
@@ -104,6 +104,7 @@ impl Universe {
     pub fn children_of<'a>(&'a self, parent: &'a Shape) -> impl Iterator<Item = &'a Shape> {
         self.shapes.values().filter(move |s| s.has_parent(parent))
     }
+
     pub fn children_of_id<'a>(&'a self, parent_id: ShapeId) -> impl Iterator<Item = &'a Shape> {
         self.shapes
             .values()

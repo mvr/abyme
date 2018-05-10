@@ -5,7 +5,7 @@ use rug::ops::{DivRounding, Pow};
 use euclid::*;
 
 use defs::*;
-use math::*;
+use math;
 
 // A "vector" in the world, possibly going up or down levels
 

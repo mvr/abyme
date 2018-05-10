@@ -1,55 +1,52 @@
 use euclid::*;
+use num::Integer as IntegerTrait;
+use rug;
+use rug::ops::Pow;
+
 use defs::*;
 
-pub mod math {
-    use num::Integer as IntegerTrait;
-    use rug;
-    use rug::ops::Pow;
-    use defs::*;
+#[inline]
+pub fn coerce_up(v: ChildVec) -> UVec {
+    UVec::new(v.x, v.y)
+}
 
-    #[inline]
-    pub fn coerce_up(v: ChildVec) -> UVec {
-        UVec::new(v.x, v.y)
-    }
+#[inline]
+pub fn truncate_up(v: ChildVec) -> UVec {
+    UVec::new(
+        v.x.div_floor(&(ZOOM_SCALE as i32)),
+        v.y.div_floor(&(ZOOM_SCALE as i32)),
+    )
+}
 
-    #[inline]
-    pub fn truncate_up(v: ChildVec) -> UVec {
-        UVec::new(
-            v.x.div_floor(&(ZOOM_SCALE as i32)),
-            v.y.div_floor(&(ZOOM_SCALE as i32)),
-        )
-    }
+#[inline]
+pub fn mod_up(v: ChildVec) -> ChildVec {
+    ChildVec::new(v.x % ZOOM_SCALE as i32, v.y % ZOOM_SCALE as i32)
+}
 
-    #[inline]
-    pub fn mod_up(v: ChildVec) -> ChildVec {
-        ChildVec::new(v.x % ZOOM_SCALE as i32, v.y % ZOOM_SCALE as i32)
-    }
+#[inline]
+pub fn split_up(v: ChildVec) -> (UVec, ChildVec) {
+    (truncate_up(v), mod_up(v))
+}
 
-    #[inline]
-    pub fn split_up(v: ChildVec) -> (UVec, ChildVec) {
-        (truncate_up(v), mod_up(v))
-    }
+#[inline]
+pub fn shift_down(v: UVec) -> ChildVec {
+    ChildVec::new(v.x * (ZOOM_SCALE as i32), v.y * (ZOOM_SCALE as i32))
+}
 
-    #[inline]
-    pub fn shift_down(v: UVec) -> ChildVec {
-        ChildVec::new(v.x * (ZOOM_SCALE as i32), v.y * (ZOOM_SCALE as i32))
-    }
+#[inline]
+pub fn coerce_down(v: UVec) -> ChildVec {
+    ChildVec::new(v.x, v.y)
+}
 
-    #[inline]
-    pub fn coerce_down(v: UVec) -> ChildVec {
-        ChildVec::new(v.x, v.y)
-    }
-
-    pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {
-        if scale < 0 {
-            (int * rug::Integer::from(ZOOM_SCALE).pow(-scale as u32)).to_f32()
-        } else if scale == 0 {
-            int.to_f32()
-        } else {
-            // self.zdelta > 0
-            let denom = rug::Integer::from(ZOOM_SCALE).pow(scale as u32);
-            rug::Rational::from((int, denom)).to_f32()
-        }
+pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {
+    if scale < 0 {
+        (int * rug::Integer::from(ZOOM_SCALE).pow(-scale as u32)).to_f32()
+    } else if scale == 0 {
+        int.to_f32()
+    } else {
+        // self.zdelta > 0
+        let denom = rug::Integer::from(ZOOM_SCALE).pow(scale as u32);
+        rug::Rational::from((int, denom)).to_f32()
     }
 }
 
@@ -83,7 +80,10 @@ pub mod transform {
         let y_scale = target.size.height / source.size.height;
         TypedTransform2D::create_translation(-source.origin.x, -source.origin.y)
             .post_scale(x_scale, y_scale)
-            .post_translate(TypedVector2D::from_untyped(&target.origin.to_untyped().to_vector()))
+            .post_translate(TypedVector2D::from_untyped(&target
+                .origin
+                .to_untyped()
+                .to_vector()))
     }
 
     // TODO: doesn't have to be f32
@@ -106,7 +106,7 @@ pub mod transform {
                 TypedSize2D::new(target.size.width, image_height),
             );
 
-            rect_to_rect(&source, &image)
+            rect_to_rect(source, &image)
         } else {
             // source is thinner than target
             let image_width = target.size.height * source_ratio;
@@ -117,7 +117,7 @@ pub mod transform {
                 TypedSize2D::new(image_width, target.size.height),
             );
 
-            rect_to_rect(&source, &image)
+            rect_to_rect(source, &image)
         }
     }
 }

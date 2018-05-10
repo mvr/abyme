@@ -1,16 +1,13 @@
 extern crate gfx;
 
 use std::collections::HashMap;
-use std::collections::VecDeque;
 use std::ops::{Add, Div};
 
-use gfx::Slice;
 use gfx::IndexBuffer;
-use gfx::shade::ToUniform;
 use gfx::handle::Buffer;
 use gfx::traits::FactoryExt;
 use gfx::pso::PipelineState;
-use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D, TypedVector2D};
+use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D};
 
 use defs::*;
 use math::*;
@@ -63,7 +60,7 @@ impl CameraState {
         );
 
         let chunk = &game_state.player_chunk;
-        let transform = CameraState::target_transform_for(&chunk, &game_state, camera_bounds);
+        let transform = CameraState::target_transform_for(&chunk, game_state, camera_bounds);
 
         CameraState {
             camera_bounds: camera_bounds,
@@ -82,7 +79,7 @@ impl CameraState {
         self.target_shape = game_state.player_chunk.origin_id;
         self.target_transform = CameraState::target_transform_for(
             &game_state.player_chunk,
-            &game_state,
+            game_state,
             self.camera_bounds,
         );
 
@@ -102,7 +99,7 @@ impl LevelTracker {
     pub fn from_chunk(chunk: &TopChunk) -> LevelTracker {
         let mut result = hashmap![];
 
-        for (shape_id, uvec) in chunk.top_shape_ids.iter() {
+        for (shape_id, uvec) in &chunk.top_shape_ids {
             result.insert(*shape_id, Delta::from(*uvec));
         }
 
@@ -115,7 +112,7 @@ impl LevelTracker {
     pub fn go_down(&self, universe: &Universe) -> LevelTracker {
         let mut result: HashMap<ShapeId, Delta> = hashmap![];
 
-        for (shape_id, delta) in self.transforms.iter() {
+        for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
 
             for child in universe.children_of(shape) {
@@ -135,14 +132,14 @@ impl LevelTracker {
     pub fn go_up(&self, universe: &Universe) -> LevelTracker {
         let mut result: HashMap<ShapeId, Delta> = hashmap![];
 
-        for (shape_id, delta) in self.transforms.iter() {
+        for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
 
             for parent in universe.parents_of(shape) {
                 if result.contains_key(&parent.id) {
                     continue;
                 }
-                result.insert(parent.id, delta.revert(&parent.delta_to_child(&shape)));
+                result.insert(parent.id, delta.revert(&parent.delta_to_child(shape)));
             }
         }
 
@@ -201,21 +198,18 @@ impl<R: gfx::Resources> Director<R> {
         let draw_space_to_gl = transform::rect_to_rect(&camera_state.camera_bounds, &ndc_bounds);
 
         Director {
-            shape_pso: shape_pso,
-
-            resolution: resolution,
-
-            camera_state: camera_state,
-            draw_space_to_gl: draw_space_to_gl,
-
-            game_state: game_state,
+            shape_pso,
+            resolution,
+            camera_state,
+            draw_space_to_gl,
+            game_state,
             mesh_store: store,
             poly_mesh_buffer: pmb,
             poly_mesh_index_buffer: pmib,
         }
     }
 
-    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &GameState, factory: &mut F) -> MeshStore {
+    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &GameState, _factory: &mut F) -> MeshStore {
         let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
@@ -285,7 +279,7 @@ impl<R: gfx::Resources> Director<R> {
             .current_transform
             .post_mul(&self.draw_space_to_gl);
 
-        for (shape_id, offset) in level_tracker.transforms.iter() {
+        for (shape_id, offset) in &level_tracker.transforms {
             let shape = &self.game_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
 

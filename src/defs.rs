@@ -1,7 +1,5 @@
 extern crate gfx;
 
-use num::Integer;
-
 use euclid::{TypedPoint2D, TypedVector2D};
 
 ////////////////////////////////////////
