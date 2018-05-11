@@ -23,10 +23,10 @@ use shape::*;
 struct CameraState {
     camera_bounds: TypedRect<f32, DrawSpace>,
 
-    current_shape: ShapeId,
+    current_chunk: TopChunk,
     current_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
-    target_shape: ShapeId,
+    target_chunk: TopChunk,
     target_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
     current_to_target_path: MonotonePath, // This should stay in sync with the above...
@@ -65,10 +65,10 @@ impl CameraState {
         CameraState {
             camera_bounds: camera_bounds,
 
-            current_shape: chunk.origin_id,
+            current_chunk: chunk.clone(),
             current_transform: transform,
 
-            target_shape: chunk.origin_id,
+            target_chunk: chunk.clone(),
             target_transform: transform,
 
             current_to_target_path: MonotonePath::Zero,
@@ -76,7 +76,7 @@ impl CameraState {
     }
 
     pub fn do_zoom(&mut self, game_state: &GameState) -> () {
-        self.target_shape = game_state.player_chunk.origin_id;
+        self.target_chunk = game_state.player_chunk.clone();
         self.target_transform = CameraState::target_transform_for(
             &game_state.player_chunk,
             game_state,
@@ -303,7 +303,7 @@ impl<R: gfx::Resources> Director<R> {
         const DISTANCE_UP: u32 = 3;
         const DISTANCE_DOWN: u32 = 8;
 
-        let mut l = LevelTracker::from_chunk(&self.game_state.player_chunk);
+        let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
 
         for _ in 1..DISTANCE_UP {
             l = l.go_up(&self.game_state.universe);
