@@ -22,6 +22,8 @@ pub struct GLSpace;
 ////////////////////////////////////////
 // Gameplay
 
+// WARNING: if this is changed then places where I have used >>
+// instead of /scale will break
 pub const ZOOM_SCALE: u32 = 2;
 
 ////////////////////////////////////////

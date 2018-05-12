@@ -3,7 +3,8 @@
 use std::collections::BTreeMap;
 use std::collections::VecDeque;
 
-use euclid::TypedRect;
+use rug::Integer;
+use euclid::{TypedRect, TypedVector2D};
 
 use defs::*;
 use math;
@@ -52,6 +53,15 @@ impl Shape {
 
     pub fn delta_to_child(&self, child: &Shape) -> Delta {
         child.delta_from_parent(self)
+    }
+
+    pub fn delta_to_parent(&self, parent: &Shape) -> FractionalDelta {
+        let coords = self.parent_ids[&parent.id].to_vector();
+        FractionalDelta {
+            zdelta: 1,
+            scale: 0,
+            coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y))
+        }
     }
 }
 
@@ -223,7 +233,7 @@ impl Universe {
 
             let needs_update: bool = match result.get(&sid) {
                 None => true,
-                Some(existing) => delta.zdelta < existing.zdelta,
+                Some(existing) => delta.zdelta > existing.zdelta,
             };
 
             if !needs_update {
@@ -232,7 +242,7 @@ impl Universe {
 
             result.insert(sid, delta.clone());
 
-            if delta.zdelta > 0 {
+            if delta.zdelta < 0 {
                 for p in self.parents_of_id(sid) {
                     queue.push_front((p.id, delta.revert(&s.delta_from_parent(p)))); // TODO: check this logic
                 }
@@ -266,7 +276,7 @@ impl Universe {
             .iter()
             .filter_map(
                 |(s, d)| {
-                    if d.zdelta > 0 {
+                    if d.zdelta < 0 {
                         Some((*s, d.clone()))
                     } else {
                         None
@@ -295,6 +305,7 @@ impl Universe {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TopChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
@@ -371,4 +382,16 @@ impl MonotonePath {
             },
         }
     }
+
+    // pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> Delta {
+    //     use MonotonePath::*;
+    //     match *self {
+    //         Zero => Delta::zero(),
+    //         Up { distance } => Up {
+    //             distance: distance + 1,
+    //         },
+    //         Down { ref path } => if path.len() == 1 {
+    //         }
+    //     }
+    // }
 }

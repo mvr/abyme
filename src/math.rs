@@ -1,7 +1,9 @@
 use euclid::*;
 use num::Integer as IntegerTrait;
+use std::ops::{Add, Neg, Sub};
+use rug::Integer;
 use rug;
-use rug::ops::Pow;
+use rug::ops::{DivRounding, Pow};
 
 use defs::*;
 
@@ -36,6 +38,32 @@ pub fn shift_down(v: UVec) -> ChildVec {
 #[inline]
 pub fn coerce_down(v: UVec) -> ChildVec {
     ChildVec::new(v.x, v.y)
+}
+
+#[inline]
+pub fn add_vec<T: Add<T, Output = T>, U>(
+    v: TypedVector2D<T, U>,
+    u: TypedVector2D<T, U>,
+) -> TypedVector2D<T, U> {
+    TypedVector2D::new(v.x + u.x, v.y + u.y)
+}
+
+#[inline]
+pub fn sub_vec<T: Sub<T, Output = T>, U>(
+    v: TypedVector2D<T, U>,
+    u: TypedVector2D<T, U>,
+) -> TypedVector2D<T, U> {
+    TypedVector2D::new(v.x - u.x, v.y - u.y)
+}
+
+#[inline]
+pub fn scale_vec<U>(v: &TypedVector2D<Integer, U>, amount: Integer) -> TypedVector2D<Integer, U> {
+    TypedVector2D::new(amount.clone() * &v.x, amount.clone() * &v.y)
+}
+
+#[inline]
+pub fn div_vec<U>(v: &TypedVector2D<Integer, U>, amount: &Integer) -> TypedVector2D<Integer, U> {
+    TypedVector2D::new(v.x.clone().div_floor(amount), v.y.clone().div_floor(amount))
 }
 
 pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {

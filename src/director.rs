@@ -2,6 +2,7 @@ extern crate gfx;
 
 use std::collections::HashMap;
 use std::ops::{Add, Div};
+use std::time;
 
 use gfx::IndexBuffer;
 use gfx::handle::Buffer;
@@ -84,6 +85,12 @@ impl CameraState {
         );
 
         self.current_to_target_path = self.current_to_target_path.up_target();
+    }
+
+
+
+    pub fn update(&mut self, game_state: &GameState, delta: time::Duration) -> () {
+
     }
 }
 
