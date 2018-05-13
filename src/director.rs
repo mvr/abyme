@@ -14,7 +14,7 @@ use defs::*;
 use math::*;
 use math;
 use mesh_gen::*;
-use delta::Delta;
+use delta::{Delta, FractionalDelta};
 use polyomino::*;
 use shape::*;
 
@@ -117,7 +117,7 @@ impl CameraState {
 #[derive(Clone)]
 struct LevelTracker {
     level: i32,
-    transforms: HashMap<ShapeId, Delta>,
+    transforms: HashMap<ShapeId, FractionalDelta>,
 }
 
 impl LevelTracker {
@@ -125,7 +125,7 @@ impl LevelTracker {
         let mut result = hashmap![];
 
         for (shape_id, uvec) in &chunk.top_shape_ids {
-            result.insert(*shape_id, Delta::from(*uvec));
+            result.insert(*shape_id, FractionalDelta::from(*uvec));
         }
 
         LevelTracker {
@@ -135,7 +135,7 @@ impl LevelTracker {
     }
 
     pub fn go_down(&self, universe: &Universe) -> LevelTracker {
-        let mut result: HashMap<ShapeId, Delta> = hashmap![];
+        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -144,7 +144,7 @@ impl LevelTracker {
                 if result.contains_key(&child.id) {
                     continue;
                 }
-                result.insert(child.id, delta.append(&shape.delta_to_child(child)));
+                result.insert(child.id, delta.append(&FractionalDelta::from(shape.delta_to_child(child))));
             }
         }
 
@@ -155,7 +155,7 @@ impl LevelTracker {
     }
 
     pub fn go_up(&self, universe: &Universe) -> LevelTracker {
-        let mut result: HashMap<ShapeId, Delta> = hashmap![];
+        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -164,7 +164,7 @@ impl LevelTracker {
                 if result.contains_key(&parent.id) {
                     continue;
                 }
-                result.insert(parent.id, delta.revert(&parent.delta_to_child(shape)));
+                result.insert(parent.id, delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))));
             }
         }
 

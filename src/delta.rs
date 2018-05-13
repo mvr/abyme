@@ -211,7 +211,6 @@ impl From<UVec> for Delta {
     }
 }
 
-
 // Do we need a `Dyadic`?
 
 #[derive(Clone, Debug)]
@@ -264,8 +263,12 @@ impl FractionalDelta {
         FractionalDelta {
             zdelta: -self.zdelta,
             scale: -self.scale,
-            coords: TypedVector2D::new(-self.coords.x.clone(), -self.coords.y.clone())
+            coords: TypedVector2D::new(-self.coords.x.clone(), -self.coords.y.clone()),
         }
+    }
+
+    pub fn revert(&self, other: &FractionalDelta) -> FractionalDelta {
+        self.append(&other.invert())
     }
 
     pub fn truncate(&self) -> Delta {
@@ -306,5 +309,25 @@ impl FractionalDelta {
         TypedTransform2D::identity()
             .post_translate(self.to_scaled_fvec())
             .post_scale(scale, scale)
+    }
+}
+
+impl From<UVec> for FractionalDelta {
+    fn from(c: UVec) -> FractionalDelta {
+        FractionalDelta {
+            zdelta: 0,
+            scale: 0,
+            coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
+        }
+    }
+}
+
+impl From<Delta> for FractionalDelta {
+    fn from(c: Delta) -> FractionalDelta {
+        FractionalDelta {
+            zdelta: c.zdelta,
+            scale: c.zdelta,
+            coords: c.coords,
+        }
     }
 }
