@@ -115,7 +115,7 @@ pub mod transform {
     }
 
     // TODO: doesn't have to be f32
-    #[inline]
+    // #[inline]
     pub fn fit_rect_in<U, U2>(
         source: &TypedRect<f32, U>,
         target: &TypedRect<f32, U2>,
@@ -147,6 +147,47 @@ pub mod transform {
 
             rect_to_rect(source, &image)
         }
+    }
+
+    pub fn transform_to_pair<U, U2>(
+        transform: &TypedTransform2D<f32, U, U2>,
+    ) -> (TypedVector2D<f32, U2>, f32) {
+        let offset = transform.transform_point(&TypedPoint2D::new(0.0, 0.0));
+        let scale = transform.transform_point(&TypedPoint2D::new(1.0, 0.0)) - offset;
+
+        (offset.to_vector(), scale.x)
+    }
+
+    pub fn transform_from_pair<U, U2>(
+        offset: TypedVector2D<f32, U2>,
+        scale: f32,
+    ) -> TypedTransform2D<f32, U, U2> {
+        TypedTransform2D::identity()
+            .post_scale(scale, scale)
+            .post_translate(offset)
+    }
+
+    pub fn transform_scale<U, U2>(
+        transform: &TypedTransform2D<f32, U, U2>,
+        amount: f32,
+    ) -> TypedTransform2D<f32, U, U2> {
+        let (offset, scale) = transform_to_pair(transform);
+
+        transform_from_pair(offset * amount, 1.0 + (scale - 1.0) * amount)
+    }
+
+    pub fn lerp<U, U2>(
+        transform1: &TypedTransform2D<f32, U, U2>,
+        transform2: &TypedTransform2D<f32, U, U2>,
+        amount: f32,
+    ) -> TypedTransform2D<f32, U, U2> {
+        let (offset1, scale1) = transform_to_pair(transform1);
+        let (offset2, scale2) = transform_to_pair(transform2);
+
+        transform_from_pair(
+            offset1 + (offset2 - offset1) * amount,
+            scale1 + (scale2 - scale1) * amount,
+        )
     }
 }
 

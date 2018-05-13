@@ -359,6 +359,7 @@ impl GameState {
     }
 }
 
+// This has to represent a monotone path between chunks
 pub enum MonotonePath {
     Zero,
     Up { distance: u32 },
@@ -383,15 +384,23 @@ impl MonotonePath {
         }
     }
 
-    // pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> Delta {
-    //     use MonotonePath::*;
-    //     match *self {
-    //         Zero => Delta::zero(),
-    //         Up { distance } => Up {
-    //             distance: distance + 1,
-    //         },
-    //         Down { ref path } => if path.len() == 1 {
-    //         }
-    //     }
-    // }
+    // Also returns the target shape of the delta
+    pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (FractionalDelta, ShapeId) {
+        use MonotonePath::*;
+        match *self {
+            Zero => (FractionalDelta::zero(), id),
+            Up { distance } => {
+                let mut result = FractionalDelta::zero();
+                let mut current_shape_id = id;
+                for _ in 0..distance {
+                    let next_shape_id = universe.shapes[&id].first_parent_id();
+                    let parent = &universe.shapes[&next_shape_id];
+                    result = result.append(&universe.shapes[&id].delta_to_parent(parent));
+                    current_shape_id = next_shape_id;
+                }
+                (result, current_shape_id)
+            },
+            Down { ref path } => unimplemented!()
+        }
+    }
 }

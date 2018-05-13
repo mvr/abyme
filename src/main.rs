@@ -33,6 +33,8 @@ mod polyomino;
 mod director;
 mod shape;
 
+use std::time::{Instant, Duration};
+
 use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
@@ -60,13 +62,10 @@ pub fn main() {
 
     let mut director: Director<_> = Director::new(&mut factory, resolution);
 
+    let mut last_time = std::time::Instant::now();
+
     let mut running = true;
     while running {
-        encoder.clear(&main_color_view, BLACK);
-        director.draw(&mut encoder, &main_color_view);
-        encoder.flush(&mut device);
-        window.swap_buffers().unwrap();
-
         events_loop.poll_events(|e| {
             use glutin::WindowEvent::*;
             if let glutin::Event::WindowEvent { event, .. } = e {
@@ -100,6 +99,15 @@ pub fn main() {
             }
         });
 
+        encoder.clear(&main_color_view, BLACK);
+        director.draw(&mut encoder, &main_color_view);
+        encoder.flush(&mut device);
+        window.swap_buffers().unwrap();
         device.cleanup();
+
+        let delta = std::time::Instant::now().duration_since(last_time);
+        last_time = std::time::Instant::now();
+
+        director.update(delta);
     }
 }

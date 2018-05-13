@@ -32,6 +32,8 @@ pub const ZOOM_SCALE: u32 = 2;
 pub const POLY_PERIMETER_GRID_THICKNESS: f32 = 0.05;
 pub const POLY_INTERIOR_GRID_THICKNESS: f32 = 0.02;
 
+pub const CAMERA_LERP_SPEED: f32 = 1.0;
+
 ////////////////////////////////////////
 // Graphics
 

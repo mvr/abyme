@@ -87,9 +87,21 @@ impl CameraState {
         self.current_to_target_path = self.current_to_target_path.up_target();
     }
 
+    pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
+        let (delta, target_id) = self.current_to_target_path.as_delta_from(&game_state.universe, self.current_chunk.origin_id);
+        let true_target_transform = delta.to_scale_transform().post_mul(&self.target_transform);
 
+        let time_delta_secs = time_delta.as_secs() as f32 + time_delta.subsec_nanos() as f32 * 1e-9;
 
-    pub fn update(&mut self, game_state: &GameState, delta: time::Duration) -> () {
+        self.current_transform = transform::lerp(&self.current_transform, &true_target_transform, 1.0 - (-time_delta_secs * CAMERA_LERP_SPEED).exp());
+
+        // let change_transform = self.current_transform.pre_mul(&true_target_transform.inverse().unwrap());
+        // self.current_transform = transform::transform_scale(&change_transform, scale_amount).pre_mul(&true_target_transform); //
+
+        self.normalise(game_state);
+    }
+
+    fn normalise(&mut self, game_state: &GameState) -> () {
 
     }
 }
@@ -312,14 +324,14 @@ impl<R: gfx::Resources> Director<R> {
 
         let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
 
-        for _ in 1..DISTANCE_UP {
+        for _ in 0..DISTANCE_UP {
             l = l.go_up(&self.game_state.universe);
             l.filter_nonvisible();
         }
 
         self.draw_level(encoder, target, &l);
 
-        for _ in 1..(DISTANCE_UP + DISTANCE_DOWN) {
+        for _ in 0..(DISTANCE_UP + DISTANCE_DOWN) {
             l = l.go_down(&self.game_state.universe);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);
@@ -329,5 +341,9 @@ impl<R: gfx::Resources> Director<R> {
     pub fn do_zoom(&mut self) -> () {
         self.game_state.do_zoom();
         self.camera_state.do_zoom(&self.game_state);
+    }
+
+    pub fn update(&mut self, time_delta: time::Duration) -> () {
+        self.camera_state.update(&self.game_state, time_delta);
     }
 }

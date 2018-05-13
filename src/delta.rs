@@ -13,7 +13,7 @@ use math;
 // using a persistent data structure and sharing the coords deque as
 // much as possible
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Delta {
     pub zdelta: i16, // How far UP the target is
     pub coords: TypedVector2D<Integer, UniverseSpace>,
@@ -214,6 +214,7 @@ impl From<UVec> for Delta {
 
 // Do we need a `Dyadic`?
 
+#[derive(Clone, Debug)]
 pub struct FractionalDelta {
     pub zdelta: i16,
     pub scale: i16,
@@ -222,6 +223,14 @@ pub struct FractionalDelta {
 }
 
 impl FractionalDelta {
+    pub fn zero() -> FractionalDelta {
+        FractionalDelta {
+            zdelta: 0,
+            scale: 0,
+            coords: TypedVector2D::new(Integer::new(), Integer::new()),
+        }
+    }
+
     pub fn append(&self, other: &FractionalDelta) -> FractionalDelta {
         let zdelta = self.zdelta + other.zdelta;
         let self_rescaled = self.scale + self.zdelta;
@@ -251,6 +260,14 @@ impl FractionalDelta {
         }
     }
 
+    pub fn invert(&self) -> FractionalDelta {
+        FractionalDelta {
+            zdelta: -self.zdelta,
+            scale: -self.scale,
+            coords: TypedVector2D::new(-self.coords.x.clone(), -self.coords.y.clone())
+        }
+    }
+
     pub fn truncate(&self) -> Delta {
         if self.scale == self.zdelta {
             Delta {
@@ -275,5 +292,19 @@ impl FractionalDelta {
                 coords: TypedVector2D::new(truncated_coords_x, truncated_coords_y),
             }
         }
+    }
+
+    pub fn to_scaled_fvec(&self) -> TypedVector2D<f32, UniverseSpace> {
+        TypedVector2D::new(
+            math::scaled_bigint_to_float(&self.coords.x, self.scale),
+            math::scaled_bigint_to_float(&self.coords.y, self.scale),
+        )
+    }
+
+    pub fn to_scale_transform(&self) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
+        let scale = (ZOOM_SCALE as f32).powi(self.zdelta as i32);
+        TypedTransform2D::identity()
+            .post_translate(self.to_scaled_fvec())
+            .post_scale(scale, scale)
     }
 }
