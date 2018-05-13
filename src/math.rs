@@ -1,6 +1,8 @@
-use euclid::*;
-use num::Integer as IntegerTrait;
 use std::ops::{Add, Neg, Sub};
+
+use euclid::*;
+
+use num::Integer as IntegerTrait;
 use rug::Integer;
 use rug;
 use rug::ops::{DivRounding, Pow};
@@ -75,6 +77,17 @@ pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {
         // self.zdelta > 0
         let denom = rug::Integer::from(ZOOM_SCALE).pow(scale as u32);
         rug::Rational::from((int, denom)).to_f32()
+    }
+}
+
+// TODO: Could be more generic
+pub fn smoothstep(x: f32) -> f32 {
+    if x < 0.0 {
+        0.0
+    } else if x > 1.0 {
+        1.0
+    } else {
+        x * x * x * (x * (x * 6.0 - 15.0) + 10.0)
     }
 }
 
@@ -167,14 +180,14 @@ pub mod transform {
             .post_translate(offset)
     }
 
-    pub fn transform_scale<U, U2>(
-        transform: &TypedTransform2D<f32, U, U2>,
-        amount: f32,
-    ) -> TypedTransform2D<f32, U, U2> {
-        let (offset, scale) = transform_to_pair(transform);
+    // pub fn transform_scale<U, U2>(
+    //     transform: &TypedTransform2D<f32, U, U2>,
+    //     amount: f32,
+    // ) -> TypedTransform2D<f32, U, U2> {
+    //     let (offset, scale) = transform_to_pair(transform);
 
-        transform_from_pair(offset * amount, 1.0 + (scale - 1.0) * amount)
-    }
+    //     transform_from_pair(offset * amount, 1.0 + (scale - 1.0) * amount)
+    // }
 
     pub fn lerp<U, U2>(
         transform1: &TypedTransform2D<f32, U, U2>,
@@ -203,5 +216,14 @@ impl<U> To2dGlTransform for TypedTransform2D<f32, U, GLSpace> {
         [[m11, m12, 0.0],
          [m21, m22, 0.0],
          [m31, m32, 1.0]]
+    }
+}
+
+pub mod time {
+    use std::time;
+
+    // TODO: f64?
+    pub fn duration_to_secs(time_delta: time::Duration) -> f32 {
+        time_delta.as_secs() as f32 + time_delta.subsec_nanos() as f32 * 1e-9
     }
 }

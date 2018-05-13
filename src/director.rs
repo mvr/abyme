@@ -8,10 +8,11 @@ use gfx::IndexBuffer;
 use gfx::handle::Buffer;
 use gfx::traits::FactoryExt;
 use gfx::pso::PipelineState;
-use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D};
+use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D, TypedVector2D};
 
 use defs::*;
 use math::*;
+use math;
 use mesh_gen::*;
 use delta::Delta;
 use polyomino::*;
@@ -88,21 +89,26 @@ impl CameraState {
     }
 
     pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
-        let (delta, target_id) = self.current_to_target_path.as_delta_from(&game_state.universe, self.current_chunk.origin_id);
-        let true_target_transform = delta.to_scale_transform().post_mul(&self.target_transform);
+        // MUST TODO!! Take into account target_id
 
-        let time_delta_secs = time_delta.as_secs() as f32 + time_delta.subsec_nanos() as f32 * 1e-9;
+        let (delta, target_id) = self.current_to_target_path
+            .as_delta_from(&game_state.universe, self.current_chunk.origin_id);
+        let true_target_transform = delta
+            .invert()
+            .to_scale_transform()
+            .post_mul(&self.target_transform);
 
-        self.current_transform = transform::lerp(&self.current_transform, &true_target_transform, 1.0 - (-time_delta_secs * CAMERA_LERP_SPEED).exp());
-
-        // let change_transform = self.current_transform.pre_mul(&true_target_transform.inverse().unwrap());
-        // self.current_transform = transform::transform_scale(&change_transform, scale_amount).pre_mul(&true_target_transform); //
+        self.current_transform = transform::lerp(
+            &self.current_transform,
+            &true_target_transform,
+            1.0 - (-math::time::duration_to_secs(time_delta) * CAMERA_LERP_SPEED).exp(),
+        );
 
         self.normalise(game_state);
     }
 
     fn normalise(&mut self, game_state: &GameState) -> () {
-
+        // MUST TODO!!
     }
 }
 
@@ -168,7 +174,51 @@ impl LevelTracker {
         }
     }
 
-    pub fn filter_nonvisible(&mut self) -> () {}
+    pub fn filter_nonvisible(&mut self) -> () {
+        // TODO: do this
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    pub fn to_vect<F, U>(self) -> TypedVector2D<F, U>
+    where
+        F: From<i32>,
+    {
+        use Direction::*;
+        match self {
+            Up => TypedVector2D::new(F::from(0), F::from(1)),
+            Down => TypedVector2D::new(F::from(0), F::from(-1)),
+            Left => TypedVector2D::new(F::from(-1), F::from(0)),
+            Right => TypedVector2D::new(F::from(1), F::from(0)),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum MoveState {
+    None,
+    Moving { chunk: TopChunk, direction: Direction, progress: f32 },
+}
+
+impl MoveState {
+    pub fn update(&mut self, time_delta: time::Duration) -> () {
+        if let MoveState::Moving { ref mut progress, .. } = self {
+            let newprogress = *progress + math::time::duration_to_secs(time_delta);
+            if newprogress >= 0.0 {
+                *self = MoveState::None
+            } else {
+                *progress = newprogress
+            }
+        }
+    }
 }
 
 pub struct Director<R: gfx::Resources> {
@@ -183,6 +233,7 @@ pub struct Director<R: gfx::Resources> {
     shape_pso: PipelineState<R, shape_pipe::Meta>,
 
     game_state: GameState,
+    move_state: MoveState,
 }
 
 impl<R: gfx::Resources> Director<R> {
@@ -221,10 +272,13 @@ impl<R: gfx::Resources> Director<R> {
             resolution,
             camera_state,
             draw_space_to_gl,
-            game_state,
+
             mesh_store: store,
             poly_mesh_buffer: pmb,
             poly_mesh_index_buffer: pmib,
+
+            game_state,
+            move_state: MoveState::None,
         }
     }
 
@@ -345,5 +399,6 @@ impl<R: gfx::Resources> Director<R> {
 
     pub fn update(&mut self, time_delta: time::Duration) -> () {
         self.camera_state.update(&self.game_state, time_delta);
+        self.move_state.update(time_delta);
     }
 }
