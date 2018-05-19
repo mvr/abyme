@@ -128,37 +128,45 @@ impl Universe {
             .map(|(id, pos)| (&self.shapes[id], *pos))
             .collect()
     }
+
+    // canPushChunk :: Universe -> Direction -> Chunk -> Bool
+    //     canPushChunk u d c = not (oob || any (isInhabited u) fr)
+    // where (fr, oob) = fringe u d c
+
+    pub fn can_shove(&self, chunk: TopChunk, d: Direction) -> bool {
+        unimplemented!();
+    }
+
+    pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {}
 }
 
-pub struct Square<'a> {
-    pub universe: &'a Universe,
-    pub shape: &'a Shape,
+pub struct Square {
+    pub shape_id: ShapeId,
     pub position: UPoint,
 }
 
-impl<'a> Square<'a> {
-    fn location_on(&self, parent_id: ShapeId) -> Option<Location> {
-        let pos_on = self.shape.parent_ids.get(&parent_id)?;
-        let new_shape = &self.universe.shapes[&parent_id];
+impl Square {
+    fn location_on(&self, universe: &Universe, parent_id: ShapeId) -> Option<Location> {
+        let pos_on = universe.shapes[&self.shape_id].parent_ids.get(&parent_id)?;
+        let new_shape = &universe.shapes[&parent_id];
         let offset = self.position.to_vector() + math::coerce_up(pos_on.to_vector());
         let (new_pos, new_subp) = math::split_up(math::coerce_down(offset));
 
         Some(Location {
             square: Square {
-                universe: self.universe,
-                shape: new_shape,
+                shape_id: parent_id,
                 position: new_pos.to_point(),
             },
             subposition: new_subp,
         })
     }
 
-    fn location(&self) -> Location {
+    fn location(&self, universe: &Universe) -> Location {
         // TODO: This sort of sanity checking is slower, probably doesn't matter
-        let mut locations: Vec<Location> = self.shape
+        let mut locations: Vec<Location> = universe.shapes[&self.shape_id]
             .parent_ids
             .keys()
-            .filter_map(|s| self.location_on(*s))
+            .filter_map(|s| self.location_on(universe, *s))
             .collect();
 
         match locations.len() {
@@ -169,18 +177,18 @@ impl<'a> Square<'a> {
     }
 }
 
-pub struct Location<'a> {
-    pub square: Square<'a>,
+pub struct Location {
+    pub square: Square,
     pub subposition: ChildVec,
 }
 
-impl<'a> Location<'a> {
-    pub fn inhabitant(&self) -> Option<Square> {
+impl Location {
+    pub fn inhabitant(&self, universe: &Universe) -> Option<Square> {
         let c = self.to_coordinate();
+        let shape = &universe.shapes[&self.square.shape_id];
 
-        let mut inhabitants: Vec<Square> = self.square
-            .universe
-            .parents_with_position_of(self.square.shape)
+        let mut inhabitants: Vec<Square> = universe
+            .parents_with_position_of(shape)
             .into_iter()
             .filter(|&(s, pos)| {
                 let cpos = math::coerce_up(c - pos.to_vector());
@@ -189,8 +197,7 @@ impl<'a> Location<'a> {
             .map(|(s, pos)| {
                 let cpos = math::coerce_up(c - pos.to_vector());
                 Square {
-                    universe: self.square.universe,
-                    shape: s,
+                    shape_id: s.id,
                     position: cpos.to_point(),
                 }
             })
@@ -313,7 +320,8 @@ pub struct TopChunk {
 
 impl TopChunk {
     pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
-        let poly_bounds: Vec<TypedRect<i32, UniverseSpace>> = self.top_shape_ids
+        let poly_bounds: Vec<TypedRect<i32, UniverseSpace>> = self
+            .top_shape_ids
             .keys()
             .map(|shape_id| universe.shapes[shape_id].polyomino.bounding_box())
             .collect();
