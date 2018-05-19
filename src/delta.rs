@@ -312,6 +312,19 @@ impl FractionalDelta {
     }
 }
 
+impl From<TypedVector2D<f32, UniverseSpace>> for FractionalDelta {
+    fn from(c: TypedVector2D<f32, UniverseSpace>) -> FractionalDelta {
+        let int_x = (c.x / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
+        let int_y = (c.y / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
+
+        FractionalDelta {
+            zdelta: 0,
+            scale: FRACTIONAL_DELTA_SCALE as i16,
+            coords: TypedVector2D::new(Integer::from(int_x), Integer::from(int_y)),
+        }
+    }
+}
+
 impl From<UVec> for FractionalDelta {
     fn from(c: UVec) -> FractionalDelta {
         FractionalDelta {

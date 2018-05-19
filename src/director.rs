@@ -144,7 +144,10 @@ impl LevelTracker {
                 if result.contains_key(&child.id) {
                     continue;
                 }
-                result.insert(child.id, delta.append(&FractionalDelta::from(shape.delta_to_child(child))));
+                result.insert(
+                    child.id,
+                    delta.append(&FractionalDelta::from(shape.delta_to_child(child))),
+                );
             }
         }
 
@@ -164,7 +167,10 @@ impl LevelTracker {
                 if result.contains_key(&parent.id) {
                     continue;
                 }
-                result.insert(parent.id, delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))));
+                result.insert(
+                    parent.id,
+                    delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))),
+                );
             }
         }
 
