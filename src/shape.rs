@@ -137,9 +137,12 @@ impl Universe {
         unimplemented!();
     }
 
-    pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {}
+    pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {
+        unimplemented!();
+    }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Square {
     pub shape_id: ShapeId,
     pub position: UPoint,
@@ -177,6 +180,7 @@ impl Square {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Location {
     pub square: Square,
     pub subposition: ChildVec,
@@ -213,6 +217,94 @@ impl Location {
 
     fn to_coordinate(&self) -> ChildVec {
         math::shift_down(self.square.position.to_vector()) + self.subposition
+    }
+
+    pub fn all_subpositions() -> Vec<ChildVec> {
+        (0..ZOOM_SCALE)
+            .cartesian_product(0..ZOOM_SCALE)
+            .map(|(x, y)| ChildVec::new(x as i32, y as i32))
+            .collect()
+    }
+
+    fn wrap_subposition(v: ChildVec) -> ChildVec {
+        ChildVec::new(v.x % ZOOM_SCALE as i32, v.y % ZOOM_SCALE as i32)
+    }
+}
+
+impl Square {
+    fn nudge_easy(&self, u: &Universe, d: Direction) -> Option<Square> {
+        let newpos = self.position + d.to_vect();
+        if u.shapes[&self.shape_id].polyomino.squares.contains(&newpos) {
+            Some(Square {
+                shape_id: self.shape_id,
+                position: newpos,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn nudge_recurse(
+        &self,
+        universe: &Universe,
+        d: Direction,
+        mut seen: HashSet<(Location, Direction)>,
+    ) -> Option<Square> {
+        if let Some(easy) = self.nudge_easy(universe, d) {
+            return Some(easy);
+        }
+
+        self.location(universe)
+            .nudge_recurse(universe, d, seen)?
+            .inhabitant(universe)
+    }
+
+    pub fn nudge(&self, universe: &Universe, d: Direction) -> Option<Square> {
+        self.nudge_recurse(universe, d, HashSet::new())
+    }
+}
+
+impl Location {
+    fn nudge_easy(&self, d: Direction) -> Option<Location> {
+        let newpos = self.subposition + d.to_vect();
+        if newpos.x >= 0
+            && newpos.x < ZOOM_SCALE as i32
+            && newpos.y >= 0
+            && newpos.y < ZOOM_SCALE as i32
+        {
+            Some(Location {
+                square: self.square.clone(),
+                subposition: newpos,
+            })
+        } else {
+            None
+        }
+    }
+
+    fn nudge_recurse(
+        &self,
+        universe: &Universe,
+        d: Direction,
+        mut seen: HashSet<(Location, Direction)>,
+    ) -> Option<Location> {
+        if seen.contains(&(*self, d)) {
+            return None;
+        }
+        if let Some(easy) = self.nudge_easy(d) {
+            return Some(easy);
+        }
+
+        seen.insert((self.clone(), d));
+        let newsquare = self.square.nudge_recurse(universe, d, seen)?;
+        let newsubpos = self.subposition + d.to_vect();
+        Some(Location {
+            square: newsquare,
+            subposition: newsubpos,
+        })
+    }
+
+    pub fn nudge(&self, universe: &Universe, d: Direction) -> Option<Location> {
+        self.nudge_recurse(universe, d, HashSet::new())
     }
 }
 
@@ -365,6 +457,10 @@ impl GameState {
     pub fn do_zoom(&mut self) -> () {
         self.player_chunk = self.universe.parent_of(&self.player_chunk);
     }
+
+    pub fn do_move(&mut self, d: Direction) -> () {
+        unimplemented!();
+    }
 }
 
 // This has to represent a monotone path between chunks
@@ -407,8 +503,8 @@ impl MonotonePath {
                     current_shape_id = next_shape_id;
                 }
                 (result, current_shape_id)
-            },
-            Down { ref path } => unimplemented!()
+            }
+            Down { ref path } => unimplemented!(),
         }
     }
 }
