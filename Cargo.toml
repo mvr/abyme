@@ -11,6 +11,9 @@ name = "abyme"
 path = "src/main.rs"
 
 [dependencies]
+maplit = "*"
+itertools = "*"
+
 num = "*"
 rug = "*"
 
@@ -21,5 +24,3 @@ glutin = "*"
 
 euclid = ">=0.17.2"
 lyon = ">=0.10"
-
-maplit = "*"
