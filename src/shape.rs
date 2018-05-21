@@ -1,14 +1,15 @@
 // extern crate euclid;
 
-use std::collections::BTreeMap;
-use std::collections::VecDeque;
+use itertools::Itertools;
+use std::collections::{BTreeMap, HashSet, VecDeque};
 
-use rug::Integer;
 use euclid::{TypedRect, TypedVector2D};
+use rug::Integer;
 
 use defs::*;
-use math;
 use delta::*;
+use math;
+use math::Direction;
 use polyomino::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -60,7 +61,7 @@ impl Shape {
         FractionalDelta {
             zdelta: 1,
             scale: 0,
-            coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y))
+            coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y)),
         }
     }
 }
@@ -72,6 +73,61 @@ impl PartialEq for Shape {
 }
 
 impl Eq for Shape {}
+
+trait HasSquares {
+    // TODO: Would be nice if this could be impl Iterator
+    #[inline]
+    fn constituent_squares<'a>(&self, universe: &Universe) -> Box<Iterator<Item = Square> + 'a>;
+
+    fn locations<'a>(&self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
+        Box::new(
+            self.constituent_squares(universe)
+                .map(move |s| s.location(universe)),
+        )
+    }
+
+    #[inline]
+    fn constituent_shapes(&self, universe: &Universe) -> Box<Iterator<Item = ShapeId>> {
+        Box::new(
+            self.constituent_squares(universe)
+                .map(|s| s.shape_id)
+                .unique(),
+        )
+    }
+
+    #[inline]
+    fn constituent_locations<'a>(
+        &self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = Location> + 'a> {
+        Box::new(
+            self.constituent_squares(universe)
+                .cartesian_product(Location::all_subpositions())
+                .map(|(s, subp)| Location {
+                    square: s,
+                    subposition: subp,
+                }),
+        )
+    }
+
+    #[inline]
+    fn child_shapes<'a>(&self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
+        Box::new(
+            self.constituent_locations(universe)
+                .filter_map(move |l| l.inhabitant(universe))
+                .map(|s| s.shape_id)
+                .unique(),
+        )
+    }
+
+    #[inline]
+    fn unblocked(&self, universe: &Universe, d: Direction) -> bool {
+        self.locations(universe).map(|l| l.nudge(universe, d)).all(|o| o.is_some()) // This is doing a little more calculation than is necessary...
+    }
+    //     fringe u d a = (filter (not . inhabits u a) justs, length allMaybes /= length justs)
+    // where allMaybes = fmap (nudgeLocation u d) $ locations u a
+    //     justs = catMaybes allMaybes
+}
 
 pub struct Universe {
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
