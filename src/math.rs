@@ -227,3 +227,26 @@ pub mod time {
         time_delta.as_secs() as f32 + time_delta.subsec_nanos() as f32 * 1e-9
     }
 }
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    pub fn to_vect<F, U>(self) -> TypedVector2D<F, U>
+    where
+        F: From<i32>,
+    {
+        use Direction::*;
+        match self {
+            Up => TypedVector2D::new(F::from(0), F::from(1)),
+            Down => TypedVector2D::new(F::from(0), F::from(-1)),
+            Left => TypedVector2D::new(F::from(-1), F::from(0)),
+            Right => TypedVector2D::new(F::from(1), F::from(0)),
+        }
+    }
+}

@@ -185,44 +185,35 @@ impl LevelTracker {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-impl Direction {
-    pub fn to_vect<F, U>(self) -> TypedVector2D<F, U>
-    where
-        F: From<i32>,
-    {
-        use Direction::*;
-        match self {
-            Up => TypedVector2D::new(F::from(0), F::from(1)),
-            Down => TypedVector2D::new(F::from(0), F::from(-1)),
-            Left => TypedVector2D::new(F::from(-1), F::from(0)),
-            Right => TypedVector2D::new(F::from(1), F::from(0)),
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum MoveState {
     None,
-    Moving { chunk: TopChunk, direction: Direction, progress: f32 },
+    Moving {
+        chunk: TopChunk,
+        direction: Direction,
+        progress: f32,
+    },
 }
 
 impl MoveState {
     pub fn update(&mut self, time_delta: time::Duration) -> () {
-        if let MoveState::Moving { ref mut progress, .. } = self {
+        if let MoveState::Moving {
+            ref mut progress, ..
+        } = self
+        {
             let newprogress = *progress + math::time::duration_to_secs(time_delta);
             if newprogress >= 0.0 {
                 *self = MoveState::None
             } else {
                 *progress = newprogress
             }
+        }
+    }
+
+    pub fn move_complete(&self) -> bool {
+        match *self {
+            MoveState::None => false,
+            MoveState::Moving { progress, .. } => progress > 1.0,
         }
     }
 }
@@ -403,8 +394,22 @@ impl<R: gfx::Resources> Director<R> {
         self.camera_state.do_zoom(&self.game_state);
     }
 
+    pub fn try_move(&mut self, d: Direction) -> () {
+        unimplemented!();
+    }
+
     pub fn update(&mut self, time_delta: time::Duration) -> () {
         self.camera_state.update(&self.game_state, time_delta);
         self.move_state.update(time_delta);
+
+        if self.move_state.move_complete() {
+            match self.move_state {
+                MoveState::None => {}
+                MoveState::Moving{ direction, .. } => {
+                    self.game_state.do_move(direction);
+                }
+            }
+            self.move_state = MoveState::None;
+        }
     }
 }

@@ -1,6 +1,3 @@
-#![feature(match_default_bindings)]
-#![feature(universal_impl_trait)]
-#![feature(conservative_impl_trait)]
 #![feature(slice_patterns)]
 #![feature(custom_attribute)]
 #![feature(nll)]
@@ -15,11 +12,10 @@ extern crate gfx_window_glutin;
 extern crate glutin;
 extern crate lyon;
 
-// Rust's import system feels so janky, why do I have to import this
-// here for it to be available elsewhere?
 extern crate euclid;
 #[macro_use]
 extern crate maplit;
+extern crate itertools;
 
 mod defs;
 mod math;
@@ -29,11 +25,11 @@ mod mesh_gen;
 
 mod delta;
 
-mod polyomino;
 mod director;
+mod polyomino;
 mod shape;
 
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
@@ -42,8 +38,8 @@ use glutin::GlContext;
 use euclid::TypedSize2D;
 
 use defs::*;
-use math::*;
 use director::*;
+use math::*;
 use shape::*;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
@@ -70,15 +66,10 @@ pub fn main() {
             use glutin::WindowEvent::*;
             if let glutin::Event::WindowEvent { event, .. } = e {
                 match event {
-                    KeyboardInput {
-                        input:
-                            glutin::KeyboardInput {
-                                virtual_keycode: Some(glutin::VirtualKeyCode::Escape),
-                                ..
-                            },
-                        ..
+                    CloseRequested => {
+                        running = false;
                     }
-                    | CloseRequested => running = false,
+
                     Resized(w, h) => {
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
                         director.resolution = TypedSize2D::new(w, h);
@@ -88,13 +79,24 @@ pub fn main() {
                     KeyboardInput {
                         input:
                             glutin::KeyboardInput {
-                                virtual_keycode: Some(glutin::VirtualKeyCode::Space),
+                                virtual_keycode: Some(key),
                                 state: glutin::ElementState::Pressed,
                                 ..
                             },
                         ..
-                    } => director.do_zoom(),
-                    _ => (),
+                    } => {
+                        use glutin::VirtualKeyCode::*;
+                        match key {
+                            Escape => running = false,
+                            Space => director.do_zoom(),
+                            Up => director.try_move(Direction::Up),
+                            Down => director.try_move(Direction::Down),
+                            Left => director.try_move(Direction::Left),
+                            Right => director.try_move(Direction::Right),
+                            _ => {}
+                        }
+                    }
+                    _ => {}
                 }
             }
         });
