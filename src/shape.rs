@@ -77,9 +77,9 @@ impl Eq for Shape {}
 trait HasSquares {
     // TODO: Would be nice if this could be impl Iterator
     #[inline]
-    fn constituent_squares<'a>(&self, universe: &Universe) -> Box<Iterator<Item = Square> + 'a>;
+    fn constituent_squares<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a>;
 
-    fn locations<'a>(&self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
+    fn locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .map(move |s| s.location(universe)),
@@ -87,7 +87,7 @@ trait HasSquares {
     }
 
     #[inline]
-    fn constituent_shapes(&self, universe: &Universe) -> Box<Iterator<Item = ShapeId>> {
+    fn constituent_shapes<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .map(|s| s.shape_id)
@@ -97,7 +97,7 @@ trait HasSquares {
 
     #[inline]
     fn constituent_locations<'a>(
-        &self,
+        &'a self,
         universe: &'a Universe,
     ) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
@@ -111,7 +111,7 @@ trait HasSquares {
     }
 
     #[inline]
-    fn child_shapes<'a>(&self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
+    fn child_shapes<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
         Box::new(
             self.constituent_locations(universe)
                 .filter_map(move |l| l.inhabitant(universe))
@@ -122,7 +122,9 @@ trait HasSquares {
 
     #[inline]
     fn unblocked(&self, universe: &Universe, d: Direction) -> bool {
-        self.locations(universe).map(|l| l.nudge(universe, d)).all(|o| o.is_some()) // This is doing a little more calculation than is necessary...
+        self.locations(universe)
+            .map(|l| l.nudge(universe, d))
+            .all(|o| o.is_some()) // This is doing a little more calculation than is necessary...
     }
     //     fringe u d a = (filter (not . inhabits u a) justs, length allMaybes /= length justs)
     // where allMaybes = fmap (nudgeLocation u d) $ locations u a
