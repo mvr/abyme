@@ -131,6 +131,17 @@ trait HasSquares {
     //     justs = catMaybes allMaybes
 }
 
+impl HasSquares for Shape {
+    fn constituent_squares<'a>(&'a self, _universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a> {
+        Box::new(self.polyomino.squares.iter().map(move |p| Square {
+            shape_id: self.id,
+            position: *p,
+        }))
+    }
+
+    // TODO: specialise some other methods? only if worth it
+}
+
 pub struct Universe {
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
 }
@@ -209,7 +220,6 @@ pub struct Square {
 impl Square {
     fn location_on(&self, universe: &Universe, parent_id: ShapeId) -> Option<Location> {
         let pos_on = universe.shapes[&self.shape_id].parent_ids.get(&parent_id)?;
-        let new_shape = &universe.shapes[&parent_id];
         let offset = self.position.to_vector() + math::coerce_up(pos_on.to_vector());
         let (new_pos, new_subp) = math::split_up(math::coerce_down(offset));
 
@@ -306,7 +316,7 @@ impl Square {
         &self,
         universe: &Universe,
         d: Direction,
-        mut seen: HashSet<(Location, Direction)>,
+        seen: HashSet<(Location, Direction)>,
     ) -> Option<Square> {
         if let Some(easy) = self.nudge_easy(universe, d) {
             return Some(easy);
@@ -472,10 +482,26 @@ impl TopChunk {
     pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
         let poly_bounds: Vec<TypedRect<i32, UniverseSpace>> = self
             .top_shape_ids
-            .keys()
-            .map(|shape_id| universe.shapes[shape_id].polyomino.bounding_box())
+            .iter()
+            .map(|(shape_id, offset)| {
+                universe.shapes[shape_id]
+                    .polyomino
+                    .bounding_box()
+                    .translate(offset)
+            })
             .collect();
         poly_bounds.iter().fold(poly_bounds[0], |a, b| a.union(b))
+    }
+}
+
+impl HasSquares for TopChunk {
+    fn constituent_squares<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a> {
+        Box::new(
+            self.top_shape_ids
+                .keys()
+                .map(move |id| &universe.shapes[id])
+                .flat_map(move |s| s.constituent_squares(universe)),
+        )
     }
 }
 
