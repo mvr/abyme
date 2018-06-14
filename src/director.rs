@@ -394,8 +394,25 @@ impl<R: gfx::Resources> Director<R> {
         self.camera_state.do_zoom(&self.game_state);
     }
 
-    pub fn try_move(&mut self, d: Direction) -> () {
-        unimplemented!();
+    pub fn try_start_move(&mut self, d: Direction) -> () {
+        if let MoveState::Moving { .. } = self.move_state {
+            return;
+        }
+
+        if self.game_state.can_move(d) {
+            self.move_state = MoveState::Moving {
+                chunk: self.game_state.player_chunk.clone(),
+                direction: d,
+                progress: 0.0,
+            }
+        } else {
+            // TODO: visual indicator?
+        }
+    }
+
+    pub fn do_move(&mut self, d: Direction) -> () {
+        self.game_state.do_move(d);
+        self.camera_state.recenter(&self.game_state.player_chunk);
     }
 
     pub fn update(&mut self, time_delta: time::Duration) -> () {
@@ -405,9 +422,7 @@ impl<R: gfx::Resources> Director<R> {
         if self.move_state.move_complete() {
             match self.move_state {
                 MoveState::None => {}
-                MoveState::Moving{ direction, .. } => {
-                    self.game_state.do_move(direction);
-                }
+                MoveState::Moving { direction, .. } => self.do_move(direction),
             }
             self.move_state = MoveState::None;
         }

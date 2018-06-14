@@ -89,10 +89,10 @@ pub fn main() {
                         match key {
                             Escape => running = false,
                             Space => director.do_zoom(),
-                            Up => director.try_move(Direction::Up),
-                            Down => director.try_move(Direction::Down),
-                            Left => director.try_move(Direction::Left),
-                            Right => director.try_move(Direction::Right),
+                            Up => director.try_start_move(Direction::Up),
+                            Down => director.try_start_move(Direction::Down),
+                            Left => director.try_start_move(Direction::Left),
+                            Right => director.try_start_move(Direction::Right),
                             _ => {}
                         }
                     }
