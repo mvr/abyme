@@ -77,7 +77,10 @@ impl Eq for Shape {}
 trait HasSquares {
     // TODO: Would be nice if this could be impl Iterator
     #[inline]
-    fn constituent_squares<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a>;
+    fn constituent_squares<'a>(
+        &'a self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = Square> + 'a>;
 
     fn locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
@@ -87,7 +90,10 @@ trait HasSquares {
     }
 
     #[inline]
-    fn constituent_shapes<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
+    fn constituent_shapes<'a>(
+        &'a self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = ShapeId> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .map(|s| s.shape_id)
@@ -132,7 +138,10 @@ trait HasSquares {
 }
 
 impl HasSquares for Shape {
-    fn constituent_squares<'a>(&'a self, _universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a> {
+    fn constituent_squares<'a>(
+        &'a self,
+        _universe: &'a Universe,
+    ) -> Box<Iterator<Item = Square> + 'a> {
         Box::new(self.polyomino.squares.iter().map(move |p| Square {
             shape_id: self.id,
             position: *p,
@@ -202,9 +211,9 @@ impl Universe {
     //     canPushChunk u d c = not (oob || any (isInhabited u) fr)
     // where (fr, oob) = fringe u d c
 
-    pub fn can_shove(&self, chunk: TopChunk, d: Direction) -> bool {
-        unimplemented!();
-    }
+    // pub fn can_shove(&self, chunk: TopChunk, d: Direction) -> bool {
+    //     unimplemented!();
+    // }
 
     pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {
         unimplemented!();
@@ -495,7 +504,10 @@ impl TopChunk {
 }
 
 impl HasSquares for TopChunk {
-    fn constituent_squares<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Square> + 'a> {
+    fn constituent_squares<'a>(
+        &'a self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = Square> + 'a> {
         Box::new(
             self.top_shape_ids
                 .keys()

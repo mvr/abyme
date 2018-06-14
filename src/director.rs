@@ -4,19 +4,22 @@ use std::collections::HashMap;
 use std::ops::{Add, Div};
 use std::time;
 
-use gfx::IndexBuffer;
-use gfx::handle::Buffer;
-use gfx::traits::FactoryExt;
-use gfx::pso::PipelineState;
 use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D, TypedVector2D};
+use gfx::handle::Buffer;
+use gfx::pso::PipelineState;
+use gfx::traits::FactoryExt;
+use gfx::IndexBuffer;
 
 use defs::*;
-use math::*;
-use math;
-use mesh_gen::*;
 use delta::{Delta, FractionalDelta};
+use math;
+use math::*;
+use mesh_gen::*;
 use polyomino::*;
 use shape::*;
+
+// TODO: Do I need a custom AATransform that manages precision
+// somehow?
 
 // TODO: think about how movement will work: this is tricky. When a
 // chunk is broken in to pieces, we need to make sure our
@@ -88,19 +91,23 @@ impl CameraState {
         self.current_to_target_path = self.current_to_target_path.up_target();
     }
 
-    pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
-        // MUST TODO!! Take into account target_id
-
-        let (delta, target_id) = self.current_to_target_path
+    fn true_target_transform(
+        &self,
+        game_state: &GameState,
+    ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
+        let (delta, target_id) = self
+            .current_to_target_path
             .as_delta_from(&game_state.universe, self.current_chunk.origin_id);
-        let true_target_transform = delta
+        delta
             .invert()
             .to_scale_transform()
-            .post_mul(&self.target_transform);
+            .post_mul(&self.target_transform)
+    }
 
+    pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
         self.current_transform = transform::lerp(
             &self.current_transform,
-            &true_target_transform,
+            &self.true_target_transform(game_state),
             1.0 - (-math::time::duration_to_secs(time_delta) * CAMERA_LERP_SPEED).exp(),
         );
 
@@ -108,7 +115,25 @@ impl CameraState {
     }
 
     fn normalise(&mut self, game_state: &GameState) -> () {
-        // MUST TODO!!
+        let scale = transform::scale(&self.true_target_transform(game_state));
+
+        if scale > CAMERA_UPPER_NORMALISE_TRIGGER || scale < CAMERA_LOWER_NORMALISE_TRIGGER {
+            let adjustment = self.current_to_target_path.take(1).as_delta_from(&game_state.universe, self.current_chunk.origin_id).0.to_scale_transform();
+
+            self.current_transform = self.current_transform.pre_mul(&adjustment.inverse().unwrap());
+            self.current_to_target_path = self.current_to_target_path.drop(1);
+        }
+    }
+
+
+    pub fn set_origin_shape(&mut self, new_origin: &ShapeId) -> () {
+        unimplemented!();
+    }
+
+    // This should/could rely on the focus of the camera not being the
+    // player, but the parent of the player
+    pub fn recenter(&mut self, new_target: &TopChunk) -> () {
+        unimplemented!();
     }
 }
 
@@ -345,7 +370,8 @@ impl<R: gfx::Resources> Director<R> {
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
         level_tracker: &LevelTracker,
     ) -> () {
-        let transform_to_gl = self.camera_state
+        let transform_to_gl = self
+            .camera_state
             .current_transform
             .post_mul(&self.draw_space_to_gl);
 
