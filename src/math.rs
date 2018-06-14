@@ -3,9 +3,9 @@ use std::ops::{Add, Neg, Sub};
 use euclid::*;
 
 use num::Integer as IntegerTrait;
-use rug::Integer;
 use rug;
 use rug::ops::{DivRounding, Pow};
+use rug::Integer;
 
 use defs::*;
 
@@ -99,8 +99,8 @@ pub fn smoothstep(x: f32) -> f32 {
 // }
 
 pub mod transform {
-    use euclid::*;
     use defs::*;
+    use euclid::*;
 
     #[inline]
     pub fn screen_to_gl(
@@ -169,6 +169,10 @@ pub mod transform {
         let scale = transform.transform_point(&TypedPoint2D::new(1.0, 0.0)) - offset;
 
         (offset.to_vector(), scale.x)
+    }
+
+    pub fn scale<U, U2>(t: &TypedTransform2D<f32, U, U2>) -> f32 {
+        transform_to_pair(t).1
     }
 
     pub fn transform_from_pair<U, U2>(
