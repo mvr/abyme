@@ -542,6 +542,10 @@ impl GameState {
         self.player_chunk = self.universe.parent_of(&self.player_chunk);
     }
 
+    pub fn can_move(&self, d: Direction) -> bool {
+        self.player_chunk.unblocked(&self.universe, d)
+    }
+
     pub fn do_move(&mut self, d: Direction) -> () {
         unimplemented!();
     }
@@ -555,6 +559,73 @@ pub enum MonotonePath {
 }
 
 impl MonotonePath {
+    pub fn take(&self, n: u32) -> MonotonePath {
+        use MonotonePath::*;
+
+        if n == 0 { return Zero; }
+
+        match *self {
+            Zero => {
+                assert!(n == 0);
+                Zero
+            }
+            Up { distance } => {
+                assert!(n <= distance);
+                Up { distance: n }
+            }
+            Down { ref path } => {
+                assert!(n <= path.len() as u32);
+                Down {
+                    path: path[0..n as usize].to_vec()
+                }
+            }
+        }
+    }
+
+    // pub fn last(&self, n: u32) -> MonotonePath {
+    //     use MonotonePath::*;
+
+    //     if n == 0 { return Zero; }
+
+    //     match *self {
+    //         Zero => {
+    //             assert!(n == 0);
+    //             Zero
+    //         }
+    //         Up { distance } => {
+    //             assert!(n <= distance);
+    //             Up { distance: n }
+    //         }
+    //         Down { ref path } => {
+    //             assert!(n <= path.len() as u32);
+    //             Down {
+    //                 path: path[path.len() - n as usize..].to_vec()
+    //             }
+    //         }
+    //     }
+    // }
+
+    pub fn drop(&self, n: u32) -> MonotonePath {
+        use MonotonePath::*;
+
+        match *self {
+            Zero => {
+                assert!(n == 0);
+                Zero
+            }
+            Up { distance } => {
+                assert!(n <= distance);
+                Up { distance: distance - n }
+            }
+            Down { ref path } => {
+                assert!(n <= path.len() as u32);
+                Down {
+                    path: path[n as usize ..].to_vec()
+                }
+            }
+        }
+    }
+
     pub fn up_target(&self) -> MonotonePath {
         use MonotonePath::*;
         match *self {
