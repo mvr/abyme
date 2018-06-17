@@ -32,7 +32,7 @@ struct CameraState {
     current_neutral_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
     current_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
-    target_chunk: TopChunk,
+    target_chunk: TopChunk, // This should always be the parent chunk of the player chunk
     target_neutral_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
     current_to_target_path: MonotonePath, // This should stay in sync with the above...
@@ -65,17 +65,17 @@ impl CameraState {
             TypedSize2D::new(resolution.width as f32, resolution.height as f32),
         );
 
-        let chunk = &game_state.player_chunk;
-        let transform = CameraState::target_transform_for(&chunk, game_state, camera_bounds);
+        let start_chunk = &game_state.universe.parent_of(&game_state.player_chunk);
+        let transform = CameraState::target_transform_for(&start_chunk, game_state, camera_bounds);
 
         CameraState {
             camera_bounds: camera_bounds,
 
-            current_chunk: chunk.clone(),
+            current_chunk: start_chunk.clone(),
             current_transform: transform,
             current_neutral_transform: transform,
 
-            target_chunk: chunk.clone(),
+            target_chunk: start_chunk.clone(),
             target_neutral_transform: transform,
 
             current_to_target_path: MonotonePath::Zero,
@@ -123,11 +123,13 @@ impl CameraState {
     }
 
     fn normalise(&mut self, game_state: &GameState) -> () {
-        let scale_from_neutral = transform::scale(&self.current_transform.post_mul(&self.current_neutral_transform.inverse().unwrap()));
+        let scale_from_neutral = transform::scale(&self
+            .current_transform
+            .post_mul(&self.current_neutral_transform.inverse().unwrap()));
 
-        if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER {
-            println!("{:#?}", scale_from_neutral);
-
+        if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
+            || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER
+        {
             let (adjustment, new_current_origin) = self
                 .current_to_target_path
                 .take(1)
@@ -135,7 +137,11 @@ impl CameraState {
 
             let new_current_chunk = game_state.universe.top_chunk_of_id(new_current_origin);
 
-            self.current_neutral_transform = CameraState::target_transform_for(&new_current_chunk, game_state, self.camera_bounds);
+            self.current_neutral_transform = CameraState::target_transform_for(
+                &new_current_chunk,
+                game_state,
+                self.camera_bounds,
+            );
             self.current_chunk = new_current_chunk;
 
             self.current_transform = self
@@ -143,7 +149,6 @@ impl CameraState {
                 .pre_mul(&adjustment.to_scale_transform());
 
             self.current_to_target_path = self.current_to_target_path.drop(1);
-
         }
     }
 
@@ -160,7 +165,7 @@ impl CameraState {
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 struct LevelTracker {
     level: i32,
     transforms: HashMap<ShapeId, FractionalDelta>,
@@ -416,7 +421,6 @@ impl<R: gfx::Resources> Director<R> {
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
     ) -> () {
-        // TODO: move to defs.rs
         let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
 
         for _ in 0..DRAW_DISTANCE_UP {

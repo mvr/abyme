@@ -49,7 +49,11 @@ impl Shape {
     }
 
     pub fn delta_from_parent(&self, parent: &Shape) -> Delta {
-        Delta::from(self.position_on(parent).to_vector())
+        let coords = self.parent_ids[&parent.id].to_vector();
+        Delta {
+            zdelta: -1,
+            coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y)),
+        }
     }
 
     pub fn delta_to_child(&self, child: &Shape) -> Delta {
@@ -161,7 +165,7 @@ impl Universe {
         let id2 = ShapeId(2);
         let shape1 = Shape {
             id: id1,
-            parent_ids: btreemap!{ id2 => ChildPoint::new(0, 0) },
+            parent_ids: btreemap!{ id2 => ChildPoint::new(1, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
@@ -543,14 +547,11 @@ pub struct GameState {
 impl GameState {
     pub fn minimal() -> GameState {
         let u = Universe::minimal();
+        let player_chunk = u.top_chunk_of_id(ShapeId(1));
 
         GameState {
             universe: u,
-            player_chunk: TopChunk {
-                origin_id: ShapeId(1),
-                top_shape_ids: btreemap![ShapeId(1) => UVec::zero()],
-                //                lower_shape_ids: btreemap![ShapeId(2) => Delta::zero().shift_target_down()],
-            },
+            player_chunk: player_chunk,
         }
     }
 
@@ -579,7 +580,9 @@ impl MonotonePath {
     pub fn take(&self, n: u32) -> MonotonePath {
         use MonotonePath::*;
 
-        if n == 0 { return Zero; }
+        if n == 0 {
+            return Zero;
+        }
 
         match *self {
             Zero => {
@@ -593,7 +596,7 @@ impl MonotonePath {
             Down { ref path } => {
                 assert!(n <= path.len() as u32);
                 Down {
-                    path: path[0..n as usize].to_vec()
+                    path: path[0..n as usize].to_vec(),
                 }
             }
         }
@@ -632,12 +635,14 @@ impl MonotonePath {
             }
             Up { distance } => {
                 assert!(n <= distance);
-                Up { distance: distance - n }
+                Up {
+                    distance: distance - n,
+                }
             }
             Down { ref path } => {
                 assert!(n <= path.len() as u32);
                 Down {
-                    path: path[n as usize ..].to_vec()
+                    path: path[n as usize..].to_vec(),
                 }
             }
         }

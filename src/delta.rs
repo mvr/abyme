@@ -64,8 +64,8 @@ impl Delta {
     pub fn to_scale_transform(&self) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
         let scale = (ZOOM_SCALE as f32).powi(self.zdelta as i32);
         TypedTransform2D::identity()
-            .post_translate(self.to_scaled_fvec())
             .post_scale(scale, scale)
+            .post_translate(self.to_scaled_fvec())
     }
 
     pub fn invert(self) -> Delta {
@@ -307,8 +307,8 @@ impl FractionalDelta {
     pub fn to_scale_transform(&self) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
         let scale = (ZOOM_SCALE as f32).powi(self.zdelta as i32);
         TypedTransform2D::identity()
-            .post_translate(self.to_scaled_fvec())
             .post_scale(scale, scale)
+            .post_translate(self.to_scaled_fvec())
     }
 }
 
