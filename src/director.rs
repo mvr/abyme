@@ -29,10 +29,11 @@ struct CameraState {
     camera_bounds: TypedRect<f32, DrawSpace>,
 
     current_chunk: TopChunk,
+    current_neutral_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
     current_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
     target_chunk: TopChunk,
-    target_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
+    target_neutral_transform: TypedTransform2D<f32, UniverseSpace, DrawSpace>,
 
     current_to_target_path: MonotonePath, // This should stay in sync with the above...
 }
@@ -72,9 +73,10 @@ impl CameraState {
 
             current_chunk: chunk.clone(),
             current_transform: transform,
+            current_neutral_transform: transform,
 
             target_chunk: chunk.clone(),
-            target_transform: transform,
+            target_neutral_transform: transform,
 
             current_to_target_path: MonotonePath::Zero,
         }
@@ -82,7 +84,7 @@ impl CameraState {
 
     pub fn do_zoom(&mut self, game_state: &GameState) -> () {
         self.target_chunk = game_state.player_chunk.clone();
-        self.target_transform = CameraState::target_transform_for(
+        self.target_neutral_transform = CameraState::target_transform_for(
             &game_state.player_chunk,
             game_state,
             self.camera_bounds,
@@ -91,17 +93,23 @@ impl CameraState {
         self.current_to_target_path = self.current_to_target_path.up_target();
     }
 
+    fn current_to_target_transform(
+        &self,
+        game_state: &GameState,
+    ) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
+        self.current_to_target_path
+            .as_delta_from(&game_state.universe, self.current_chunk.origin_id)
+            .0
+            .invert()
+            .to_scale_transform()
+    }
+
     fn true_target_transform(
         &self,
         game_state: &GameState,
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
-        let (delta, target_id) = self
-            .current_to_target_path
-            .as_delta_from(&game_state.universe, self.current_chunk.origin_id);
-        delta
-            .invert()
-            .to_scale_transform()
-            .post_mul(&self.target_transform)
+        self.current_to_target_transform(game_state)
+            .post_mul(&self.target_neutral_transform)
     }
 
     pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
@@ -115,16 +123,29 @@ impl CameraState {
     }
 
     fn normalise(&mut self, game_state: &GameState) -> () {
-        let scale = transform::scale(&self.true_target_transform(game_state));
+        let scale_from_neutral = transform::scale(&self.current_transform.post_mul(&self.current_neutral_transform.inverse().unwrap()));
 
-        if scale > CAMERA_UPPER_NORMALISE_TRIGGER || scale < CAMERA_LOWER_NORMALISE_TRIGGER {
-            let adjustment = self.current_to_target_path.take(1).as_delta_from(&game_state.universe, self.current_chunk.origin_id).0.to_scale_transform();
+        if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER {
+            println!("{:#?}", scale_from_neutral);
 
-            self.current_transform = self.current_transform.pre_mul(&adjustment.inverse().unwrap());
+            let (adjustment, new_current_origin) = self
+                .current_to_target_path
+                .take(1)
+                .as_delta_from(&game_state.universe, self.current_chunk.origin_id);
+
+            let new_current_chunk = game_state.universe.top_chunk_of_id(new_current_origin);
+
+            self.current_neutral_transform = CameraState::target_transform_for(&new_current_chunk, game_state, self.camera_bounds);
+            self.current_chunk = new_current_chunk;
+
+            self.current_transform = self
+                .current_transform
+                .pre_mul(&adjustment.to_scale_transform());
+
             self.current_to_target_path = self.current_to_target_path.drop(1);
+
         }
     }
-
 
     pub fn set_origin_shape(&mut self, new_origin: &ShapeId) -> () {
         unimplemented!();
@@ -159,29 +180,6 @@ impl LevelTracker {
         }
     }
 
-    pub fn go_down(&self, universe: &Universe) -> LevelTracker {
-        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
-
-        for (shape_id, delta) in &self.transforms {
-            let shape = &universe.shapes[shape_id];
-
-            for child in universe.children_of(shape) {
-                if result.contains_key(&child.id) {
-                    continue;
-                }
-                result.insert(
-                    child.id,
-                    delta.append(&FractionalDelta::from(shape.delta_to_child(child))),
-                );
-            }
-        }
-
-        LevelTracker {
-            level: self.level + 1,
-            transforms: result,
-        }
-    }
-
     pub fn go_up(&self, universe: &Universe) -> LevelTracker {
         let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
 
@@ -195,6 +193,29 @@ impl LevelTracker {
                 result.insert(
                     parent.id,
                     delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))),
+                );
+            }
+        }
+
+        LevelTracker {
+            level: self.level + 1,
+            transforms: result,
+        }
+    }
+
+    pub fn go_down(&self, universe: &Universe) -> LevelTracker {
+        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
+
+        for (shape_id, delta) in &self.transforms {
+            let shape = &universe.shapes[shape_id];
+
+            for child in universe.children_of(shape) {
+                if result.contains_key(&child.id) {
+                    continue;
+                }
+                result.insert(
+                    child.id,
+                    delta.append(&FractionalDelta::from(shape.delta_to_child(child))),
                 );
             }
         }
@@ -396,19 +417,16 @@ impl<R: gfx::Resources> Director<R> {
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
     ) -> () {
         // TODO: move to defs.rs
-        const DISTANCE_UP: u32 = 3;
-        const DISTANCE_DOWN: u32 = 8;
-
         let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
 
-        for _ in 0..DISTANCE_UP {
+        for _ in 0..DRAW_DISTANCE_UP {
             l = l.go_up(&self.game_state.universe);
             l.filter_nonvisible();
         }
 
         self.draw_level(encoder, target, &l);
 
-        for _ in 0..(DISTANCE_UP + DISTANCE_DOWN) {
+        for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
             l = l.go_down(&self.game_state.universe);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);

@@ -475,6 +475,10 @@ impl Universe {
         self.explore(shape.id)
     }
 
+    pub fn top_chunk_of_id(&self, id: ShapeId) -> TopChunk {
+        TopChunk::from(self.explore(id))
+    }
+
     pub fn parent_of(&self, chunk: &TopChunk) -> TopChunk {
         let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
         self.explore(origin_parent_id).into()
@@ -564,6 +568,7 @@ impl GameState {
 }
 
 // This has to represent a monotone path between chunks
+#[derive(Debug)]
 pub enum MonotonePath {
     Zero,
     Up { distance: u32 },
@@ -655,6 +660,7 @@ impl MonotonePath {
         }
     }
 
+    // MUST TODO: This doesn't take into account movement.
     // Also returns the target shape of the delta
     pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (FractionalDelta, ShapeId) {
         use MonotonePath::*;
