@@ -29,8 +29,12 @@ pub const ZOOM_SCALE: u32 = 2;
 ////////////////////////////////////////
 // Drawing
 
-pub const DRAW_DISTANCE_UP: u32 = 1;//3;
-pub const DRAW_DISTANCE_DOWN: u32 = 1;//8;
+// pub const DRAW_DISTANCE_UP: u32 = 2;
+// pub const DRAW_DISTANCE_DOWN: u32 = 1;
+pub const DRAW_DISTANCE_UP: u32 = 5;
+pub const DRAW_DISTANCE_DOWN: u32 = 8;
+
+pub const DRAW_PARENT_MARGIN: f32 = 0.3;
 
 pub const POLY_PERIMETER_GRID_THICKNESS: f32 = 0.05;
 pub const POLY_INTERIOR_GRID_THICKNESS: f32 = 0.02;

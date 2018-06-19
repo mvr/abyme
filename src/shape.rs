@@ -61,12 +61,7 @@ impl Shape {
     }
 
     pub fn delta_to_parent(&self, parent: &Shape) -> FractionalDelta {
-        let coords = self.parent_ids[&parent.id].to_vector();
-        FractionalDelta {
-            zdelta: 1,
-            scale: 0,
-            coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y)),
-        }
+        FractionalDelta::from(self.delta_from_parent(parent)).invert()
     }
 }
 

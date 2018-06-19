@@ -25,6 +25,7 @@ use shape::*;
 // chunk is broken in to pieces, we need to make sure our
 // current_shape and target_shape are switched to being ones that are
 // in the correct chunk
+#[derive(Debug)]
 struct CameraState {
     camera_bounds: TypedRect<f32, DrawSpace>,
 
@@ -49,6 +50,11 @@ impl CameraState {
         )
     }
 
+    fn intended_target(game_state: &GameState) -> TopChunk {
+        game_state.universe.parent_of(&game_state.player_chunk)
+    }
+
+
     fn target_transform_for(
         chunk: &TopChunk,
         game_state: &GameState,
@@ -56,7 +62,7 @@ impl CameraState {
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
         let chunk_bounds = chunk.bounding_box(&game_state.universe);
 
-        transform::fit_rect_in(&chunk_bounds.to_f32().inflate(1.0, 1.0), &bounds)
+        transform::fit_rect_in(&chunk_bounds.to_f32().inflate(DRAW_PARENT_MARGIN, DRAW_PARENT_MARGIN), &bounds)
     }
 
     pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, game_state: &GameState) -> CameraState {
@@ -65,7 +71,7 @@ impl CameraState {
             TypedSize2D::new(resolution.width as f32, resolution.height as f32),
         );
 
-        let start_chunk = &game_state.universe.parent_of(&game_state.player_chunk);
+        let start_chunk = CameraState::intended_target(&game_state);
         let transform = CameraState::target_transform_for(&start_chunk, game_state, camera_bounds);
 
         CameraState {
@@ -83,9 +89,10 @@ impl CameraState {
     }
 
     pub fn do_zoom(&mut self, game_state: &GameState) -> () {
-        self.target_chunk = game_state.player_chunk.clone();
+        let new_target = CameraState::intended_target(game_state);
+        self.target_chunk = new_target.clone();
         self.target_neutral_transform = CameraState::target_transform_for(
-            &game_state.player_chunk,
+            &new_target,
             game_state,
             self.camera_bounds,
         );
@@ -218,6 +225,7 @@ impl LevelTracker {
                 if result.contains_key(&child.id) {
                     continue;
                 }
+
                 result.insert(
                     child.id,
                     delta.append(&FractionalDelta::from(shape.delta_to_child(child))),
