@@ -48,20 +48,20 @@ impl Shape {
         self.parent_ids[&parent.id]
     }
 
-    pub fn delta_from_parent(&self, parent: &Shape) -> FractionalDelta {
+    pub fn delta_from_parent(&self, parent: &Shape) -> Delta {
         let coords = self.parent_ids[&parent.id].to_vector();
-        FractionalDelta {
+        Delta {
             zdelta: -1,
             scale: -1,
             coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y)),
         }
     }
 
-    pub fn delta_to_child(&self, child: &Shape) -> FractionalDelta {
+    pub fn delta_to_child(&self, child: &Shape) -> Delta {
         child.delta_from_parent(self)
     }
 
-    pub fn delta_to_parent(&self, parent: &Shape) -> FractionalDelta {
+    pub fn delta_to_parent(&self, parent: &Shape) -> Delta {
         self.delta_from_parent(parent).invert()
     }
 }
@@ -393,13 +393,13 @@ impl Location {
 pub struct TotalChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
-    pub lower_shape_ids: BTreeMap<ShapeId, FractionalDelta>,
+    pub lower_shape_ids: BTreeMap<ShapeId, Delta>,
 }
 
 impl TotalChunk {}
 
-type ExploreResult = BTreeMap<ShapeId, FractionalDelta>;
-type ExploreQueue = VecDeque<(ShapeId, FractionalDelta)>;
+type ExploreResult = BTreeMap<ShapeId, Delta>;
+type ExploreQueue = VecDeque<(ShapeId, Delta)>;
 
 impl Universe {
     fn explore_step(&self, result: &mut ExploreResult, queue: &mut ExploreQueue) -> () {
@@ -434,7 +434,7 @@ impl Universe {
         let mut result = BTreeMap::new();
         let mut queue = VecDeque::new();
 
-        queue.push_back((shape_id, FractionalDelta::zero()));
+        queue.push_back((shape_id, Delta::zero()));
 
         self.explore_step(&mut result, &mut queue);
 
@@ -664,12 +664,12 @@ impl MonotonePath {
     // MUST TODO: This doesn't take into account movement
     // MUST TODO: This should be fixed to always give the delta to the origin of the chunk
     // Also returns the target shape of the delta
-    pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (FractionalDelta, ShapeId) {
+    pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (Delta, ShapeId) {
         use MonotonePath::*;
         match *self {
-            Zero => (FractionalDelta::zero(), id),
+            Zero => (Delta::zero(), id),
             Up { distance } => {
-                let mut result = FractionalDelta::zero();
+                let mut result = Delta::zero();
                 let mut current_shape_id = id;
                 for _ in 0..distance {
                     let next_shape_id = universe.shapes[&id].first_parent_id();

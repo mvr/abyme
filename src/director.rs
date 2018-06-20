@@ -11,7 +11,7 @@ use gfx::traits::FactoryExt;
 use gfx::IndexBuffer;
 
 use defs::*;
-use delta::FractionalDelta;
+use delta::Delta;
 use math;
 use math::*;
 use mesh_gen::*;
@@ -177,7 +177,7 @@ impl CameraState {
 #[derive(Clone, Debug)]
 struct LevelTracker {
     level: i32,
-    transforms: HashMap<ShapeId, FractionalDelta>,
+    transforms: HashMap<ShapeId, Delta>,
 }
 
 impl LevelTracker {
@@ -185,7 +185,7 @@ impl LevelTracker {
         let mut result = hashmap![];
 
         for (shape_id, uvec) in &chunk.top_shape_ids {
-            result.insert(*shape_id, FractionalDelta::from(*uvec));
+            result.insert(*shape_id, Delta::from(*uvec));
         }
 
         LevelTracker {
@@ -195,7 +195,7 @@ impl LevelTracker {
     }
 
     pub fn go_up(&self, universe: &Universe) -> LevelTracker {
-        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
+        let mut result: HashMap<ShapeId, Delta> = hashmap![];
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -207,7 +207,7 @@ impl LevelTracker {
 
                 result.insert(
                     parent.id,
-                    delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))),
+                    delta.revert(&Delta::from(parent.delta_to_child(shape))),
                 );
             }
         }
@@ -219,7 +219,7 @@ impl LevelTracker {
     }
 
     pub fn go_down(&self, universe: &Universe) -> LevelTracker {
-        let mut result: HashMap<ShapeId, FractionalDelta> = hashmap![];
+        let mut result: HashMap<ShapeId, Delta> = hashmap![];
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -231,7 +231,7 @@ impl LevelTracker {
 
                 result.insert(
                     child.id,
-                    delta.append(&FractionalDelta::from(shape.delta_to_child(child))),
+                    delta.append(&Delta::from(shape.delta_to_child(child))),
                 );
             }
         }

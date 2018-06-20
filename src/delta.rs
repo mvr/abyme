@@ -11,23 +11,23 @@ use math;
 // TODO: Do we need a `Dyadic`?
 
 #[derive(Clone, Debug, PartialEq, Eq)] // MUST TODO: this Eq is dangerous!
-pub struct FractionalDelta {
+pub struct Delta {
     pub zdelta: i16,
     pub scale: i16,
     pub coords: TypedVector2D<Integer, UniverseSpace>,
     // So a coord distance of 1 means a `real` distance of 2^(scale) at z value 0
 }
 
-impl FractionalDelta {
-    pub fn zero() -> FractionalDelta {
-        FractionalDelta {
+impl Delta {
+    pub fn zero() -> Delta {
+        Delta {
             zdelta: 0,
             scale: 0,
             coords: TypedVector2D::new(Integer::new(), Integer::new()),
         }
     }
 
-    pub fn append(&self, other: &FractionalDelta) -> FractionalDelta {
+    pub fn append(&self, other: &Delta) -> Delta {
         let zdelta = self.zdelta + other.zdelta;
         let other_relative_scale = self.zdelta + other.scale;
         let newscale = self.scale.min(other_relative_scale);
@@ -49,22 +49,22 @@ impl FractionalDelta {
             );
         }
 
-        FractionalDelta {
+        Delta {
             zdelta: zdelta,
             scale: newscale,
             coords: newcoords,
         }
     }
 
-    pub fn invert(&self) -> FractionalDelta {
-        FractionalDelta {
+    pub fn invert(&self) -> Delta {
+        Delta {
             zdelta: -self.zdelta,
             scale: self.scale - self.zdelta,
             coords: TypedVector2D::new(-self.coords.x.clone(), -self.coords.y.clone()),
         }
     }
 
-    pub fn revert(&self, other: &FractionalDelta) -> FractionalDelta {
+    pub fn revert(&self, other: &Delta) -> Delta {
         self.append(&other.invert())
     }
 
@@ -118,12 +118,12 @@ impl FractionalDelta {
     }
 }
 
-impl From<TypedVector2D<f32, UniverseSpace>> for FractionalDelta {
-    fn from(c: TypedVector2D<f32, UniverseSpace>) -> FractionalDelta {
+impl From<TypedVector2D<f32, UniverseSpace>> for Delta {
+    fn from(c: TypedVector2D<f32, UniverseSpace>) -> Delta {
         let int_x = (c.x / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
         let int_y = (c.y / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
 
-        FractionalDelta {
+        Delta {
             zdelta: 0,
             scale: FRACTIONAL_DELTA_SCALE as i16,
             coords: TypedVector2D::new(Integer::from(int_x), Integer::from(int_y)),
@@ -131,9 +131,9 @@ impl From<TypedVector2D<f32, UniverseSpace>> for FractionalDelta {
     }
 }
 
-impl From<UVec> for FractionalDelta {
-    fn from(c: UVec) -> FractionalDelta {
-        FractionalDelta {
+impl From<UVec> for Delta {
+    fn from(c: UVec) -> Delta {
+        Delta {
             zdelta: 0,
             scale: 0,
             coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
@@ -146,12 +146,12 @@ mod tests {
     use super::*;
     #[test]
     fn fractional_append_1() {
-        let a = FractionalDelta {
+        let a = Delta {
             zdelta: 2,
             scale: 1,
             coords: TypedVector2D::new(Integer::from(-1), Integer::from(0)),
         };
-        let b = FractionalDelta {
+        let b = Delta {
             zdelta: -1,
             scale: -1,
             coords: TypedVector2D::new(Integer::from(1), Integer::from(0)),
@@ -159,7 +159,7 @@ mod tests {
 
         assert_eq!(
             a.append(&b),
-            FractionalDelta {
+            Delta {
                 zdelta: 1,
                 scale: 1,
                 coords: TypedVector2D::new(Integer::from(0), Integer::from(0)),
@@ -169,20 +169,20 @@ mod tests {
 
     #[test]
     fn fractional_append_2() {
-        let a = FractionalDelta {
+        let a = Delta {
             zdelta: 1,
             scale: 0,
             coords: TypedVector2D::new(Integer::from(0), Integer::from(0)),
         };
 
-        let b = FractionalDelta {
+        let b = Delta {
             zdelta: 1,
             scale: 1,
             coords: TypedVector2D::new(Integer::from(-1), Integer::from(0)),
         };
         assert_eq!(
             a.append(&b),
-            FractionalDelta {
+            Delta {
                 zdelta: 2,
                 scale: 0,
                 coords: TypedVector2D::new(Integer::from(-4), Integer::from(0)),
@@ -192,20 +192,20 @@ mod tests {
 
     #[test]
     fn fractional_append_3() {
-        let a = FractionalDelta {
+        let a = Delta {
             zdelta: -1,
             scale: -1,
             coords: TypedVector2D::new(Integer::from(1), Integer::from(0)),
         };
 
-        let b = FractionalDelta {
+        let b = Delta {
             zdelta: -1,
             scale: -1,
             coords: TypedVector2D::new(Integer::from(0), Integer::from(0)),
         };
         assert_eq!(
             a.append(&b),
-            FractionalDelta {
+            Delta {
                 zdelta: -2,
                 scale: -2,
                 coords: TypedVector2D::new(Integer::from(2), Integer::from(0)),
