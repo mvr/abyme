@@ -19,6 +19,7 @@ extern crate itertools;
 
 mod defs;
 mod math;
+mod adic;
 
 mod mesh_collector;
 mod mesh_gen;

@@ -1,6 +1,6 @@
-use std::ops::{Add, Neg, Sub};
-use rug::Integer;
 use rug::ops::{DivRounding, Pow};
+use rug::Integer;
+use std::ops::{Add, Neg, Sub};
 
 use euclid::*;
 
@@ -304,6 +304,40 @@ impl FractionalDelta {
     }
 }
 
+
+impl From<TypedVector2D<f32, UniverseSpace>> for FractionalDelta {
+    fn from(c: TypedVector2D<f32, UniverseSpace>) -> FractionalDelta {
+        let int_x = (c.x / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
+        let int_y = (c.y / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
+
+        FractionalDelta {
+            zdelta: 0,
+            scale: FRACTIONAL_DELTA_SCALE as i16,
+            coords: TypedVector2D::new(Integer::from(int_x), Integer::from(int_y)),
+        }
+    }
+}
+
+impl From<UVec> for FractionalDelta {
+    fn from(c: UVec) -> FractionalDelta {
+        FractionalDelta {
+            zdelta: 0,
+            scale: 0,
+            coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
+        }
+    }
+}
+
+impl From<Delta> for FractionalDelta {
+    fn from(c: Delta) -> FractionalDelta {
+        FractionalDelta {
+            zdelta: c.zdelta,
+            scale: c.zdelta,
+            coords: c.coords,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -347,8 +381,8 @@ mod tests {
             a.append(&b),
             FractionalDelta {
                 zdelta: 2,
-                scale: 1,
-                coords: TypedVector2D::new(Integer::from(-1), Integer::from(0)),
+                scale: 0,
+                coords: TypedVector2D::new(Integer::from(-4), Integer::from(0)),
             }
         );
     }
@@ -376,37 +410,4 @@ mod tests {
         );
     }
 
-}
-
-impl From<TypedVector2D<f32, UniverseSpace>> for FractionalDelta {
-    fn from(c: TypedVector2D<f32, UniverseSpace>) -> FractionalDelta {
-        let int_x = (c.x / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
-        let int_y = (c.y / (2.0 as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
-
-        FractionalDelta {
-            zdelta: 0,
-            scale: FRACTIONAL_DELTA_SCALE as i16,
-            coords: TypedVector2D::new(Integer::from(int_x), Integer::from(int_y)),
-        }
-    }
-}
-
-impl From<UVec> for FractionalDelta {
-    fn from(c: UVec) -> FractionalDelta {
-        FractionalDelta {
-            zdelta: 0,
-            scale: 0,
-            coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
-        }
-    }
-}
-
-impl From<Delta> for FractionalDelta {
-    fn from(c: Delta) -> FractionalDelta {
-        FractionalDelta {
-            zdelta: c.zdelta,
-            scale: c.zdelta,
-            coords: c.coords,
-        }
-    }
 }

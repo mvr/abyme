@@ -660,7 +660,8 @@ impl MonotonePath {
         }
     }
 
-    // MUST TODO: This doesn't take into account movement.
+    // MUST TODO: This doesn't take into account movement
+    // MUST TODO: This should be fixed to always give the delta to the origin of the chunk
     // Also returns the target shape of the delta
     pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (FractionalDelta, ShapeId) {
         use MonotonePath::*;

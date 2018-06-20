@@ -54,7 +54,6 @@ impl CameraState {
         game_state.universe.parent_of(&game_state.player_chunk)
     }
 
-
     fn target_transform_for(
         chunk: &TopChunk,
         game_state: &GameState,
@@ -62,7 +61,12 @@ impl CameraState {
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
         let chunk_bounds = chunk.bounding_box(&game_state.universe);
 
-        transform::fit_rect_in(&chunk_bounds.to_f32().inflate(DRAW_PARENT_MARGIN, DRAW_PARENT_MARGIN), &bounds)
+        transform::fit_rect_in(
+            &chunk_bounds
+                .to_f32()
+                .inflate(DRAW_PARENT_MARGIN, DRAW_PARENT_MARGIN),
+            &bounds,
+        )
     }
 
     pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, game_state: &GameState) -> CameraState {
@@ -91,16 +95,13 @@ impl CameraState {
     pub fn do_zoom(&mut self, game_state: &GameState) -> () {
         let new_target = CameraState::intended_target(game_state);
         self.target_chunk = new_target.clone();
-        self.target_neutral_transform = CameraState::target_transform_for(
-            &new_target,
-            game_state,
-            self.camera_bounds,
-        );
+        self.target_neutral_transform =
+            CameraState::target_transform_for(&new_target, game_state, self.camera_bounds);
 
         self.current_to_target_path = self.current_to_target_path.up_target();
     }
 
-    fn current_to_target_transform(
+    fn target_to_current_transform(
         &self,
         game_state: &GameState,
     ) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
@@ -115,11 +116,12 @@ impl CameraState {
         &self,
         game_state: &GameState,
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
-        self.current_to_target_transform(game_state)
+        self.target_to_current_transform(game_state)
             .post_mul(&self.target_neutral_transform)
     }
 
     pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
+        // TODO: This is currently busted but somehow I get away with it?
         self.current_transform = transform::lerp(
             &self.current_transform,
             &self.true_target_transform(game_state),
@@ -172,7 +174,7 @@ impl CameraState {
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 struct LevelTracker {
     level: i32,
     transforms: HashMap<ShapeId, FractionalDelta>,
@@ -202,6 +204,7 @@ impl LevelTracker {
                 if result.contains_key(&parent.id) {
                     continue;
                 }
+
                 result.insert(
                     parent.id,
                     delta.revert(&FractionalDelta::from(parent.delta_to_child(shape))),
@@ -252,27 +255,41 @@ pub enum MoveState {
         direction: Direction,
         progress: f32,
     },
+    MoveComplete {
+        chunk: TopChunk,
+        direction: Direction,
+    },
 }
 
 impl MoveState {
-    pub fn update(&mut self, time_delta: time::Duration) -> () {
+    pub fn update(&self, time_delta: time::Duration) -> MoveState {
         if let MoveState::Moving {
-            ref mut progress, ..
+            progress,
+            chunk,
+            direction,
         } = self
         {
-            let newprogress = *progress + math::time::duration_to_secs(time_delta);
-            if newprogress >= 0.0 {
-                *self = MoveState::None
+            let newprogress = progress + math::time::duration_to_secs(time_delta);
+            if newprogress >= 1.0 {
+                return MoveState::MoveComplete {
+                    chunk: chunk.clone(),
+                    direction: *direction,
+                };
             } else {
-                *progress = newprogress
+                return MoveState::Moving {
+                    chunk: chunk.clone(),
+                    direction: *direction,
+                    progress: newprogress,
+                };
             }
         }
+        return self.clone();
     }
 
     pub fn move_complete(&self) -> bool {
         match *self {
-            MoveState::None => false,
-            MoveState::Moving { progress, .. } => progress > 1.0,
+            MoveState::MoveComplete { .. } => true,
+            _ => false,
         }
     }
 }
@@ -437,7 +454,6 @@ impl<R: gfx::Resources> Director<R> {
         }
 
         self.draw_level(encoder, target, &l);
-
         for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
             l = l.go_down(&self.game_state.universe);
             l.filter_nonvisible();
@@ -473,12 +489,12 @@ impl<R: gfx::Resources> Director<R> {
 
     pub fn update(&mut self, time_delta: time::Duration) -> () {
         self.camera_state.update(&self.game_state, time_delta);
-        self.move_state.update(time_delta);
+        self.move_state = self.move_state.update(time_delta);
 
         if self.move_state.move_complete() {
             match self.move_state {
-                MoveState::None => {}
-                MoveState::Moving { direction, .. } => self.do_move(direction),
+                MoveState::MoveComplete { direction, .. } => self.do_move(direction),
+                _ => {}
             }
             self.move_state = MoveState::None;
         }
