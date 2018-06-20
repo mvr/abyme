@@ -11,7 +11,7 @@ use gfx::traits::FactoryExt;
 use gfx::IndexBuffer;
 
 use defs::*;
-use delta::{Delta, FractionalDelta};
+use delta::FractionalDelta;
 use math;
 use math::*;
 use mesh_gen::*;

@@ -20,7 +20,7 @@ pub struct Shape {
     // Gameplay:
     pub id: ShapeId,
 
-    //TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
+    // TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
     pub parent_ids: BTreeMap<ShapeId, ChildPoint>,
     // TODO: instead store a distinguished parent?
     pub polyomino: Polyomino,
@@ -48,20 +48,21 @@ impl Shape {
         self.parent_ids[&parent.id]
     }
 
-    pub fn delta_from_parent(&self, parent: &Shape) -> Delta {
+    pub fn delta_from_parent(&self, parent: &Shape) -> FractionalDelta {
         let coords = self.parent_ids[&parent.id].to_vector();
-        Delta {
+        FractionalDelta {
             zdelta: -1,
+            scale: -1,
             coords: TypedVector2D::new(Integer::from(coords.x), Integer::from(coords.y)),
         }
     }
 
-    pub fn delta_to_child(&self, child: &Shape) -> Delta {
+    pub fn delta_to_child(&self, child: &Shape) -> FractionalDelta {
         child.delta_from_parent(self)
     }
 
     pub fn delta_to_parent(&self, parent: &Shape) -> FractionalDelta {
-        FractionalDelta::from(self.delta_from_parent(parent)).invert()
+        self.delta_from_parent(parent).invert()
     }
 }
 
@@ -392,13 +393,13 @@ impl Location {
 pub struct TotalChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
-    pub lower_shape_ids: BTreeMap<ShapeId, Delta>,
+    pub lower_shape_ids: BTreeMap<ShapeId, FractionalDelta>,
 }
 
 impl TotalChunk {}
 
-type ExploreResult = BTreeMap<ShapeId, Delta>;
-type ExploreQueue = VecDeque<(ShapeId, Delta)>;
+type ExploreResult = BTreeMap<ShapeId, FractionalDelta>;
+type ExploreQueue = VecDeque<(ShapeId, FractionalDelta)>;
 
 impl Universe {
     fn explore_step(&self, result: &mut ExploreResult, queue: &mut ExploreQueue) -> () {
@@ -433,7 +434,7 @@ impl Universe {
         let mut result = BTreeMap::new();
         let mut queue = VecDeque::new();
 
-        queue.push_back((shape_id, Delta::zero()));
+        queue.push_back((shape_id, FractionalDelta::zero()));
 
         self.explore_step(&mut result, &mut queue);
 
@@ -441,7 +442,7 @@ impl Universe {
             .iter()
             .filter_map(|(s, d)| {
                 if d.zdelta == 0 {
-                    Some((*s, d.to_uvec()))
+                    Some((*s, d.to_uvec().unwrap()))
                 } else {
                     None
                 }
