@@ -1,6 +1,8 @@
 #![feature(slice_patterns)]
 #![feature(custom_attribute)]
 #![feature(nll)]
+#![cfg_attr(test, feature(plugin))]
+#![cfg_attr(test, plugin(quickcheck_macros))]
 
 extern crate num;
 extern crate rug;
@@ -17,9 +19,12 @@ extern crate euclid;
 extern crate maplit;
 extern crate itertools;
 
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
+
 mod defs;
 mod math;
-mod adic;
 
 mod mesh_collector;
 mod mesh_gen;

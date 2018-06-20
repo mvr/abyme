@@ -24,3 +24,7 @@ glutin = "*"
 
 euclid = ">=0.17.2"
 lyon = ">=0.10"
+
+[dev-dependencies]
+quickcheck = "0.6"
+quickcheck_macros = "0.6"
