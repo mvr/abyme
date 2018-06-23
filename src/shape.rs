@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, HashSet, VecDeque};
 
 use euclid::{TypedRect, TypedVector2D};
 use rug::Integer;
+use num::Integer as IntegerTrait;
 
 use defs::*;
 use delta::*;
@@ -82,7 +83,8 @@ trait HasSquares {
         universe: &'a Universe,
     ) -> Box<Iterator<Item = Square> + 'a>;
 
-    fn locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
+    #[inline]
+    fn constituent_locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .map(move |s| s.location(universe)),
@@ -102,7 +104,7 @@ trait HasSquares {
     }
 
     #[inline]
-    fn constituent_locations<'a>(
+    fn locations<'a>(
         &'a self,
         universe: &'a Universe,
     ) -> Box<Iterator<Item = Location> + 'a> {
@@ -119,7 +121,7 @@ trait HasSquares {
     #[inline]
     fn child_shapes<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = ShapeId> + 'a> {
         Box::new(
-            self.constituent_locations(universe)
+            self.locations(universe)
                 .filter_map(move |l| l.inhabitant(universe))
                 .map(|s| s.shape_id)
                 .unique(),
@@ -128,7 +130,7 @@ trait HasSquares {
 
     #[inline]
     fn unblocked(&self, universe: &Universe, d: Direction) -> bool {
-        self.locations(universe)
+        self.constituent_locations(universe)
             .map(|l| l.nudge(universe, d))
             .all(|o| o.is_some()) // This is doing a little more calculation than is necessary...
     }
@@ -199,6 +201,14 @@ impl Universe {
             .filter(move |s| s.parent_ids.contains_key(&parent_id))
     }
 
+    pub fn children_of_with_position<'a>(&'a self, parent_id: ShapeId) -> impl Iterator<Item = (ShapeId, ChildPoint)> + 'a {
+        self.shapes
+            .values()
+            .filter(move |s| s.parent_ids.contains_key(&parent_id.clone()))
+            .map(move |s| (s.id, s.parent_ids[&parent_id.clone()]))
+    }
+
+
     pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, ChildPoint)> {
         shape
             .parent_ids
@@ -266,19 +276,18 @@ pub struct Location {
 impl Location {
     pub fn inhabitant(&self, universe: &Universe) -> Option<Square> {
         let c = self.to_coordinate();
-        let shape = &universe.shapes[&self.square.shape_id];
 
         let mut inhabitants: Vec<Square> = universe
-            .parents_with_position_of(shape)
+            .children_of_with_position(self.square.shape_id)
             .into_iter()
-            .filter(|&(s, pos)| {
+            .filter(|&(sid, pos)| {
                 let cpos = math::coerce_up(c - pos.to_vector());
-                s.has_position(cpos.to_point())
+                universe.shapes[&sid].has_position(cpos.to_point())
             })
-            .map(|(s, pos)| {
+            .map(|(sid, pos)| {
                 let cpos = math::coerce_up(c - pos.to_vector());
                 Square {
-                    shape_id: s.id,
+                    shape_id: sid,
                     position: cpos.to_point(),
                 }
             })
@@ -342,16 +351,18 @@ impl Square {
 }
 
 impl Location {
+    fn wrap_subpos(v: ChildVec) -> ChildVec {
+        ChildVec::new(v.x.mod_floor(&(ZOOM_SCALE as i32)),
+                      v.y.mod_floor(&(ZOOM_SCALE as i32)))
+    }
+
     fn nudge_easy(&self, d: Direction) -> Option<Location> {
-        let newpos = self.subposition + d.to_vect();
-        if newpos.x >= 0
-            && newpos.x < ZOOM_SCALE as i32
-            && newpos.y >= 0
-            && newpos.y < ZOOM_SCALE as i32
+        let newsubpos = self.subposition + d.to_vect();
+        if newsubpos == Location::wrap_subpos(newsubpos)
         {
             Some(Location {
                 square: self.square.clone(),
-                subposition: newpos,
+                subposition: newsubpos,
             })
         } else {
             None
@@ -373,7 +384,7 @@ impl Location {
 
         seen.insert((self.clone(), d));
         let newsquare = self.square.nudge_recurse(universe, d, seen)?;
-        let newsubpos = self.subposition + d.to_vect();
+        let newsubpos = Location::wrap_subpos(self.subposition + d.to_vect());
         Some(Location {
             square: newsquare,
             subposition: newsubpos,
@@ -681,5 +692,67 @@ impl MonotonePath {
             }
             Down { ref path } => unimplemented!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod movement_tests {
+    use super::*;
+
+    fn setup() -> GameState {
+        let id1 = ShapeId(1);
+        let id2 = ShapeId(2);
+        let shape1 = Shape {
+            id: id1,
+            parent_ids: btreemap!{ id2 => ChildPoint::new(1, 0) },
+            polyomino: Polyomino::monomino(),
+            fill_color: [0.5, 0.5, 1.0],
+            outline_color: [0.5, 0.5, 0.5],
+        };
+        let shape2 = Shape {
+            id: id2,
+            parent_ids: btreemap!{ id1 => ChildPoint::new(0, 0) },
+            polyomino: Polyomino::monomino(),
+            fill_color: [1.0, 0.5, 0.5],
+            outline_color: [0.5, 0.25, 0.25],
+        };
+
+        let mut shapes = BTreeMap::new();
+        shapes.insert(id1, shape1);
+        shapes.insert(id2, shape2);
+
+        let u = Universe { shapes: shapes };
+
+        let player_chunk = u.top_chunk_of_id(ShapeId(1));
+
+        GameState {
+            universe: u,
+            player_chunk: player_chunk,
+        }
+    }
+
+    #[test]
+    fn inhabitant_1() {
+        let gs = setup();
+
+        let l = Location {
+            square: Square {
+                shape_id: ShapeId(
+                    1
+                ),
+                position: UVec::new(0,0).to_point()
+            },
+            subposition: ChildVec::new(1,0)
+        };
+
+        assert!(l.inhabitant(&gs.universe) == None);
+    }
+
+
+    #[test]
+    fn test_1() {
+        let gs = setup();
+
+        assert!(!gs.can_move(Direction::Right));
     }
 }
