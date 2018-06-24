@@ -96,11 +96,11 @@ pub fn main() {
                         use glutin::VirtualKeyCode::*;
                         match key {
                             Escape => running = false,
-                            Space => director.do_zoom(),
-                            Up => director.try_start_move(Direction::Up),
-                            Down => director.try_start_move(Direction::Down),
-                            Left => director.try_start_move(Direction::Left),
-                            Right => director.try_start_move(Direction::Right),
+                            Space => director.game_state.do_zoom(),
+                            Up => director.game_state.try_start_move(Direction::Up),
+                            Down => director.game_state.try_start_move(Direction::Down),
+                            Left => director.game_state.try_start_move(Direction::Left),
+                            Right => director.game_state.try_start_move(Direction::Right),
                             _ => {}
                         }
                     }
@@ -118,6 +118,6 @@ pub fn main() {
         let delta = std::time::Instant::now().duration_since(last_time);
         last_time = std::time::Instant::now();
 
-        director.update(delta);
+        director.game_state.update(delta);
     }
 }

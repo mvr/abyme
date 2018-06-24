@@ -17,7 +17,7 @@ use mesh_gen::*;
 use polyomino::*;
 use shape::*;
 use camera::CameraState;
-use gamestate::MoveState;
+use gamestate::GameState;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
@@ -97,7 +97,6 @@ impl LevelTracker {
 pub struct Director<R: gfx::Resources> {
     pub resolution: TypedSize2D<u32, ScreenSpace>,
 
-    camera_state: CameraState,
     draw_space_to_gl: TypedTransform2D<f32, DrawSpace, GLSpace>,
 
     mesh_store: MeshStore,
@@ -105,8 +104,7 @@ pub struct Director<R: gfx::Resources> {
     poly_mesh_index_buffer: IndexBuffer<R>,
     shape_pso: PipelineState<R, shape_pipe::Meta>,
 
-    logical_state: LogicalState,
-    move_state: MoveState,
+    pub game_state: GameState,
 }
 
 impl<R: gfx::Resources> Director<R> {
@@ -114,7 +112,7 @@ impl<R: gfx::Resources> Director<R> {
         factory: &mut F,
         resolution: TypedSize2D<u32, ScreenSpace>,
     ) -> Director<R> {
-        let logical_state = LogicalState::minimal();
+        let game_state = GameState::new(resolution);
 
         // TODO: will one day have to make this choose the right
         // shaders for the platform.
@@ -132,26 +130,24 @@ impl<R: gfx::Resources> Director<R> {
             )
             .unwrap();
 
-        let store = Director::build_mesh_cache(&logical_state, factory);
+        let store = Director::build_mesh_cache(&game_state.logical_state, factory);
         let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
         let pmib = factory.create_index_buffer(&store.poly_meshes.all_indices[..]);
 
-        let camera_state = CameraState::new(&resolution, &logical_state);
+
         let ndc_bounds = TypedRect::new(TypedPoint2D::new(-1.0, -1.0), TypedSize2D::new(2.0, 2.0));
-        let draw_space_to_gl = transform::rect_to_rect(&camera_state.camera_bounds, &ndc_bounds);
+        let draw_space_to_gl = transform::rect_to_rect(&game_state.camera_state.camera_bounds, &ndc_bounds);
 
         Director {
             shape_pso,
             resolution,
-            camera_state,
             draw_space_to_gl,
 
             mesh_store: store,
             poly_mesh_buffer: pmb,
             poly_mesh_index_buffer: pmib,
 
-            logical_state,
-            move_state: MoveState::None,
+            game_state,
         }
     }
 
@@ -222,12 +218,13 @@ impl<R: gfx::Resources> Director<R> {
         level_tracker: &LevelTracker,
     ) -> () {
         let transform_to_gl = self
+            .game_state
             .camera_state
             .current_transform
             .post_mul(&self.draw_space_to_gl);
 
         for (shape_id, offset) in &level_tracker.transforms {
-            let shape = &self.logical_state.universe.shapes[shape_id];
+            let shape = &self.game_state.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
 
             self.execute_poly_draw(
@@ -246,57 +243,18 @@ impl<R: gfx::Resources> Director<R> {
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
     ) -> () {
-        let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
+        let mut l = LevelTracker::from_chunk(&self.game_state.camera_state.current_chunk);
 
         for _ in 0..DRAW_DISTANCE_UP {
-            l = l.go_up(&self.logical_state.universe);
+            l = l.go_up(&self.game_state.logical_state.universe);
             l.filter_nonvisible();
         }
 
         self.draw_level(encoder, target, &l);
         for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
-            l = l.go_down(&self.logical_state.universe);
+            l = l.go_down(&self.game_state.logical_state.universe);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);
-        }
-    }
-
-    pub fn do_zoom(&mut self) -> () {
-        self.logical_state.do_zoom();
-        self.camera_state.do_zoom(&self.logical_state);
-    }
-
-    pub fn try_start_move(&mut self, d: Direction) -> () {
-        if let MoveState::Moving { .. } = self.move_state {
-            return;
-        }
-
-        if self.logical_state.can_move(d) {
-            self.move_state = MoveState::Moving {
-                chunk: self.logical_state.player_chunk.clone(),
-                direction: d,
-                progress: 0.0,
-            }
-        } else {
-            // TODO: visual indicator?
-        }
-    }
-
-    pub fn do_move(&mut self, d: Direction) -> () {
-        self.logical_state.do_move(d);
-        self.camera_state.recenter(&self.logical_state.player_chunk);
-    }
-
-    pub fn update(&mut self, time_delta: time::Duration) -> () {
-        self.camera_state.update(&self.logical_state, time_delta);
-        self.move_state = self.move_state.update(time_delta);
-
-        if self.move_state.move_complete() {
-            match self.move_state {
-                MoveState::MoveComplete { direction, .. } => self.do_move(direction),
-                _ => {}
-            }
-            self.move_state = MoveState::None;
         }
     }
 }
