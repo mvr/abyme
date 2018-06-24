@@ -32,6 +32,7 @@ mod mesh_gen;
 mod delta;
 
 mod camera;
+mod gamestate;
 mod director;
 mod polyomino;
 mod shape;

@@ -17,6 +17,7 @@ use mesh_gen::*;
 use polyomino::*;
 use shape::*;
 use camera::CameraState;
+use gamestate::MoveState;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
@@ -90,53 +91,6 @@ impl LevelTracker {
 
     pub fn filter_nonvisible(&mut self) -> () {
         // TODO: do this
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum MoveState {
-    None,
-    Moving {
-        chunk: TopChunk,
-        direction: Direction,
-        progress: f32,
-    },
-    MoveComplete {
-        chunk: TopChunk,
-        direction: Direction,
-    },
-}
-
-impl MoveState {
-    pub fn update(&self, time_delta: time::Duration) -> MoveState {
-        if let MoveState::Moving {
-            progress,
-            chunk,
-            direction,
-        } = self
-        {
-            let newprogress = progress + math::time::duration_to_secs(time_delta);
-            if newprogress >= 1.0 {
-                return MoveState::MoveComplete {
-                    chunk: chunk.clone(),
-                    direction: *direction,
-                };
-            } else {
-                return MoveState::Moving {
-                    chunk: chunk.clone(),
-                    direction: *direction,
-                    progress: newprogress,
-                };
-            }
-        }
-        return self.clone();
-    }
-
-    pub fn move_complete(&self) -> bool {
-        match *self {
-            MoveState::MoveComplete { .. } => true,
-            _ => false,
-        }
     }
 }
 
