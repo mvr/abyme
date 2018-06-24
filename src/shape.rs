@@ -546,17 +546,17 @@ impl From<TotalChunk> for TopChunk {
     }
 }
 
-pub struct GameState {
+pub struct LogicalState {
     pub universe: Universe,
     pub player_chunk: TopChunk,
 }
 
-impl GameState {
-    pub fn minimal() -> GameState {
+impl LogicalState {
+    pub fn minimal() -> LogicalState {
         let u = Universe::minimal();
         let player_chunk = u.top_chunk_of_id(ShapeId(1));
 
-        GameState {
+        LogicalState {
             universe: u,
             player_chunk: player_chunk,
         }
@@ -699,7 +699,7 @@ impl MonotonePath {
 mod movement_tests {
     use super::*;
 
-    fn setup() -> GameState {
+    fn setup() -> LogicalState {
         let id1 = ShapeId(1);
         let id2 = ShapeId(2);
         let shape1 = Shape {
@@ -725,7 +725,7 @@ mod movement_tests {
 
         let player_chunk = u.top_chunk_of_id(ShapeId(1));
 
-        GameState {
+        LogicalState {
             universe: u,
             player_chunk: player_chunk,
         }

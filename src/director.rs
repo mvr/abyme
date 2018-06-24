@@ -50,16 +50,16 @@ impl CameraState {
         )
     }
 
-    fn intended_target(game_state: &GameState) -> TopChunk {
-        game_state.universe.parent_of(&game_state.player_chunk)
+    fn intended_target(logical_state: &LogicalState) -> TopChunk {
+        logical_state.universe.parent_of(&logical_state.player_chunk)
     }
 
     fn target_transform_for(
         chunk: &TopChunk,
-        game_state: &GameState,
+        logical_state: &LogicalState,
         bounds: TypedRect<f32, DrawSpace>,
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
-        let chunk_bounds = chunk.bounding_box(&game_state.universe);
+        let chunk_bounds = chunk.bounding_box(&logical_state.universe);
 
         transform::fit_rect_in(
             &chunk_bounds
@@ -69,14 +69,14 @@ impl CameraState {
         )
     }
 
-    pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, game_state: &GameState) -> CameraState {
+    pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, logical_state: &LogicalState) -> CameraState {
         let camera_bounds = TypedRect::new(
             TypedPoint2D::zero(),
             TypedSize2D::new(resolution.width as f32, resolution.height as f32),
         );
 
-        let start_chunk = CameraState::intended_target(&game_state);
-        let transform = CameraState::target_transform_for(&start_chunk, game_state, camera_bounds);
+        let start_chunk = CameraState::intended_target(&logical_state);
+        let transform = CameraState::target_transform_for(&start_chunk, logical_state, camera_bounds);
 
         CameraState {
             camera_bounds: camera_bounds,
@@ -92,21 +92,21 @@ impl CameraState {
         }
     }
 
-    pub fn do_zoom(&mut self, game_state: &GameState) -> () {
-        let new_target = CameraState::intended_target(game_state);
+    pub fn do_zoom(&mut self, logical_state: &LogicalState) -> () {
+        let new_target = CameraState::intended_target(logical_state);
         self.target_chunk = new_target.clone();
         self.target_neutral_transform =
-            CameraState::target_transform_for(&new_target, game_state, self.camera_bounds);
+            CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);
 
         self.current_to_target_path = self.current_to_target_path.up_target();
     }
 
     fn target_to_current_transform(
         &self,
-        game_state: &GameState,
+        logical_state: &LogicalState,
     ) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
         self.current_to_target_path
-            .as_delta_from(&game_state.universe, self.current_chunk.origin_id)
+            .as_delta_from(&logical_state.universe, self.current_chunk.origin_id)
             .0
             .invert()
             .to_scale_transform()
@@ -114,24 +114,24 @@ impl CameraState {
 
     fn true_target_transform(
         &self,
-        game_state: &GameState,
+        logical_state: &LogicalState,
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
-        self.target_to_current_transform(game_state)
+        self.target_to_current_transform(logical_state)
             .post_mul(&self.target_neutral_transform)
     }
 
-    pub fn update(&mut self, game_state: &GameState, time_delta: time::Duration) -> () {
+    pub fn update(&mut self, logical_state: &LogicalState, time_delta: time::Duration) -> () {
         // TODO: This is currently busted but somehow I get away with it?
         self.current_transform = transform::lerp(
             &self.current_transform,
-            &self.true_target_transform(game_state),
+            &self.true_target_transform(logical_state),
             1.0 - (-math::time::duration_to_secs(time_delta) * CAMERA_LERP_SPEED).exp(),
         );
 
-        self.normalise(game_state);
+        self.normalise(logical_state);
     }
 
-    fn normalise(&mut self, game_state: &GameState) -> () {
+    fn normalise(&mut self, logical_state: &LogicalState) -> () {
         let scale_from_neutral = transform::scale(&self
             .current_transform
             .post_mul(&self.current_neutral_transform.inverse().unwrap()));
@@ -142,13 +142,13 @@ impl CameraState {
             let (adjustment, new_current_origin) = self
                 .current_to_target_path
                 .take(1)
-                .as_delta_from(&game_state.universe, self.current_chunk.origin_id);
+                .as_delta_from(&logical_state.universe, self.current_chunk.origin_id);
 
-            let new_current_chunk = game_state.universe.top_chunk_of_id(new_current_origin);
+            let new_current_chunk = logical_state.universe.top_chunk_of_id(new_current_origin);
 
             self.current_neutral_transform = CameraState::target_transform_for(
                 &new_current_chunk,
-                game_state,
+                logical_state,
                 self.camera_bounds,
             );
             self.current_chunk = new_current_chunk;
@@ -305,7 +305,7 @@ pub struct Director<R: gfx::Resources> {
     poly_mesh_index_buffer: IndexBuffer<R>,
     shape_pso: PipelineState<R, shape_pipe::Meta>,
 
-    game_state: GameState,
+    logical_state: LogicalState,
     move_state: MoveState,
 }
 
@@ -314,7 +314,7 @@ impl<R: gfx::Resources> Director<R> {
         factory: &mut F,
         resolution: TypedSize2D<u32, ScreenSpace>,
     ) -> Director<R> {
-        let game_state = GameState::minimal();
+        let logical_state = LogicalState::minimal();
 
         // TODO: will one day have to make this choose the right
         // shaders for the platform.
@@ -332,11 +332,11 @@ impl<R: gfx::Resources> Director<R> {
             )
             .unwrap();
 
-        let store = Director::build_mesh_cache(&game_state, factory);
+        let store = Director::build_mesh_cache(&logical_state, factory);
         let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
         let pmib = factory.create_index_buffer(&store.poly_meshes.all_indices[..]);
 
-        let camera_state = CameraState::new(&resolution, &game_state);
+        let camera_state = CameraState::new(&resolution, &logical_state);
         let ndc_bounds = TypedRect::new(TypedPoint2D::new(-1.0, -1.0), TypedSize2D::new(2.0, 2.0));
         let draw_space_to_gl = transform::rect_to_rect(&camera_state.camera_bounds, &ndc_bounds);
 
@@ -350,12 +350,12 @@ impl<R: gfx::Resources> Director<R> {
             poly_mesh_buffer: pmb,
             poly_mesh_index_buffer: pmib,
 
-            game_state,
+            logical_state,
             move_state: MoveState::None,
         }
     }
 
-    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &GameState, _factory: &mut F) -> MeshStore {
+    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &LogicalState, _factory: &mut F) -> MeshStore {
         let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
@@ -427,7 +427,7 @@ impl<R: gfx::Resources> Director<R> {
             .post_mul(&self.draw_space_to_gl);
 
         for (shape_id, offset) in &level_tracker.transforms {
-            let shape = &self.game_state.universe.shapes[shape_id];
+            let shape = &self.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
 
             self.execute_poly_draw(
@@ -449,21 +449,21 @@ impl<R: gfx::Resources> Director<R> {
         let mut l = LevelTracker::from_chunk(&self.camera_state.current_chunk);
 
         for _ in 0..DRAW_DISTANCE_UP {
-            l = l.go_up(&self.game_state.universe);
+            l = l.go_up(&self.logical_state.universe);
             l.filter_nonvisible();
         }
 
         self.draw_level(encoder, target, &l);
         for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
-            l = l.go_down(&self.game_state.universe);
+            l = l.go_down(&self.logical_state.universe);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);
         }
     }
 
     pub fn do_zoom(&mut self) -> () {
-        self.game_state.do_zoom();
-        self.camera_state.do_zoom(&self.game_state);
+        self.logical_state.do_zoom();
+        self.camera_state.do_zoom(&self.logical_state);
     }
 
     pub fn try_start_move(&mut self, d: Direction) -> () {
@@ -471,9 +471,9 @@ impl<R: gfx::Resources> Director<R> {
             return;
         }
 
-        if self.game_state.can_move(d) {
+        if self.logical_state.can_move(d) {
             self.move_state = MoveState::Moving {
-                chunk: self.game_state.player_chunk.clone(),
+                chunk: self.logical_state.player_chunk.clone(),
                 direction: d,
                 progress: 0.0,
             }
@@ -483,12 +483,12 @@ impl<R: gfx::Resources> Director<R> {
     }
 
     pub fn do_move(&mut self, d: Direction) -> () {
-        self.game_state.do_move(d);
-        self.camera_state.recenter(&self.game_state.player_chunk);
+        self.logical_state.do_move(d);
+        self.camera_state.recenter(&self.logical_state.player_chunk);
     }
 
     pub fn update(&mut self, time_delta: time::Duration) -> () {
-        self.camera_state.update(&self.game_state, time_delta);
+        self.camera_state.update(&self.logical_state, time_delta);
         self.move_state = self.move_state.update(time_delta);
 
         if self.move_state.move_complete() {
