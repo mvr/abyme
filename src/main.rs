@@ -30,6 +30,7 @@ mod mesh_collector;
 mod mesh_gen;
 
 mod delta;
+mod draw_delta;
 
 mod camera;
 mod gamestate;

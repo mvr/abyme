@@ -225,8 +225,20 @@ impl Universe {
     //     unimplemented!();
     // }
 
-    pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {
-        unimplemented!();
+    pub fn do_shove(&mut self, chunk: &TopChunk, d: Direction) -> () {
+        // Move every shape on its parent
+        for sid in chunk.top_shape_ids.keys() {
+            let mut result = btreemap![];
+            for (pid, pos) in self.shapes[sid].parent_ids.iter() {
+                result.insert(*pid, *pos + d.to_vect());
+            }
+            self.shapes.entry(*sid).and_modify(|p| (*p).parent_ids = result );
+        }
+
+        // MUST TODO: Delete old parents that the chunk is no longer on
+        for sid in chunk.top_shape_ids.keys() {
+
+        }
     }
 }
 
@@ -571,7 +583,7 @@ impl LogicalState {
     }
 
     pub fn do_move(&mut self, d: Direction) -> () {
-        unimplemented!();
+        self.universe.do_shove(&self.player_chunk, d);
     }
 }
 

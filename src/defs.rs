@@ -5,8 +5,17 @@ use euclid::{TypedPoint2D, TypedVector2D};
 ////////////////////////////////////////
 // Types
 
+pub trait SpaceWithLevel {
+    const level: i16;
+}
+
 pub struct UniverseSpace;
 pub struct ChildSpace;
+pub struct ParentSpace;
+
+impl SpaceWithLevel for UniverseSpace { const level: i16 = 0; }
+impl SpaceWithLevel for ChildSpace { const level: i16 = -1; }
+impl SpaceWithLevel for ParentSpace { const level: i16 = 1; }
 
 pub type UVec = TypedVector2D<i32, UniverseSpace>;
 pub type UPoint = TypedPoint2D<i32, UniverseSpace>;

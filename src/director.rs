@@ -9,15 +9,15 @@ use gfx::pso::PipelineState;
 use gfx::traits::FactoryExt;
 use gfx::IndexBuffer;
 
+use camera::CameraState;
 use defs::*;
 use delta::Delta;
+use gamestate::GameState;
 use math;
 use math::*;
 use mesh_gen::*;
 use polyomino::*;
 use shape::*;
-use camera::CameraState;
-use gamestate::GameState;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
@@ -41,8 +41,9 @@ impl LevelTracker {
         }
     }
 
-    pub fn go_up(&self, universe: &Universe) -> LevelTracker {
+    pub fn go_up(&self, gamestate: &GameState) -> LevelTracker {
         let mut result: HashMap<ShapeId, Delta> = hashmap![];
+        let universe = &gamestate.logical_state.universe;
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -54,7 +55,7 @@ impl LevelTracker {
 
                 result.insert(
                     parent.id,
-                    delta.revert(&Delta::from(parent.delta_to_child(shape))),
+                    delta.revert(&gamestate.visual_delta_to_child(parent, shape)),
                 );
             }
         }
@@ -65,8 +66,9 @@ impl LevelTracker {
         }
     }
 
-    pub fn go_down(&self, universe: &Universe) -> LevelTracker {
+    pub fn go_down(&self, gamestate: &GameState) -> LevelTracker {
         let mut result: HashMap<ShapeId, Delta> = hashmap![];
+        let universe = &gamestate.logical_state.universe;
 
         for (shape_id, delta) in &self.transforms {
             let shape = &universe.shapes[shape_id];
@@ -76,10 +78,7 @@ impl LevelTracker {
                     continue;
                 }
 
-                result.insert(
-                    child.id,
-                    delta.append(&Delta::from(shape.delta_to_child(child))),
-                );
+                result.insert(child.id, delta.append(&gamestate.visual_delta_to_child(shape, child)));
             }
         }
 
@@ -134,9 +133,9 @@ impl<R: gfx::Resources> Director<R> {
         let pmb = factory.create_vertex_buffer(&store.poly_meshes.vertices);
         let pmib = factory.create_index_buffer(&store.poly_meshes.all_indices[..]);
 
-
         let ndc_bounds = TypedRect::new(TypedPoint2D::new(-1.0, -1.0), TypedSize2D::new(2.0, 2.0));
-        let draw_space_to_gl = transform::rect_to_rect(&game_state.camera_state.camera_bounds, &ndc_bounds);
+        let draw_space_to_gl =
+            transform::rect_to_rect(&game_state.camera_state.camera_bounds, &ndc_bounds);
 
         Director {
             shape_pso,
@@ -151,7 +150,10 @@ impl<R: gfx::Resources> Director<R> {
         }
     }
 
-    fn build_mesh_cache<F: gfx::traits::Factory<R>>(gs: &LogicalState, _factory: &mut F) -> MeshStore {
+    fn build_mesh_cache<F: gfx::traits::Factory<R>>(
+        gs: &LogicalState,
+        _factory: &mut F,
+    ) -> MeshStore {
         let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
@@ -246,13 +248,13 @@ impl<R: gfx::Resources> Director<R> {
         let mut l = LevelTracker::from_chunk(&self.game_state.camera_state.current_chunk);
 
         for _ in 0..DRAW_DISTANCE_UP {
-            l = l.go_up(&self.game_state.logical_state.universe);
+            l = l.go_up(&self.game_state);
             l.filter_nonvisible();
         }
 
         self.draw_level(encoder, target, &l);
         for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
-            l = l.go_down(&self.game_state.logical_state.universe);
+            l = l.go_down(&self.game_state);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l);
         }

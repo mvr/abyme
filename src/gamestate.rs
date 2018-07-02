@@ -1,12 +1,13 @@
 use std::time;
 
-use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D};
+use euclid::{TypedRect, TypedSize2D, TypedTransform2D, TypedVector2D};
 
+use camera::CameraState;
 use defs::*;
+use delta::*;
 use math;
 use math::*;
 use shape::*;
-use camera::CameraState;
 
 #[derive(Clone, Debug)]
 pub enum MoveState {
@@ -53,6 +54,22 @@ impl MoveState {
             _ => false,
         }
     }
+
+    fn ease(t: f32) -> f32 {
+        if t < 0.5 {
+            4.0 * t * t * t
+        } else {
+            (t - 1.0) * (2.0 * t - 2.0) * (2.0 * t - 2.0) + 1.0
+        }
+    }
+
+    pub fn progress_to_displacement<U>(
+        progress: f32,
+        direction: Direction,
+    ) -> TypedVector2D<f32, U> {
+        let visual_progress = MoveState::ease(progress);
+        direction.to_vect::<i32, U>().to_f32() * visual_progress
+    }
 }
 
 pub struct GameState {
@@ -68,7 +85,7 @@ impl GameState {
         GameState {
             logical_state,
             camera_state,
-            move_state:  MoveState::None,
+            move_state: MoveState::None,
         }
     }
 
@@ -94,6 +111,7 @@ impl GameState {
     }
 
     pub fn do_move(&mut self, d: Direction) -> () {
+        assert!(self.logical_state.can_move(d));
         self.logical_state.do_move(d);
         self.camera_state.recenter(&self.logical_state.player_chunk);
     }
@@ -109,5 +127,35 @@ impl GameState {
             }
             self.move_state = MoveState::None;
         }
+    }
+
+    pub fn visual_delta_to_child(&self, parent: &Shape, child: &Shape) -> Delta {
+        match self.move_state {
+            MoveState::Moving {
+                ref chunk,
+                progress,
+                direction,
+            } => {
+                if chunk.top_shape_ids.contains_key(&child.id) {
+                    return Delta::from(
+                        child.position_on(&parent).to_f32().to_vector()
+                            + MoveState::progress_to_displacement(progress, direction),
+                    );
+                }
+            }
+            _ => (),
+        }
+
+        parent.delta_to_child(&child)
+        // if self.move_state == MoveState::Moving && self
+        //     .logical_state
+        //     .player_chunk
+        //     .top_shape_ids
+        //     .contains_key(&child.id)
+        // {
+        //     unimplemented!();
+        // } else {
+
+        // }
     }
 }
