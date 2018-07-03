@@ -147,15 +147,5 @@ impl GameState {
         }
 
         parent.delta_to_child(&child)
-        // if self.move_state == MoveState::Moving && self
-        //     .logical_state
-        //     .player_chunk
-        //     .top_shape_ids
-        //     .contains_key(&child.id)
-        // {
-        //     unimplemented!();
-        // } else {
-
-        // }
     }
 }
