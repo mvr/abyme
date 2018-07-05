@@ -515,8 +515,9 @@ impl Universe {
 
     pub fn delta_to_parent_of(&self, chunk: &TopChunk) -> Delta {
         let parent_chunk = self.parent_of(chunk);
-        let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
-        let parent_to_origin = self.shapes[&origin_parent_id].parent_ids[&origin_parent_id];
+        let origin_shape = &self.shapes[&chunk.origin_id];
+        let origin_parent_id = origin_shape.first_parent_id();
+        let parent_to_origin = origin_shape.parent_ids[&origin_shape.first_parent_id()];
         let parent_position_in_chunk = parent_chunk.top_shape_ids[&origin_parent_id];
         Delta::from(-parent_position_in_chunk).append(&Delta::from(parent_to_origin.to_vector()))
     }
