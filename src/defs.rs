@@ -55,6 +55,8 @@ pub const CAMERA_LERP_SPEED: f32 = 5.0;
 pub const CAMERA_UPPER_NORMALISE_TRIGGER: f32 = 1.5;
 pub const CAMERA_LOWER_NORMALISE_TRIGGER: f32 = 0.6;
 
+pub const MOVE_TIME: f32 = 0.5;
+
 ////////////////////////////////////////
 // Graphics
 

@@ -133,11 +133,13 @@ where U: SpaceWithLevel
     }
 }
 
-impl From<UVec> for Delta {
-    fn from(c: UVec) -> Delta {
+impl<U> From<TypedVector2D<i32, U>> for Delta
+where U: SpaceWithLevel
+{
+    fn from(c: TypedVector2D<i32, U>) -> Delta {
         Delta {
-            zdelta: 0,
-            scale: 0,
+            zdelta: U::level,
+            scale: U::level,
             coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
         }
     }

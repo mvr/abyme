@@ -31,7 +31,7 @@ impl MoveState {
             direction,
         } = self
         {
-            let newprogress = progress + math::time::duration_to_secs(time_delta);
+            let newprogress = progress + math::time::duration_to_secs(time_delta) / MOVE_TIME;
             if newprogress >= 1.0 {
                 return MoveState::MoveComplete {
                     chunk: chunk.clone(),
@@ -113,7 +113,7 @@ impl GameState {
     pub fn do_move(&mut self, d: Direction) -> () {
         assert!(self.logical_state.can_move(d));
         self.logical_state.do_move(d);
-        self.camera_state.recenter(&self.logical_state.player_chunk);
+        self.camera_state.recenter(&self.logical_state);
     }
 
     pub fn update(&mut self, time_delta: time::Duration) -> () {

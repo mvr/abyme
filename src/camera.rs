@@ -97,7 +97,7 @@ impl CameraState {
         logical_state: &LogicalState,
     ) -> TypedTransform2D<f32, UniverseSpace, UniverseSpace> {
         self.current_to_target_path
-            .as_delta_from(&logical_state.universe, self.current_chunk.origin_id)
+            .as_delta_from(&logical_state.universe, &self.current_chunk)
             .0
             .invert()
             .to_scale_transform()
@@ -130,12 +130,10 @@ impl CameraState {
         if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
             || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER
         {
-            let (adjustment, new_current_origin) = self
+            let (adjustment, new_current_chunk) = self
                 .current_to_target_path
                 .take(1)
-                .as_delta_from(&logical_state.universe, self.current_chunk.origin_id);
-
-            let new_current_chunk = logical_state.universe.top_chunk_of_id(new_current_origin);
+                .as_delta_from(&logical_state.universe, &self.current_chunk);
 
             self.current_neutral_transform = CameraState::target_transform_for(
                 &new_current_chunk,
@@ -158,7 +156,10 @@ impl CameraState {
 
     // This should/could rely on the focus of the camera not being the
     // player, but the parent of the player
-    pub fn recenter(&mut self, new_target: &TopChunk) -> () {
-        unimplemented!();
+    pub fn recenter(&mut self, logical_state: &LogicalState) -> () {
+        // let old_target_chunk = &self.target_chunk;
+        // let new_target_chunk = CameraState::intended_target(logical_state);
+        // let new_target_shape = old_target_chunk.common_shape_with(&new_target_chunk);
+        //unimplemented!();
     }
 }

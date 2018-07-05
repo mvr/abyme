@@ -461,7 +461,7 @@ impl Universe {
 
         self.explore_step(&mut result, &mut queue);
 
-        let top = result
+        let top: BTreeMap<ShapeId, UVec> = result
             .iter()
             .filter_map(|(s, d)| {
                 if d.zdelta == 0 {
@@ -471,7 +471,7 @@ impl Universe {
                 }
             })
             .collect();
-        let lower = result
+        let lower: BTreeMap<ShapeId, Delta> = result
             .iter()
             .filter_map(
                 |(s, d)| {
@@ -484,10 +484,16 @@ impl Universe {
             )
             .collect();
 
+        let origin_id = *top.keys().min().unwrap();
+        let origin_position = top[&origin_id];
+
+        let top_offsetted = top.into_iter().map(|(s, d)| (s, d - origin_position)).collect();
+        let lower_offsetted = lower.into_iter().map(|(s, d)| (s, Delta::from(- origin_position).append(&d))).collect();
+
         TotalChunk {
-            origin_id: shape_id,
-            top_shape_ids: top,
-            lower_shape_ids: lower,
+            top_shape_ids: top_offsetted,
+            lower_shape_ids: lower_offsetted,
+            origin_id: origin_id,
         }
     }
 
@@ -505,6 +511,14 @@ impl Universe {
     pub fn parent_of(&self, chunk: &TopChunk) -> TopChunk {
         let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
         self.explore(origin_parent_id).into()
+    }
+
+    pub fn delta_to_parent_of(&self, chunk: &TopChunk) -> Delta {
+        let parent_chunk = self.parent_of(chunk);
+        let origin_parent_id = self.shapes[&chunk.origin_id].first_parent_id();
+        let parent_to_origin = self.shapes[&origin_parent_id].parent_ids[&origin_parent_id];
+        let parent_position_in_chunk = parent_chunk.top_shape_ids[&origin_parent_id];
+        Delta::from(-parent_position_in_chunk).append(&Delta::from(parent_to_origin.to_vector()))
     }
 }
 
@@ -527,6 +541,15 @@ impl TopChunk {
             })
             .collect();
         poly_bounds.iter().fold(poly_bounds[0], |a, b| a.union(b))
+    }
+
+    pub fn common_shape_with(&self, other: &TopChunk) -> Option<ShapeId> {
+        for k in self.top_shape_ids.keys() {
+            if other.top_shape_ids.contains_key(k) {
+                return Some(*k);
+            }
+        }
+        return None;
     }
 }
 
@@ -587,7 +610,7 @@ impl LogicalState {
     }
 }
 
-// This has to represent a monotone path between chunks
+// This represents a monotone path between chunks
 #[derive(Debug)]
 pub enum MonotonePath {
     Zero,
@@ -685,26 +708,28 @@ impl MonotonePath {
     }
 
     // MUST TODO: This doesn't take into account movement
-    // MUST TODO: This should be fixed to always give the delta to the origin of the chunk
-    // Also returns the target shape of the delta
-    pub fn as_delta_from(&self, universe: &Universe, id: ShapeId) -> (Delta, ShapeId) {
+    // Also returns the target chunk of the delta
+    pub fn as_delta_from(&self, universe: &Universe, chunk: &TopChunk) -> (Delta, TopChunk) {
         use MonotonePath::*;
         match *self {
-            Zero => (Delta::zero(), id),
+            Zero => (Delta::zero(), chunk.clone()),
             Up { distance } => {
                 let mut result = Delta::zero();
-                let mut current_shape_id = id;
+                let mut current_chunk = chunk.clone();
                 for _ in 0..distance {
-                    let next_shape_id = universe.shapes[&id].first_parent_id();
-                    let parent = &universe.shapes[&next_shape_id];
-                    result = result.append(&universe.shapes[&id].delta_to_parent(parent));
-                    current_shape_id = next_shape_id;
+                    let next_chunk = universe.parent_of(&current_chunk);
+                    result = result.append(&universe.delta_to_parent_of(&current_chunk));
+                    current_chunk = next_chunk;
                 }
-                (result, current_shape_id)
+                (result, current_chunk)
             }
             Down { ref path } => unimplemented!(),
         }
     }
+}
+
+pub struct ChunkMonotonePath {
+
 }
 
 #[cfg(test)]
