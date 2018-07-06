@@ -4,8 +4,8 @@ use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet, VecDeque};
 
 use euclid::{TypedRect, TypedVector2D};
-use rug::Integer;
 use num::Integer as IntegerTrait;
+use rug::Integer;
 
 use defs::*;
 use delta::*;
@@ -84,7 +84,10 @@ trait HasSquares {
     ) -> Box<Iterator<Item = Square> + 'a>;
 
     #[inline]
-    fn constituent_locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
+    fn constituent_locations<'a>(
+        &'a self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .map(move |s| s.location(universe)),
@@ -104,10 +107,7 @@ trait HasSquares {
     }
 
     #[inline]
-    fn locations<'a>(
-        &'a self,
-        universe: &'a Universe,
-    ) -> Box<Iterator<Item = Location> + 'a> {
+    fn locations<'a>(&'a self, universe: &'a Universe) -> Box<Iterator<Item = Location> + 'a> {
         Box::new(
             self.constituent_squares(universe)
                 .cartesian_product(Location::all_subpositions())
@@ -201,13 +201,15 @@ impl Universe {
             .filter(move |s| s.parent_ids.contains_key(&parent_id))
     }
 
-    pub fn children_of_with_position<'a>(&'a self, parent_id: ShapeId) -> impl Iterator<Item = (ShapeId, ChildPoint)> + 'a {
+    pub fn children_of_with_position<'a>(
+        &'a self,
+        parent_id: ShapeId,
+    ) -> impl Iterator<Item = (ShapeId, ChildPoint)> + 'a {
         self.shapes
             .values()
             .filter(move |s| s.parent_ids.contains_key(&parent_id.clone()))
             .map(move |s| (s.id, s.parent_ids[&parent_id.clone()]))
     }
-
 
     pub fn parents_with_position_of(&self, shape: &Shape) -> Vec<(&Shape, ChildPoint)> {
         shape
@@ -232,13 +234,13 @@ impl Universe {
             for (pid, pos) in self.shapes[sid].parent_ids.iter() {
                 result.insert(*pid, *pos + d.to_vect());
             }
-            self.shapes.entry(*sid).and_modify(|p| (*p).parent_ids = result );
+            self.shapes
+                .entry(*sid)
+                .and_modify(|p| (*p).parent_ids = result);
         }
 
         // MUST TODO: Delete old parents that the chunk is no longer on
-        for sid in chunk.top_shape_ids.keys() {
-
-        }
+        for sid in chunk.top_shape_ids.keys() {}
     }
 }
 
@@ -364,14 +366,15 @@ impl Square {
 
 impl Location {
     fn wrap_subpos(v: ChildVec) -> ChildVec {
-        ChildVec::new(v.x.mod_floor(&(ZOOM_SCALE as i32)),
-                      v.y.mod_floor(&(ZOOM_SCALE as i32)))
+        ChildVec::new(
+            v.x.mod_floor(&(ZOOM_SCALE as i32)),
+            v.y.mod_floor(&(ZOOM_SCALE as i32)),
+        )
     }
 
     fn nudge_easy(&self, d: Direction) -> Option<Location> {
         let newsubpos = self.subposition + d.to_vect();
-        if newsubpos == Location::wrap_subpos(newsubpos)
-        {
+        if newsubpos == Location::wrap_subpos(newsubpos) {
             Some(Location {
                 square: self.square.clone(),
                 subposition: newsubpos,
@@ -487,8 +490,14 @@ impl Universe {
         let origin_id = *top.keys().min().unwrap();
         let origin_position = top[&origin_id];
 
-        let top_offsetted = top.into_iter().map(|(s, d)| (s, d - origin_position)).collect();
-        let lower_offsetted = lower.into_iter().map(|(s, d)| (s, Delta::from(- origin_position).append(&d))).collect();
+        let top_offsetted = top
+            .into_iter()
+            .map(|(s, d)| (s, d - origin_position))
+            .collect();
+        let lower_offsetted = lower
+            .into_iter()
+            .map(|(s, d)| (s, Delta::from(-origin_position).append(&d)))
+            .collect();
 
         TotalChunk {
             top_shape_ids: top_offsetted,
@@ -678,8 +687,12 @@ impl MonotonePath {
             }
             Up { distance } => {
                 assert!(n <= distance);
-                Up {
-                    distance: distance - n,
+                if (distance == n) {
+                    Zero
+                } else {
+                    Up {
+                        distance: distance - n,
+                    }
                 }
             }
             Down { ref path } => {
@@ -729,10 +742,6 @@ impl MonotonePath {
     }
 }
 
-pub struct ChunkMonotonePath {
-
-}
-
 #[cfg(test)]
 mod movement_tests {
     use super::*;
@@ -775,17 +784,14 @@ mod movement_tests {
 
         let l = Location {
             square: Square {
-                shape_id: ShapeId(
-                    1
-                ),
-                position: UVec::new(0,0).to_point()
+                shape_id: ShapeId(1),
+                position: UVec::new(0, 0).to_point(),
             },
-            subposition: ChildVec::new(1,0)
+            subposition: ChildVec::new(1, 0),
         };
 
         assert!(l.inhabitant(&gs.universe) == None);
     }
-
 
     #[test]
     fn test_1() {

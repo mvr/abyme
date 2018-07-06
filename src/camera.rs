@@ -99,7 +99,6 @@ impl CameraState {
         self.current_to_target_path
             .as_delta_from(&logical_state.universe, &self.current_chunk)
             .0
-            .invert()
             .to_scale_transform()
     }
 
@@ -113,6 +112,7 @@ impl CameraState {
 
     pub fn update(&mut self, logical_state: &LogicalState, time_delta: time::Duration) -> () {
         // TODO: This is currently busted but somehow I get away with it?
+
         self.current_transform = transform::lerp(
             &self.current_transform,
             &self.true_target_transform(logical_state),
@@ -144,14 +144,10 @@ impl CameraState {
 
             self.current_transform = self
                 .current_transform
-                .pre_mul(&adjustment.to_scale_transform());
+                .pre_mul(&adjustment.invert().to_scale_transform());
 
             self.current_to_target_path = self.current_to_target_path.drop(1);
         }
-    }
-
-    pub fn set_origin_shape(&mut self, new_origin: &ShapeId) -> () {
-        unimplemented!();
     }
 
     // This should/could rely on the focus of the camera not being the
