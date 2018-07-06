@@ -150,12 +150,18 @@ impl CameraState {
         }
     }
 
-    // This should/could rely on the focus of the camera not being the
-    // player, but the parent of the player
+    // MUST TODO: This will start to matter when chunks are made
     pub fn recenter(&mut self, logical_state: &LogicalState) -> () {
         // let old_target_chunk = &self.target_chunk;
         // let new_target_chunk = CameraState::intended_target(logical_state);
-        // let new_target_shape = old_target_chunk.common_shape_with(&new_target_chunk);
+
+        // self.target_chunk = new_target_chunk;
+
+        // let old_current_chunk = &self.current_chunk;
+        // let new_current_chunk = CameraState::intended_target(logical_state);
+
+        // self.current_chunk = new_current_chunk;
+
         //unimplemented!();
     }
 }

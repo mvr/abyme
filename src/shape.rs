@@ -1,7 +1,7 @@
 // extern crate euclid;
 
 use itertools::Itertools;
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use euclid::{TypedRect, TypedVector2D};
 use num::Integer as IntegerTrait;
@@ -22,7 +22,7 @@ pub struct Shape {
     pub id: ShapeId,
 
     // TODO: use a faster hash table or just a vec https://github.com/servo/rust-fnv
-    pub parent_ids: BTreeMap<ShapeId, ChildPoint>,
+    pub parent_ids: HashMap<ShapeId, ChildPoint>,
     // TODO: instead store a distinguished parent?
     pub polyomino: Polyomino,
 
@@ -163,14 +163,14 @@ impl Universe {
         let id2 = ShapeId(2);
         let shape1 = Shape {
             id: id1,
-            parent_ids: btreemap!{ id2 => ChildPoint::new(1, 0) },
+            parent_ids: hashmap!{ id2 => ChildPoint::new(1, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
         let shape2 = Shape {
             id: id2,
-            parent_ids: btreemap!{ id1 => ChildPoint::new(0, 0) },
+            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
@@ -219,18 +219,21 @@ impl Universe {
             .collect()
     }
 
-    // canPushChunk :: Universe -> Direction -> Chunk -> Bool
-    //     canPushChunk u d c = not (oob || any (isInhabited u) fr)
-    // where (fr, oob) = fringe u d c
+    fn used_parents_of(&self, sid: ShapeId) -> Vec<ShapeId> {
+        self.shapes[&sid].constituent_locations(&self).map(move |l| l.square.shape_id).dedup().collect()
+    }
 
-    // pub fn can_shove(&self, chunk: TopChunk, d: Direction) -> bool {
-    //     unimplemented!();
-    // }
+    fn clean_parents(&mut self, sid: ShapeId) -> () {
+        let used = self.used_parents_of(sid);
+        self.shapes.entry(sid)
+            .and_modify(|s| (*s).parent_ids.retain(|pid, _| used.contains(pid)));
+    }
 
+    // This invalidates the chunk
     pub fn do_shove(&mut self, chunk: &TopChunk, d: Direction) -> () {
         // Move every shape on its parent
         for sid in chunk.top_shape_ids.keys() {
-            let mut result = btreemap![];
+            let mut result = hashmap![];
             for (pid, pos) in self.shapes[sid].parent_ids.iter() {
                 result.insert(*pid, *pos + d.to_vect());
             }
@@ -239,8 +242,10 @@ impl Universe {
                 .and_modify(|p| (*p).parent_ids = result);
         }
 
-        // MUST TODO: Delete old parents that the chunk is no longer on
-        for sid in chunk.top_shape_ids.keys() {}
+        // MUST TODO: Figure out which parts of this chunk have split off. Or can this never happen?
+        for sid in chunk.top_shape_ids.keys() {
+            self.clean_parents(*sid);
+        }
     }
 }
 
@@ -540,8 +545,7 @@ pub struct TopChunk {
 
 impl TopChunk {
     pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
-        let poly_bounds: Vec<TypedRect<i32, UniverseSpace>> = self
-            .top_shape_ids
+        self.top_shape_ids
             .iter()
             .map(|(shape_id, offset)| {
                 universe.shapes[shape_id]
@@ -549,17 +553,22 @@ impl TopChunk {
                     .bounding_box()
                     .translate(offset)
             })
-            .collect();
-        poly_bounds.iter().fold(poly_bounds[0], |a, b| a.union(b))
+            .fold1(|ref a, ref b| a.union(b))
+            .unwrap()
     }
 
-    pub fn common_shape_with(&self, other: &TopChunk) -> Option<ShapeId> {
+    fn common_shape_with(&self, other: &TopChunk) -> Option<ShapeId> {
         for k in self.top_shape_ids.keys() {
             if other.top_shape_ids.contains_key(k) {
                 return Some(*k);
             }
         }
         return None;
+    }
+
+    pub fn recentering_for(&self, other: &TopChunk) -> TypedVector2D<i32, UniverseSpace>{
+        let common = self.common_shape_with(other).unwrap();
+        other.top_shape_ids[&common] - self.top_shape_ids[&common]
     }
 }
 
