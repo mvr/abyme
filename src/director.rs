@@ -219,6 +219,16 @@ impl<R: gfx::Resources> Director<R> {
         //        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
     }
 
+    fn fade_amount_for_level(level: f32) -> f32 {
+        if level < 0.0 {
+            1.0
+        } else if 0.0 <= level && level <= 1.0 {
+            1.0 - (0.7 * level)
+        } else {
+            0.3
+        }
+    }
+
     fn draw_level<C: gfx::CommandBuffer<R>>(
         &self,
         encoder: &mut gfx::Encoder<R, C>,
@@ -231,16 +241,22 @@ impl<R: gfx::Resources> Director<R> {
             .current_transform
             .post_mul(&self.draw_space_to_gl);
 
+        let fade = <Director<R>>::fade_amount_for_level(level_tracker.visual_level);
+
         for (shape_id, offset) in &level_tracker.transforms {
             let shape = &self.game_state.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
+
+            let faded_fill = [shape.fill_color[0] * fade,
+                              shape.fill_color[1] * fade,
+                              shape.fill_color[2] * fade];
 
             self.execute_poly_draw(
                 encoder,
                 target,
                 &shape.polyomino,
                 &offset_transform.post_mul(&transform_to_gl),
-                shape.fill_color,
+                faded_fill,
                 shape.outline_color,
             );
         }
