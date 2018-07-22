@@ -38,8 +38,6 @@ mod director;
 mod polyomino;
 mod shape;
 
-use std::time::{Duration, Instant};
-
 use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;

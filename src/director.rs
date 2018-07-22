@@ -1,7 +1,6 @@
 extern crate gfx;
 
 use std::collections::HashMap;
-use std::time;
 
 use euclid::{TypedPoint2D, TypedRect, TypedSize2D, TypedTransform2D};
 use gfx::handle::Buffer;
@@ -9,11 +8,9 @@ use gfx::pso::PipelineState;
 use gfx::traits::FactoryExt;
 use gfx::IndexBuffer;
 
-use camera::CameraState;
 use defs::*;
 use delta::Delta;
 use gamestate::GameState;
-use math;
 use math::*;
 use mesh_gen::*;
 use polyomino::*;

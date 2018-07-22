@@ -1,6 +1,6 @@
-use rug::ops::{DivRounding, Pow};
+use rug::ops::{Pow};
 use rug::Integer;
-use std::ops::{Add, Neg, Sub};
+// use std::ops::{Add, Neg, Sub};
 
 use euclid::*;
 
@@ -38,13 +38,13 @@ impl Delta {
         } else if self.scale >= other_relative_scale {
             let difference = (self.scale - other_relative_scale) as u32;
             newcoords = math::add_vec(
-                math::scale_vec(&self.coords, Integer::from(ZOOM_SCALE).pow(difference)),
+                math::scale_vec(&self.coords, &Integer::from(ZOOM_SCALE).pow(difference)),
                 other.coords.clone(),
             );
         } else {
             let difference = (other_relative_scale - self.scale) as u32;
             newcoords = math::add_vec(
-                math::scale_vec(&other.coords, Integer::from(ZOOM_SCALE).pow(difference)),
+                math::scale_vec(&other.coords, &Integer::from(ZOOM_SCALE).pow(difference)),
                 self.coords.clone(),
             );
         }
@@ -126,8 +126,8 @@ where U: SpaceWithLevel
         let int_y = (c.y * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
 
         Delta {
-            zdelta: U::level,
-            scale: U::level - FRACTIONAL_DELTA_SCALE as i16,
+            zdelta: U::LEVEL,
+            scale: U::LEVEL - FRACTIONAL_DELTA_SCALE as i16,
             coords: TypedVector2D::new(Integer::from(int_x), Integer::from(int_y)),
         }
     }
@@ -138,8 +138,8 @@ where U: SpaceWithLevel
 {
     fn from(c: TypedVector2D<i32, U>) -> Delta {
         Delta {
-            zdelta: U::level,
-            scale: U::level,
+            zdelta: U::LEVEL,
+            scale: U::LEVEL,
             coords: TypedVector2D::new(Integer::from(c.x), Integer::from(c.y)),
         }
     }

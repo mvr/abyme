@@ -1,6 +1,6 @@
 use std::time;
 
-use euclid::{TypedRect, TypedSize2D, TypedTransform2D, TypedVector2D};
+use euclid::{TypedSize2D, TypedVector2D};
 
 use camera::CameraState;
 use defs::*;
@@ -45,7 +45,7 @@ impl MoveState {
                 };
             }
         }
-        return self.clone();
+        self.clone()
     }
 
     pub fn move_complete(&self) -> bool {

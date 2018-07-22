@@ -7,7 +7,8 @@ Everything is oriented counter-clockwise
 Imminent TODOs
 --------------
 
-* Fade out background layers
+* Fade out background layers -- DONE
+* Zoom in instead of out
 * Add functions to recenter a chunk on a different origin and calculate the appropriate delta
 * Move the correct chunk, not the one that currently happens to be the player
 * Only allow moving when we are approximatly at the right visual zoom level

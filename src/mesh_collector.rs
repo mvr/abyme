@@ -8,7 +8,7 @@ use gfx::{Slice, IndexBuffer, Resources};
 
 #[derive(Debug)]
 pub struct MeshCollection<IdType, VertexType>
-where IdType: Eq + Hash
+where IdType: Eq + Hash + Clone
 {
     pub vertices: Vec<VertexType>,
     pub all_indices: Vec<Index>,
@@ -16,7 +16,7 @@ where IdType: Eq + Hash
 }
 
 impl<IdType, VertexType> MeshCollection<IdType, VertexType>
-where IdType: Eq + Hash
+where IdType: Eq + Hash + Clone
 {
     pub fn new() -> MeshCollection<IdType, VertexType> {
         MeshCollection {
@@ -51,7 +51,7 @@ where IdType: Eq + Hash
 
 #[derive(Debug)]
 pub struct MeshAdder<'l, IdType: 'l, VertexType: 'l, Input, Ctor>
-where IdType: Eq + Hash
+where IdType: Eq + Hash + Clone
 {
     buffers: &'l mut MeshCollection<IdType, VertexType>,
     new_id: IdType,
@@ -63,7 +63,7 @@ where IdType: Eq + Hash
 
 impl<'l, IdType, VertexType: 'l, Input, Ctor> MeshAdder<'l, IdType, VertexType, Input, Ctor>
 where
-    IdType: Eq + Hash,
+    IdType: Eq + Hash + Clone,
 {
     pub fn new(
         buffers: &'l mut MeshCollection<IdType, VertexType>,
@@ -102,7 +102,7 @@ pub trait VertexConstructor<Input, VertexType> {
 impl<'l, IdType, VertexType, Input, Ctor> GeometryBuilder<Input>
     for MeshAdder<'l, IdType, VertexType, Input, Ctor>
 where
-    IdType: Eq + Hash,
+    IdType: Eq + Hash + Clone,
     VertexType: 'l + Clone,
     Ctor: VertexConstructor<Input, VertexType>,
 {

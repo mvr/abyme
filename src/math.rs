@@ -1,8 +1,8 @@
-use std::ops::{Add, Neg, Sub};
+use std::ops::{Add, Sub};
 
 use euclid::*;
 
-use num::Integer as IntegerTrait;
+// use num::Integer as IntegerTrait;
 use rug;
 use rug::ops::{DivRounding, Pow};
 use rug::Integer;
@@ -59,7 +59,7 @@ pub fn sub_vec<T: Sub<T, Output = T>, U>(
 }
 
 #[inline]
-pub fn scale_vec<U>(v: &TypedVector2D<Integer, U>, amount: Integer) -> TypedVector2D<Integer, U> {
+pub fn scale_vec<U>(v: &TypedVector2D<Integer, U>, amount: &Integer) -> TypedVector2D<Integer, U> {
     TypedVector2D::new(amount.clone() * &v.x, amount.clone() * &v.y)
 }
 

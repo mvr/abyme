@@ -402,7 +402,7 @@ impl Location {
             return Some(easy);
         }
 
-        seen.insert((self.clone(), d));
+        seen.insert((*self, d));
         let newsquare = self.square.nudge_recurse(universe, d, seen)?;
         let newsubpos = Location::wrap_subpos(self.subposition + d.to_vect());
         Some(Location {
@@ -507,7 +507,7 @@ impl Universe {
         TotalChunk {
             top_shape_ids: top_offsetted,
             lower_shape_ids: lower_offsetted,
-            origin_id: origin_id,
+            origin_id,
         }
     }
 
@@ -563,7 +563,7 @@ impl TopChunk {
                 return Some(*k);
             }
         }
-        return None;
+        None
     }
 
     pub fn recentering_for(&self, other: &TopChunk) -> TypedVector2D<i32, UniverseSpace>{
@@ -612,7 +612,7 @@ impl LogicalState {
 
         LogicalState {
             universe: u,
-            player_chunk: player_chunk,
+            player_chunk,
         }
     }
 
@@ -696,7 +696,7 @@ impl MonotonePath {
             }
             Up { distance } => {
                 assert!(n <= distance);
-                if (distance == n) {
+                if distance == n {
                     Zero
                 } else {
                     Up {
