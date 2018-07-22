@@ -24,11 +24,14 @@ use shape::*;
 #[derive(Clone, Debug)]
 struct LevelTracker {
     level: i32,
+    visual_level: f32,
     transforms: HashMap<ShapeId, Delta>,
 }
 
 impl LevelTracker {
-    pub fn from_chunk(chunk: &TopChunk) -> LevelTracker {
+    pub fn from_gamestate(gs: &GameState) -> LevelTracker {
+        let chunk = &gs.camera_state.current_chunk;
+
         let mut result = hashmap![];
 
         for (shape_id, uvec) in &chunk.top_shape_ids {
@@ -37,6 +40,7 @@ impl LevelTracker {
 
         LevelTracker {
             level: 0,
+            visual_level: gs.camera_state.current_visual_level(),
             transforms: result,
         }
     }
@@ -62,6 +66,7 @@ impl LevelTracker {
 
         LevelTracker {
             level: self.level + 1,
+            visual_level: self.visual_level + 1.0,
             transforms: result,
         }
     }
@@ -84,6 +89,7 @@ impl LevelTracker {
 
         LevelTracker {
             level: self.level - 1,
+            visual_level: self.visual_level - 1.0,
             transforms: result,
         }
     }
@@ -245,7 +251,7 @@ impl<R: gfx::Resources> Director<R> {
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
     ) -> () {
-        let mut l = LevelTracker::from_chunk(&self.game_state.camera_state.current_chunk);
+        let mut l = LevelTracker::from_gamestate(&self.game_state);
 
         for _ in 0..DRAW_DISTANCE_UP {
             l = l.go_up(&self.game_state);

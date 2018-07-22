@@ -42,7 +42,9 @@ impl CameraState {
     }
 
     fn intended_target(logical_state: &LogicalState) -> TopChunk {
-        logical_state.universe.parent_of(&logical_state.player_chunk)
+        logical_state
+            .universe
+            .parent_of(&logical_state.player_chunk)
     }
 
     fn target_transform_for(
@@ -60,14 +62,18 @@ impl CameraState {
         )
     }
 
-    pub fn new(resolution: &TypedSize2D<u32, ScreenSpace>, logical_state: &LogicalState) -> CameraState {
+    pub fn new(
+        resolution: &TypedSize2D<u32, ScreenSpace>,
+        logical_state: &LogicalState,
+    ) -> CameraState {
         let camera_bounds = TypedRect::new(
             TypedPoint2D::zero(),
             TypedSize2D::new(resolution.width as f32, resolution.height as f32),
         );
 
         let start_chunk = CameraState::intended_target(&logical_state);
-        let transform = CameraState::target_transform_for(&start_chunk, logical_state, camera_bounds);
+        let transform =
+            CameraState::target_transform_for(&start_chunk, logical_state, camera_bounds);
 
         CameraState {
             camera_bounds: camera_bounds,
@@ -90,6 +96,18 @@ impl CameraState {
             CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);
 
         self.current_to_target_path = self.current_to_target_path.up_target();
+    }
+
+    pub fn scale_from_neutral(&self) -> f32 {
+        transform::scale(
+            &self
+                .current_transform
+                .post_mul(&self.current_neutral_transform.inverse().unwrap()),
+        )
+    }
+
+    pub fn current_visual_level(&self) -> f32 {
+        self.scale_from_neutral().log(ZOOM_SCALE as f32)
     }
 
     fn target_to_current_transform(
@@ -123,9 +141,7 @@ impl CameraState {
     }
 
     fn normalise(&mut self, logical_state: &LogicalState) -> () {
-        let scale_from_neutral = transform::scale(&self
-            .current_transform
-            .post_mul(&self.current_neutral_transform.inverse().unwrap()));
+        let scale_from_neutral = self.scale_from_neutral();
 
         if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
             || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER
