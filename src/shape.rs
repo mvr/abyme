@@ -14,7 +14,7 @@ use math::Direction;
 use polyomino::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ShapeId(u32);
+pub struct ShapeId(pub u32);
 
 #[derive(Debug)]
 pub struct Shape {

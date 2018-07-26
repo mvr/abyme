@@ -7,6 +7,8 @@
 extern crate num;
 extern crate rug;
 
+extern crate toml;
+
 #[macro_use]
 extern crate gfx;
 extern crate gfx_core;
@@ -38,6 +40,10 @@ mod director;
 mod polyomino;
 mod shape;
 
+mod load_universe;
+
+use std::env;
+
 use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
 use glutin::GlContext;
@@ -51,6 +57,15 @@ use shape::*;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
+fn universe_filename() -> String {
+    let first_argument = std::env::args().nth(1);
+
+    match first_argument {
+        Some(name) => name,
+        None => "universe/minimal.toml".to_string()
+    }
+}
+
 pub fn main() {
     let mut events_loop = glutin::EventsLoop::new();
     let resolution = TypedSize2D::new(1024, 768);
@@ -63,7 +78,9 @@ pub fn main() {
         gfx_glutin::init::<ColorFormat, DepthFormat>(builder, context, &events_loop);
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-    let mut director: Director<_> = Director::new(&mut factory, resolution);
+
+    let logical_state = load_universe::load_universe(universe_filename());
+    let mut director: Director<_> = Director::new(&mut factory, logical_state, resolution);
 
     let mut last_time = std::time::Instant::now();
 

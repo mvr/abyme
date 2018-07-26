@@ -15,6 +15,7 @@ use math::*;
 use mesh_gen::*;
 use polyomino::*;
 use shape::*;
+use load_universe;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
@@ -112,9 +113,10 @@ pub struct Director<R: gfx::Resources> {
 impl<R: gfx::Resources> Director<R> {
     pub fn new<F: gfx::traits::Factory<R>>(
         factory: &mut F,
+        logical_state: LogicalState,
         resolution: TypedSize2D<u32, ScreenSpace>,
     ) -> Director<R> {
-        let game_state = GameState::new(resolution);
+        let game_state = GameState::new(logical_state, resolution);
 
         // TODO: will one day have to make this choose the right
         // shaders for the platform.

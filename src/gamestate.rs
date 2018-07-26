@@ -8,6 +8,7 @@ use delta::*;
 use math;
 use math::*;
 use shape::*;
+use load_universe;
 
 #[derive(Clone, Debug)]
 pub enum MoveState {
@@ -79,8 +80,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(resolution: TypedSize2D<u32, ScreenSpace>) -> GameState {
-        let logical_state = LogicalState::minimal();
+    pub fn new(logical_state: LogicalState, resolution: TypedSize2D<u32, ScreenSpace>) -> GameState {
         let camera_state = CameraState::new(&resolution, &logical_state);
         GameState {
             logical_state,
