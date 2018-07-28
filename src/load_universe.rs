@@ -78,6 +78,7 @@ pub fn parse_universe(string: String) -> LogicalState {
     for (name, val) in toml_table {
         if name == "player" {
             player_name = val.as_str().expect("player name was not a string");
+            continue;
         }
 
         name_map.insert(name.clone(), ShapeId(current_id));

@@ -169,6 +169,7 @@ impl MeshStore {
         for p in poly.square_rects() {
             MeshStore::ccw_fill_rectangle(&p.to_untyped().to_f32(), &fill_options, &mut fill_adder);
         }
+
         fill_adder.end_geometry();
         fill_adder.finalise_add();
     }
@@ -179,8 +180,6 @@ impl MeshStore {
         _options: &FillOptions,
         output: &mut GeometryBuilder<FillVertex>,
     ) -> () {
-        output.begin_geometry();
-
         let a = output.add_vertex(FillVertex {
             position: rect.origin,
             normal: vector(-1.0, -1.0),
@@ -199,8 +198,6 @@ impl MeshStore {
         });
         output.add_triangle(a, b, c);
         output.add_triangle(a, c, d);
-
-        output.end_geometry();
     }
 
     pub fn contains_poly(&self, poly: &Polyomino) -> bool {

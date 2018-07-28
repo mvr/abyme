@@ -153,6 +153,7 @@ impl HasSquares for Shape {
     // TODO: specialise some other methods? only if worth it
 }
 
+#[derive(Debug)]
 pub struct Universe {
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
 }
@@ -600,6 +601,7 @@ impl From<TotalChunk> for TopChunk {
     }
 }
 
+#[derive(Debug)]
 pub struct LogicalState {
     pub universe: Universe,
     pub player_chunk: TopChunk,

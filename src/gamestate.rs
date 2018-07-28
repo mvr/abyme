@@ -73,6 +73,7 @@ impl MoveState {
     }
 }
 
+#[derive(Debug)]
 pub struct GameState {
     pub logical_state: LogicalState,
     pub camera_state: CameraState,
