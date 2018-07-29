@@ -178,8 +178,8 @@ impl<R: gfx::Resources> Director<R> {
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
         poly: &Polyomino,
         raw_transform: &TypedTransform2D<f32, UniverseSpace, GLSpace>,
-        fill_color: [f32; 3],
-        outline_color: [f32; 3],
+        fill_color: [f32; 4],
+        outline_color: [f32; 4],
     ) -> () {
         let arr_transform = (*raw_transform).to_gl_mat3();
 
@@ -215,16 +215,26 @@ impl<R: gfx::Resources> Director<R> {
             color: outline_color,
         };
 
-        //        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
+        encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
     }
 
-    fn fade_amount_for_level(level: f32) -> f32 {
+    fn fill_fade_amount_for_level(level: f32) -> f32 {
         if level < 0.0 {
             1.0
         } else if 0.0 <= level && level <= 1.0 {
             1.0 - (0.7 * level)
         } else {
             0.3
+        }
+    }
+
+    fn outline_fade_amount_for_level(level: f32) -> f32 {
+        if level < 0.0 {
+            1.0
+        } else if 0.0 <= level && level <= 1.0 {
+            1.0 - level
+        } else {
+            0.0
         }
     }
 
@@ -240,15 +250,22 @@ impl<R: gfx::Resources> Director<R> {
             .current_transform
             .post_mul(&self.draw_space_to_gl);
 
-        let fade = <Director<R>>::fade_amount_for_level(level_tracker.visual_level);
+        let fill_fade = <Director<R>>::fill_fade_amount_for_level(level_tracker.visual_level);
+        let outline_fade = <Director<R>>::outline_fade_amount_for_level(level_tracker.visual_level);
 
         for (shape_id, offset) in &level_tracker.transforms {
             let shape = &self.game_state.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
 
-            let faded_fill = [shape.fill_color[0] * fade,
-                              shape.fill_color[1] * fade,
-                              shape.fill_color[2] * fade];
+            let faded_fill = [shape.fill_color[0] * fill_fade,
+                              shape.fill_color[1] * fill_fade,
+                              shape.fill_color[2] * fill_fade,
+                              1.0];
+
+            let faded_outline = [shape.outline_color[0] * outline_fade,
+                                 shape.outline_color[1] * outline_fade,
+                                 shape.outline_color[2] * outline_fade,
+                                 outline_fade];
 
             self.execute_poly_draw(
                 encoder,
@@ -256,7 +273,7 @@ impl<R: gfx::Resources> Director<R> {
                 &shape.polyomino,
                 &offset_transform.post_mul(&transform_to_gl),
                 faded_fill,
-                shape.outline_color,
+                faded_outline,
             );
         }
     }
