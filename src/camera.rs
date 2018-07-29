@@ -143,8 +143,14 @@ impl CameraState {
     fn normalise(&mut self, logical_state: &LogicalState) -> () {
         let scale_from_neutral = self.scale_from_neutral();
 
-        if scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
-            || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER
+        // MUST TODO: This will break if the individual chunks get too
+        // big, need to scale by the size of the target/current chunk?
+
+        let need_normalisation = (scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
+            || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER)
+            && self.current_to_target_path != MonotonePath::Zero;
+
+        if need_normalisation
         {
             let (adjustment, new_current_chunk) = self
                 .current_to_target_path

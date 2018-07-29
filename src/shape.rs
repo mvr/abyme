@@ -632,7 +632,7 @@ impl LogicalState {
 }
 
 // This represents a monotone path between chunks
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MonotonePath {
     Zero,
     Up { distance: u32 },
