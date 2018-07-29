@@ -41,7 +41,7 @@ impl Polyomino {
         let mut res = vec![];
 
         for p in self.squares.iter().cloned() {
-            let sort = if self.has_position(p - UVec::new(-1, 0)) {
+            let sort = if self.has_position(p + UVec::new(-1, 0)) {
                 GridSegmentType::Internal
             } else {
                 GridSegmentType::Perimeter
@@ -67,7 +67,7 @@ impl Polyomino {
         let mut res = vec![];
 
         for p in self.squares.iter().cloned() {
-            let sort = if self.has_position(p - UVec::new(0, -1)) {
+            let sort = if self.has_position(p + UVec::new(0, -1)) {
                 GridSegmentType::Internal
             } else {
                 GridSegmentType::Perimeter
