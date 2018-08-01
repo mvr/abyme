@@ -80,6 +80,7 @@ pub fn main() {
 
 
     let logical_state = load_universe::load_universe(universe_filename());
+
     let mut director: Director<_> = Director::new(&mut factory, logical_state, resolution);
 
     let mut last_time = std::time::Instant::now();

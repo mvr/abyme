@@ -76,7 +76,7 @@ impl VertexConstructor<FillVertex, GpuShapeVertex> for FillExtraData {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum PolyMeshType {
     GridMesh,
     FillMesh,

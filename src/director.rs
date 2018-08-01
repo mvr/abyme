@@ -11,11 +11,11 @@ use gfx::IndexBuffer;
 use defs::*;
 use delta::Delta;
 use gamestate::GameState;
+use load_universe;
 use math::*;
 use mesh_gen::*;
 use polyomino::*;
 use shape::*;
-use load_universe;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
@@ -81,7 +81,10 @@ impl LevelTracker {
                     continue;
                 }
 
-                result.insert(child.id, delta.append(&gamestate.visual_delta_to_child(shape, child)));
+                result.insert(
+                    child.id,
+                    delta.append(&gamestate.visual_delta_to_child(shape, child)),
+                );
             }
         }
 
@@ -172,34 +175,15 @@ impl<R: gfx::Resources> Director<R> {
         result
     }
 
-    fn execute_poly_draw<C: gfx::CommandBuffer<R>>(
+    fn execute_poly_outline_draw<C: gfx::CommandBuffer<R>>(
         &self,
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
         poly: &Polyomino,
         raw_transform: &TypedTransform2D<f32, UniverseSpace, GLSpace>,
-        fill_color: [f32; 4],
         outline_color: [f32; 4],
     ) -> () {
         let arr_transform = (*raw_transform).to_gl_mat3();
-
-        let fill_slice = self.mesh_store.poly_meshes.gfx_slice_for(
-            &self.poly_mesh_index_buffer,
-            PolyMeshId {
-                poly: poly.clone(),
-                which: PolyMeshType::FillMesh,
-            },
-        );
-
-        let fill_data = shape_pipe::Data {
-            vbuf: self.poly_mesh_buffer.clone(),
-            out: target.clone(),
-            transform: arr_transform,
-            color: fill_color,
-        };
-
-        encoder.draw(&fill_slice, &self.shape_pso, &fill_data);
-
         let outline_slice = self.mesh_store.poly_meshes.gfx_slice_for(
             &self.poly_mesh_index_buffer,
             PolyMeshId {
@@ -216,6 +200,33 @@ impl<R: gfx::Resources> Director<R> {
         };
 
         encoder.draw(&outline_slice, &self.shape_pso, &outline_data);
+    }
+
+    fn execute_poly_fill_draw<C: gfx::CommandBuffer<R>>(
+        &self,
+        encoder: &mut gfx::Encoder<R, C>,
+        target: &gfx::handle::RenderTargetView<R, ColorFormat>,
+        poly: &Polyomino,
+        raw_transform: &TypedTransform2D<f32, UniverseSpace, GLSpace>,
+        fill_color: [f32; 4],
+    ) -> () {
+        let arr_transform = (*raw_transform).to_gl_mat3();
+        let fill_slice = self.mesh_store.poly_meshes.gfx_slice_for(
+            &self.poly_mesh_index_buffer,
+            PolyMeshId {
+                poly: poly.clone(),
+                which: PolyMeshType::FillMesh,
+            },
+        );
+
+        let fill_data = shape_pipe::Data {
+            vbuf: self.poly_mesh_buffer.clone(),
+            out: target.clone(),
+            transform: arr_transform,
+            color: fill_color,
+        };
+
+        encoder.draw(&fill_slice, &self.shape_pso, &fill_data);
     }
 
     fn fill_fade_amount_for_level(level: f32) -> f32 {
@@ -243,6 +254,7 @@ impl<R: gfx::Resources> Director<R> {
         encoder: &mut gfx::Encoder<R, C>,
         target: &gfx::handle::RenderTargetView<R, ColorFormat>,
         level_tracker: &LevelTracker,
+        which: PolyMeshType,
     ) -> () {
         let transform_to_gl = self
             .game_state
@@ -257,24 +269,36 @@ impl<R: gfx::Resources> Director<R> {
             let shape = &self.game_state.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
 
-            let faded_fill = [shape.fill_color[0] * fill_fade,
-                              shape.fill_color[1] * fill_fade,
-                              shape.fill_color[2] * fill_fade,
-                              1.0];
+            let faded_fill = [
+                shape.fill_color[0] * fill_fade,
+                shape.fill_color[1] * fill_fade,
+                shape.fill_color[2] * fill_fade,
+                1.0,
+            ];
 
-            let faded_outline = [shape.outline_color[0] * outline_fade,
-                                 shape.outline_color[1] * outline_fade,
-                                 shape.outline_color[2] * outline_fade,
-                                 outline_fade];
+            let faded_outline = [
+                shape.outline_color[0] * outline_fade,
+                shape.outline_color[1] * outline_fade,
+                shape.outline_color[2] * outline_fade,
+                outline_fade,
+            ];
 
-            self.execute_poly_draw(
-                encoder,
-                target,
-                &shape.polyomino,
-                &offset_transform.post_mul(&transform_to_gl),
-                faded_fill,
-                faded_outline,
-            );
+            match which {
+                PolyMeshType::GridMesh => self.execute_poly_outline_draw(
+                    encoder,
+                    target,
+                    &shape.polyomino,
+                    &offset_transform.post_mul(&transform_to_gl),
+                    faded_outline,
+                ),
+                PolyMeshType::FillMesh => self.execute_poly_fill_draw(
+                    encoder,
+                    target,
+                    &shape.polyomino,
+                    &offset_transform.post_mul(&transform_to_gl),
+                    faded_fill,
+                ),
+            }
         }
     }
 
@@ -290,11 +314,18 @@ impl<R: gfx::Resources> Director<R> {
             l.filter_nonvisible();
         }
 
-        self.draw_level(encoder, target, &l);
+        self.draw_level(encoder, target, &l, PolyMeshType::FillMesh);
+
         for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
             l = l.go_down(&self.game_state);
             l.filter_nonvisible();
-            self.draw_level(encoder, target, &l);
+            self.draw_level(encoder, target, &l, PolyMeshType::FillMesh);
+        }
+
+        for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
+            l = l.go_up(&self.game_state);
+            l.filter_nonvisible();
+            self.draw_level(encoder, target, &l, PolyMeshType::GridMesh);
         }
     }
 }
