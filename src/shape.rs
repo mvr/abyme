@@ -221,12 +221,17 @@ impl Universe {
     }
 
     fn used_parents_of(&self, sid: ShapeId) -> Vec<ShapeId> {
-        self.shapes[&sid].constituent_locations(&self).map(move |l| l.square.shape_id).dedup().collect()
+        self.shapes[&sid]
+            .constituent_locations(&self)
+            .map(move |l| l.square.shape_id)
+            .dedup()
+            .collect()
     }
 
     fn clean_parents(&mut self, sid: ShapeId) -> () {
         let used = self.used_parents_of(sid);
-        self.shapes.entry(sid)
+        self.shapes
+            .entry(sid)
             .and_modify(|s| (*s).parent_ids.retain(|pid, _| used.contains(pid)));
     }
 
@@ -567,7 +572,7 @@ impl TopChunk {
         None
     }
 
-    pub fn recentering_for(&self, other: &TopChunk) -> TypedVector2D<i32, UniverseSpace>{
+    pub fn recentering_for(&self, other: &TopChunk) -> TypedVector2D<i32, UniverseSpace> {
         let common = self.common_shape_with(other).unwrap();
         other.top_shape_ids[&common] - self.top_shape_ids[&common]
     }
@@ -640,6 +645,15 @@ pub enum MonotonePath {
 }
 
 impl MonotonePath {
+    pub fn zdelta(&self) -> i32 {
+        use MonotonePath::*;
+        match self {
+            Zero => 0,
+            Up { distance } => *distance as i32,
+            Down { path } => -(path.len() as i32),
+        }
+    }
+
     pub fn take(&self, n: u32) -> MonotonePath {
         use MonotonePath::*;
 

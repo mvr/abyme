@@ -145,10 +145,11 @@ impl CameraState {
 
         // MUST TODO: This will break if the individual chunks get too
         // big, need to scale by the size of the target/current chunk?
+        // println!("{:#?}", scale_from_neutral);
 
-        let need_normalisation = (scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER
-            || scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER)
-            && self.current_to_target_path != MonotonePath::Zero;
+        let need_normalisation =
+            (scale_from_neutral > CAMERA_UPPER_NORMALISE_TRIGGER && self.current_to_target_path.zdelta() < 0) ||
+            (scale_from_neutral < CAMERA_LOWER_NORMALISE_TRIGGER && self.current_to_target_path.zdelta() > 0);
 
         if need_normalisation
         {
