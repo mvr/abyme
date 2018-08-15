@@ -135,11 +135,37 @@ trait HasSquares {
             .all(|o| match o {
                 None => false,
                 Some(a) => a.is_unoccupied(universe),
-            }) // This is doing a little more calculation than is necessary...
+            })
     }
-    //     fringe u d a = (filter (not . inhabits u a) justs, length allMaybes /= length justs)
-    // where allMaybes = fmap (nudgeLocation u d) $ locations u a
-    //     justs = catMaybes allMaybes
+
+    // This means, all the locations one step in direction d from self
+    // The funny name hopefully makes the order harder to confuse
+    #[inline]
+    fn squares_with_fringe<'a>(
+        &'a self,
+        universe: &'a Universe,
+        d: Direction,
+    ) -> Box<Iterator<Item = (Square, Location)> + 'a> {
+        let self_squares: Vec<Square> = self.constituent_squares(universe).collect();
+        Box::new(
+            self.constituent_squares(universe).filter_map(move |s| {
+                match s.location(universe).nudge(universe, d) {
+                    None => None, // We hit out of bounds
+                    Some(n) => match n.inhabitant(universe) {
+                        None => Some((s, n)), // We are next to empty space
+                        Some(i) => if self_squares.contains(&i) {
+                            None // We are still in self
+                        } else {
+                            Some((s, n)) // We are next to some other shape
+                        },
+                    },
+                }
+            }),
+            // TODO: this is doing more calculation than necessary,
+            // for example, a polyomino knows which squares are on the
+            // edge
+        )
+    }
 }
 
 impl HasSquares for Shape {
@@ -238,8 +264,31 @@ impl Universe {
             .and_modify(|s| (*s).parent_ids.retain(|pid, _| used.contains(pid)));
     }
 
-    // This invalidates the chunk
-    pub fn do_shove(&mut self, chunk: &TopChunk, d: Direction) -> () {
+    fn expand_parent_list(&mut self, shape_id: ShapeId, d: Direction) -> () {
+        let fringe: Vec<(Square, Location)> = self.shapes[&shape_id].squares_with_fringe(&self, d).collect();
+        for (o, f) in fringe {
+            let o_location = o.location(self);
+            if o_location.square.shape_id != f.square.shape_id {
+                // Then there's a new potential parent to add:
+                // The idea is that o_location + d = f, so
+
+                let shape_position_on_f_parent = f.to_coordinate()
+                    - d.to_vect()
+                    - ChildVec::from_untyped(&o.position.to_vector().to_untyped());
+                self.shapes.entry(shape_id).and_modify(|s| {
+                    (*s).parent_ids
+                        .insert(f.square.shape_id, shape_position_on_f_parent.to_point());
+                });
+
+                // TODO: this is possibly setting the same parent
+                // repeatedly, but it should set it to the same thing
+                // every time.
+            }
+        }
+    }
+
+    // CAUTION!! This invalidates the chunk and all the shapes in it
+    pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {
         // Move every shape on its parent
         for sid in chunk.top_shape_ids.keys() {
             let mut result = hashmap![];
@@ -639,7 +688,12 @@ impl LogicalState {
     }
 
     pub fn do_move(&mut self, d: Direction) -> () {
-        self.universe.do_shove(&self.player_chunk, d);
+        // TODO: could use mem::replace here to save copying the chunk
+
+        let some_player_shape_id = self.player_chunk.origin_id;
+
+        self.universe.do_shove(self.player_chunk.clone(), d);
+        self.player_chunk = self.universe.top_chunk_of_id(some_player_shape_id);
     }
 }
 
