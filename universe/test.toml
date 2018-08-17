@@ -1,13 +1,19 @@
 player = "first"
 
 [first]    
-polyomino = [ [0, 0], [0, 1] ]
-parents = { second = [0, 0] }
+polyomino = [ [0, 0] ]
+parents = { second = [1, 0] }
 fill_color = [0.5, 0.5, 1.0]
-outline_color = [0.5, 0.5, 0.5]
+outline_color = [0.0, 0.0, 0.0]
 
 [second]
 polyomino = [ [0, 0] ]
 parents = { first = [0, 0] }
 fill_color = [1.0, 0.5, 0.5]
-outline_color = [0.5, 0.25, 0.25]
+outline_color = [0.0, 0.0, 0.0]
+
+[second2]    
+polyomino = [ [0, 0] ]
+parents = { first = [1, 0] }
+fill_color = [1.0, 0.5, 0.5]
+outline_color = [0.0, 0.0, 0.0]
