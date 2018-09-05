@@ -33,7 +33,7 @@ pub struct Shape {
 
 impl Shape {
     pub fn has_position(&self, p: UPoint) -> bool {
-        self.polyomino.has_position(p)
+        self.polyomino.has_position(p.to_untyped())
     }
 
     pub fn has_parent(&self, parent: &Shape) -> bool {
@@ -175,7 +175,7 @@ impl HasSquares for Shape {
     ) -> Box<Iterator<Item = Square> + 'a> {
         Box::new(self.polyomino.squares.iter().map(move |p| Square {
             shape_id: self.id,
-            position: *p,
+            position: UPoint::from_untyped(p),
         }))
     }
 
@@ -401,7 +401,11 @@ impl Location {
 impl Square {
     fn nudge_easy(&self, u: &Universe, d: Direction) -> Option<Square> {
         let newpos = self.position + d.to_vect();
-        if u.shapes[&self.shape_id].polyomino.squares.contains(&newpos) {
+        if u.shapes[&self.shape_id]
+            .polyomino
+            .squares
+            .contains(&newpos.to_untyped())
+        {
             Some(Square {
                 shape_id: self.shape_id,
                 position: newpos,
@@ -607,16 +611,19 @@ pub struct TopChunk {
 
 impl TopChunk {
     pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
-        self.top_shape_ids
-            .iter()
-            .map(|(shape_id, offset)| {
-                universe.shapes[shape_id]
-                    .polyomino
-                    .bounding_box()
-                    .translate(offset)
-            })
-            .fold1(|ref a, ref b| a.union(b))
-            .unwrap()
+        TypedRect::from_untyped(
+            &self
+                .top_shape_ids
+                .iter()
+                .map(|(shape_id, offset)| {
+                    universe.shapes[shape_id]
+                        .polyomino
+                        .bounding_box()
+                        .translate(&offset.to_untyped())
+                })
+                .fold1(|ref a, ref b| a.union(b))
+                .unwrap(),
+        )
     }
 
     fn common_shape_with(&self, other: &TopChunk) -> Option<ShapeId> {
@@ -689,7 +696,7 @@ impl LogicalState {
 
     pub fn do_move(&mut self, d: Direction) -> () {
         // TODO: could use mem::replace here to save copying the chunk
-
+        // TODO: this doesn't account for chunks splitting in two? Or can that not happen?
         let some_player_shape_id = self.player_chunk.origin_id;
 
         self.universe.do_shove(self.player_chunk.clone(), d);

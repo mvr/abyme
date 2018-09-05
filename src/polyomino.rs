@@ -1,13 +1,13 @@
 extern crate euclid;
 
-use euclid::TypedRect;
-use euclid::TypedSize2D;
+use euclid::{Rect, Point2D, Vector2D, Size2D};
+use rug::ops::DivRounding;
 
 use defs::*;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Polyomino {
-    pub squares: Vec<UPoint>,
+    pub squares: Vec<Point2D<i32>>,
 }
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
@@ -16,16 +16,16 @@ pub enum GridSegmentType {
     Internal,
 }
 
-pub struct GridSegment(pub UPoint, pub UPoint, pub GridSegmentType);
+pub struct GridSegment(pub Point2D<i32>, pub Point2D<i32>, pub GridSegmentType);
 
 impl Polyomino {
     pub fn monomino() -> Polyomino {
         Polyomino {
-            squares: vec![UPoint::new(0, 0)],
+            squares: vec![Point2D::new(0, 0)],
         }
     }
 
-    pub fn has_position(&self, p: UPoint) -> bool {
+    pub fn has_position(&self, p: Point2D<i32>) -> bool {
         self.squares.contains(&p)
     }
 
@@ -41,19 +41,19 @@ impl Polyomino {
         let mut res = vec![];
 
         for p in self.squares.iter().cloned() {
-            let sort = if self.has_position(p + UVec::new(-1, 0)) {
+            let sort = if self.has_position(p + Vector2D::new(-1, 0)) {
                 GridSegmentType::Internal
             } else {
                 GridSegmentType::Perimeter
             };
 
-            res.push(GridSegment(p, p + UVec::new(0, 1), sort));
+            res.push(GridSegment(p, p + Vector2D::new(0, 1), sort));
 
-            if !self.has_position(p + UVec::new(1, 0)) {
+            if !self.has_position(p + Vector2D::new(1, 0)) {
                 // In this case we must be at the right-most side of the poly
                 res.push(GridSegment(
-                    p + UVec::new(1, 0),
-                    p + UVec::new(1, 0) + UVec::new(0, 1),
+                    p + Vector2D::new(1, 0),
+                    p + Vector2D::new(1, 0) + Vector2D::new(0, 1),
                     GridSegmentType::Perimeter,
                 ));
             }
@@ -67,18 +67,18 @@ impl Polyomino {
         let mut res = vec![];
 
         for p in self.squares.iter().cloned() {
-            let sort = if self.has_position(p + UVec::new(0, -1)) {
+            let sort = if self.has_position(p + Vector2D::new(0, -1)) {
                 GridSegmentType::Internal
             } else {
                 GridSegmentType::Perimeter
             };
 
-            res.push(GridSegment(p, p + UVec::new(1, 0), sort));
+            res.push(GridSegment(p, p + Vector2D::new(1, 0), sort));
 
-            if !self.has_position(p + UVec::new(0, 1)) {
+            if !self.has_position(p + Vector2D::new(0, 1)) {
                 res.push(GridSegment(
-                    p + UVec::new(0, 1),
-                    p + UVec::new(0, 1) + UVec::new(1, 0),
+                    p + Vector2D::new(0, 1),
+                    p + Vector2D::new(0, 1) + Vector2D::new(1, 0),
                     GridSegmentType::Perimeter,
                 ));
             }
@@ -93,14 +93,14 @@ impl Polyomino {
         r
     }
 
-    pub fn square_rects(&self) -> Vec<TypedRect<i32, UniverseSpace>> {
+    pub fn square_rects(&self) -> Vec<Rect<i32>> {
         self.squares
             .iter()
-            .map(|&s| TypedRect::new(s, TypedSize2D::new(1, 1)))
+            .map(|&s| Rect::new(s, Size2D::new(1, 1)))
             .collect()
     }
 
-    pub fn bounding_box(&self) -> TypedRect<i32, UniverseSpace> {
+    pub fn bounding_box(&self) -> Rect<i32> {
         let rects = self.square_rects();
         rects.iter().fold(rects[0], |a, b| a.union(b))
     }
