@@ -104,4 +104,38 @@ impl Polyomino {
         let rects = self.square_rects();
         rects.iter().fold(rects[0], |a, b| a.union(b))
     }
+
+    pub fn divide_by(&self, amount: u32) -> Polyomino {
+        let mut result_squares = vec![];
+
+        for s in &self.squares {
+            let result_pos = Point2D::new(
+                s.x.div_floor(&(amount as i32)),
+                s.y.div_floor(&(amount as i32)),
+            );
+
+            if !result_squares.contains(&result_pos) {
+                result_squares.push(result_pos);
+            }
+        }
+
+        Polyomino {
+            squares: result_squares,
+        }
+    }
+
+    pub fn overlaps(&self, other: &Polyomino) -> bool {
+        for s in &self.squares {
+            if other.squares.contains(s) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn translate(&self, v: Vector2D<i32>) -> Polyomino {
+        Polyomino {
+            squares: self.squares.iter().map(|s| *s + v).collect()
+        }
+    }
 }

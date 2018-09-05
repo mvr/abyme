@@ -250,10 +250,21 @@ impl Universe {
     }
 
     fn used_parents_of(&self, sid: ShapeId) -> Vec<ShapeId> {
-        self.shapes[&sid]
-            .constituent_locations(&self)
-            .map(move |l| l.square.shape_id)
-            .dedup()
+        let shape = &self.shapes[&sid];
+        shape
+            .parent_ids
+            .iter()
+            .filter_map(|(&parent_id, &pos_on_parent)| {
+                let habitat = shape
+                    .polyomino
+                    .translate(pos_on_parent.to_untyped().to_vector())
+                    .divide_by(ZOOM_SCALE);
+                if habitat.overlaps(&self.shapes[&parent_id].polyomino) {
+                    Some(parent_id)
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
@@ -265,7 +276,9 @@ impl Universe {
     }
 
     fn expand_parent_list(&mut self, shape_id: ShapeId, d: Direction) -> () {
-        let fringe: Vec<(Square, Location)> = self.shapes[&shape_id].squares_with_fringe(&self, d).collect();
+        let fringe: Vec<(Square, Location)> = self.shapes[&shape_id]
+            .squares_with_fringe(&self, d)
+            .collect();
         for (o, f) in fringe {
             let o_location = o.location(self);
             if o_location.square.shape_id != f.square.shape_id {
@@ -289,6 +302,11 @@ impl Universe {
 
     // CAUTION!! This invalidates the chunk and all the shapes in it
     pub fn do_shove(&mut self, chunk: TopChunk, d: Direction) -> () {
+        // Add possible new parents in that direction
+        for &sid in chunk.top_shape_ids.keys() {
+            self.expand_parent_list(sid, d);
+        }
+
         // Move every shape on its parent
         for sid in chunk.top_shape_ids.keys() {
             let mut result = hashmap![];
