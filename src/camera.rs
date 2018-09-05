@@ -175,6 +175,8 @@ impl CameraState {
 
     // MUST TODO: This will start to matter when chunks are made
     pub fn recenter(&mut self, logical_state: &LogicalState) -> () {
+        unimplemented!();
+
         // let old_target_chunk = &self.target_chunk;
         // let new_target_chunk = CameraState::intended_target(logical_state);
 
