@@ -122,8 +122,8 @@ impl<U> From<TypedVector2D<f32, U>> for Delta
 where U: SpaceWithLevel
 {
     fn from(c: TypedVector2D<f32, U>) -> Delta {
-        let int_x = (c.x * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
-        let int_y = (c.y * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as u32;
+        let int_x = (c.x * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as i32;
+        let int_y = (c.y * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as i32;
 
         Delta {
             zdelta: U::LEVEL,
