@@ -687,6 +687,26 @@ impl From<TotalChunk> for TopChunk {
     }
 }
 
+// This stores offsets of each shape in the region
+#[derive(Clone)]
+pub struct TopRegion {
+    // pub origin_id: ShapeId,
+    pub top_shape_ids: BTreeMap<ShapeId, UVec>,
+}
+
+// type ExploreResult = BTreeMap<ShapeId, Delta>;
+// type ExploreQueue = VecDeque<(ShapeId, Delta)>;
+
+impl Universe {
+    fn neighbouring_shapes_on_parent(&self, shape: &Shape, parent_id: ShapeId) -> Vec<ShapeId> {
+        unimplemented!();
+    }
+
+    pub fn region_of(&self, shape: &Shape) -> TopRegion {
+        unimplemented!();
+    }
+}
+
 #[derive(Debug)]
 pub struct LogicalState {
     pub universe: Universe,
