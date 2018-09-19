@@ -690,7 +690,7 @@ impl From<TotalChunk> for TopChunk {
 // This stores offsets of each shape in the region
 #[derive(Clone)]
 pub struct TopRegion {
-    // pub origin_id: ShapeId,
+    pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
 }
 
@@ -698,12 +698,32 @@ pub struct TopRegion {
 // type ExploreQueue = VecDeque<(ShapeId, Delta)>;
 
 impl Universe {
-    fn neighbouring_shapes_on_parent(&self, shape: &Shape, parent_id: ShapeId) -> Vec<ShapeId> {
+    fn neighbouring_shapes_of(&self, shape: &Shape) -> Vec<(ShapeId, UVec)> {
         unimplemented!();
     }
 
     pub fn region_of(&self, shape: &Shape) -> TopRegion {
-        unimplemented!();
+        let mut stack : VecDeque<(ShapeId, UVec)> = VecDeque::new();
+        stack.push_back((shape.id, UVec::zero()));
+
+        let mut result : BTreeMap<ShapeId, UVec> = BTreeMap::new();
+        result.insert(shape.id, UVec::zero());
+
+        while !stack.len() > 0 {
+            let (next_id, next_offset) = stack.pop_front().unwrap();
+            for (neighbour_id, neighbour_offset) in self.neighbouring_shapes_of(&self.shapes[&next_id]) {
+                if !result.contains_key(&neighbour_id) {
+                    let new_offset = neighbour_offset + next_offset;
+                    stack.push_back((neighbour_id, new_offset));
+                    result.insert(neighbour_id, new_offset);
+                }
+            }
+        }
+
+        TopRegion {
+            origin_id: shape.id,
+            top_shape_ids: result,
+        }
     }
 }
 
