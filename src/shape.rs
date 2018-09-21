@@ -166,6 +166,32 @@ trait HasSquares {
             // edge
         )
     }
+
+    fn fringe_squares_with_neighbours<'a>(
+        &'a self,
+        universe: &'a Universe,
+        d: Direction,
+    ) -> Box<Iterator<Item = (Square, Square)> + 'a> {
+        let self_squares: Vec<Square> = self.constituent_squares(universe).collect();
+        Box::new(
+            self.constituent_squares(universe).filter_map(move |s| {
+                match s.location(universe).nudge(universe, d) {
+                    None => None, // We hit out of bounds
+                    Some(n) => match n.inhabitant(universe) {
+                        None => None, // We are next to empty space
+                        Some(i) => if self_squares.contains(&i) {
+                            None // We are still in self
+                        } else {
+                            Some((s, i)) // We are next to some other shape
+                        },
+                    },
+                }
+            }),
+            // TODO: this is doing more calculation than necessary,
+            // for example, a polyomino knows which squares are on the
+            // edge
+        )
+    }
 }
 
 impl HasSquares for Shape {
@@ -694,24 +720,39 @@ pub struct TopRegion {
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
 }
 
-// type ExploreResult = BTreeMap<ShapeId, Delta>;
-// type ExploreQueue = VecDeque<(ShapeId, Delta)>;
-
 impl Universe {
+    fn neighbouring_shapes_in_direction<'a>(
+        &'a self,
+        shape: &'a Shape,
+        d: Direction,
+    ) -> impl Iterator<Item = (ShapeId, UVec)> + 'a {
+        shape
+            .fringe_squares_with_neighbours(&self, d)
+            .map(move |(square, neighbour)|
+                 (neighbour.shape_id, unimplemented!())
+            )
+    }
+
     fn neighbouring_shapes_of(&self, shape: &Shape) -> Vec<(ShapeId, UVec)> {
-        unimplemented!();
+        Direction::all()
+            .iter()
+            .flat_map(move |d| self.neighbouring_shapes_in_direction(shape, *d))
+            .unique()
+            .collect()
     }
 
     pub fn region_of(&self, shape: &Shape) -> TopRegion {
-        let mut stack : VecDeque<(ShapeId, UVec)> = VecDeque::new();
+        let mut stack: VecDeque<(ShapeId, UVec)> = VecDeque::new();
         stack.push_back((shape.id, UVec::zero()));
 
-        let mut result : BTreeMap<ShapeId, UVec> = BTreeMap::new();
+        let mut result: BTreeMap<ShapeId, UVec> = BTreeMap::new();
         result.insert(shape.id, UVec::zero());
 
         while !stack.len() > 0 {
             let (next_id, next_offset) = stack.pop_front().unwrap();
-            for (neighbour_id, neighbour_offset) in self.neighbouring_shapes_of(&self.shapes[&next_id]) {
+            for (neighbour_id, neighbour_offset) in
+                self.neighbouring_shapes_of(&self.shapes[&next_id])
+            {
                 if !result.contains_key(&neighbour_id) {
                     let new_offset = neighbour_offset + next_offset;
                     stack.push_back((neighbour_id, new_offset));

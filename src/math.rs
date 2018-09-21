@@ -121,10 +121,9 @@ pub mod transform {
         let y_scale = target.size.height / source.size.height;
         TypedTransform2D::create_translation(-source.origin.x, -source.origin.y)
             .post_scale(x_scale, y_scale)
-            .post_translate(TypedVector2D::from_untyped(&target
-                .origin
-                .to_untyped()
-                .to_vector()))
+            .post_translate(TypedVector2D::from_untyped(
+                &target.origin.to_untyped().to_vector(),
+            ))
     }
 
     // TODO: doesn't have to be f32
@@ -241,6 +240,11 @@ pub enum Direction {
 }
 
 impl Direction {
+    pub fn all() -> [Direction; 4] {
+        use Direction::*;
+        [Up, Down, Left, Right]
+    }
+
     pub fn to_vect<F, U>(self) -> TypedVector2D<F, U>
     where
         F: From<i32>,
