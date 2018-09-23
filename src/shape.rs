@@ -721,6 +721,7 @@ pub struct TopRegion {
 }
 
 impl Universe {
+    // Also returns the offset of the neighbour's origin relative to this shape's origin
     fn neighbouring_shapes_in_direction<'a>(
         &'a self,
         shape: &'a Shape,
@@ -729,8 +730,13 @@ impl Universe {
         shape
             .fringe_squares_with_neighbours(&self, d)
             .map(move |(square, neighbour)|
-                 (neighbour.shape_id, unimplemented!())
-            )
+
+                 // Reasoning:
+                 // self_origin + square_position + direction.to_vect - neighbour_square_position = neighbour_shape_origin
+
+                 (neighbour.shape_id, square.position + d.to_vect() - neighbour.position)
+            ).unique()
+            // TODO: could do unique by shape id first
     }
 
     fn neighbouring_shapes_of(&self, shape: &Shape) -> Vec<(ShapeId, UVec)> {
