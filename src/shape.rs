@@ -714,7 +714,7 @@ impl From<TotalChunk> for TopChunk {
 }
 
 // This stores offsets of each shape in the region
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopRegion {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
@@ -734,9 +734,9 @@ impl Universe {
                  // Reasoning:
                  // self_origin + square_position + direction.to_vect - neighbour_square_position = neighbour_shape_origin
 
-                 (neighbour.shape_id, square.position + d.to_vect() - neighbour.position)
-            ).unique()
-            // TODO: could do unique by shape id first
+                 (neighbour.shape_id, square.position + d.to_vect() - neighbour.position))
+            .unique()
+        // TODO: could do unique by shape id first
     }
 
     fn neighbouring_shapes_of(&self, shape: &Shape) -> Vec<(ShapeId, UVec)> {
@@ -754,7 +754,7 @@ impl Universe {
         let mut result: BTreeMap<ShapeId, UVec> = BTreeMap::new();
         result.insert(shape.id, UVec::zero());
 
-        while !stack.len() > 0 {
+        while stack.len() > 0 {
             let (next_id, next_offset) = stack.pop_front().unwrap();
             for (neighbour_id, neighbour_offset) in
                 self.neighbouring_shapes_of(&self.shapes[&next_id])
@@ -941,7 +941,7 @@ impl MonotonePath {
 }
 
 #[cfg(test)]
-mod movement_tests {
+mod shape_tests {
     use super::*;
 
     // TODO: replace this with loading from a toml
@@ -1045,5 +1045,46 @@ mod movement_tests {
         let gs = setup_2();
 
         assert!(!gs.can_move(Direction::Up));
+    }
+
+    #[test]
+    fn region_1() {
+        let gs = setup_2();
+
+        let shape1 = &gs.universe.shapes[&ShapeId(1)];
+        let shape2 = &gs.universe.shapes[&ShapeId(2)];
+        let shape3 = &gs.universe.shapes[&ShapeId(3)];
+
+        assert_eq!(
+            gs.universe.region_of(shape1),
+            TopRegion {
+                origin_id: ShapeId(1),
+                top_shape_ids: btreemap![
+                    ShapeId(1) => UVec::new(0, 0),
+                    ShapeId(3) => UVec::new(0, 1),
+                ],
+            }
+        );
+
+        assert_eq!(
+            gs.universe.region_of(shape3),
+            TopRegion {
+                origin_id: ShapeId(3),
+                top_shape_ids: btreemap![
+                    ShapeId(1) => UVec::new(0, -1),
+                    ShapeId(3) => UVec::new(0, 0),
+                ],
+            }
+        );
+
+        assert_eq!(
+            gs.universe.region_of(shape2),
+            TopRegion {
+                origin_id: ShapeId(2),
+                top_shape_ids: btreemap![
+                    ShapeId(2) => UVec::new(0, 0),
+                ],
+            }
+        );
     }
 }
