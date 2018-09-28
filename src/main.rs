@@ -79,12 +79,15 @@ pub fn main() {
         gfx_glutin::init::<ColorFormat, DepthFormat>(builder, context, &events_loop);
     let mut encoder: gfx::Encoder<_, _> = factory.create_command_buffer().into();
 
-
     let logical_state = load_universe::load_universe(universe_filename());
 
     let mut director: Director<_> = Director::new(&mut factory, logical_state, resolution);
 
     let mut last_time = std::time::Instant::now();
+
+    // TODO: temporary workaround, delete once bug is fixed
+    events_loop.poll_events(|e| {});
+    window.resize(resolution.width, resolution.height);
 
     let mut running = true;
     while running {
