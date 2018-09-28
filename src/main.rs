@@ -1,6 +1,7 @@
 #![feature(slice_patterns)]
 #![feature(custom_attribute)]
 #![feature(nll)]
+#![feature(stmt_expr_attributes)]
 #![cfg_attr(test, feature(plugin))]
 // #![cfg_attr(test, plugin(quickcheck_macros))]
 
