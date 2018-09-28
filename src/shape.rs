@@ -720,6 +720,20 @@ pub struct TopRegion {
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
 }
 
+impl HasSquares for TopRegion {
+    fn constituent_squares<'a>(
+        &'a self,
+        universe: &'a Universe,
+    ) -> Box<Iterator<Item = Square> + 'a> {
+        Box::new(
+            self.top_shape_ids
+                .keys()
+                .map(move |id| &universe.shapes[id])
+                .flat_map(move |s| s.constituent_squares(universe)),
+        )
+    }
+}
+
 impl Universe {
     // Also returns the offset of the neighbour's origin relative to this shape's origin
     fn neighbouring_shapes_in_direction<'a>(
