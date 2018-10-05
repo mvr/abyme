@@ -41,7 +41,7 @@ impl CameraState {
         )
     }
 
-    fn intended_target(logical_state: &LogicalState) -> TopChunk {
+    fn intended_target_chunk(logical_state: &LogicalState) -> TopChunk {
         logical_state
             .universe
             .parent_of(&logical_state.player_chunk)
@@ -52,7 +52,10 @@ impl CameraState {
         logical_state: &LogicalState,
         bounds: TypedRect<f32, DrawSpace>,
     ) -> TypedTransform2D<f32, UniverseSpace, DrawSpace> {
-        let chunk_bounds = chunk.bounding_box(&logical_state.universe);
+        let chunk_bounds = logical_state
+            .universe
+            .region_of_chunk(chunk)
+            .bounding_box(&logical_state.universe);
 
         transform::fit_rect_in(
             &chunk_bounds
@@ -71,7 +74,7 @@ impl CameraState {
             TypedSize2D::new(resolution.width as f32, resolution.height as f32),
         );
 
-        let start_chunk = CameraState::intended_target(&logical_state);
+        let start_chunk = CameraState::intended_target_chunk(&logical_state);
         let transform =
             CameraState::target_transform_for(&start_chunk, logical_state, camera_bounds);
 
@@ -90,7 +93,7 @@ impl CameraState {
     }
 
     pub fn do_zoom(&mut self, logical_state: &LogicalState) -> () {
-        let new_target = CameraState::intended_target(logical_state);
+        let new_target = CameraState::intended_target_chunk(logical_state);
         self.target_chunk = new_target.clone();
         self.target_neutral_transform =
             CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);

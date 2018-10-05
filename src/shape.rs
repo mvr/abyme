@@ -734,6 +734,25 @@ impl HasSquares for TopRegion {
     }
 }
 
+impl TopRegion {
+    // This should really be part of a "HasSquares" trait
+    pub fn bounding_box(&self, universe: &Universe) -> TypedRect<i32, UniverseSpace> {
+        TypedRect::from_untyped(
+            &self
+                .top_shape_ids
+                .iter()
+                .map(|(shape_id, offset)| {
+                    universe.shapes[shape_id]
+                        .polyomino
+                        .bounding_box()
+                        .translate(&offset.to_untyped())
+                })
+                .fold1(|ref a, ref b| a.union(b))
+                .unwrap(),
+        )
+    }
+}
+
 impl Universe {
     // Also returns the offset of the neighbour's origin relative to this shape's origin
     fn neighbouring_shapes_in_direction<'a>(
@@ -761,12 +780,17 @@ impl Universe {
             .collect()
     }
 
-    pub fn region_of(&self, shape: &Shape) -> TopRegion {
-        let mut stack: VecDeque<(ShapeId, UVec)> = VecDeque::new();
-        stack.push_back((shape.id, UVec::zero()));
+    fn explore_region(&self, starting_shapes: &BTreeMap<ShapeId, UVec>) -> TopRegion {
+        let mut iter = starting_shapes.iter().peekable();
+        let (&origin_id, _) = iter.peek().unwrap();
 
+        let mut stack: VecDeque<(ShapeId, UVec)> = VecDeque::new();
         let mut result: BTreeMap<ShapeId, UVec> = BTreeMap::new();
-        result.insert(shape.id, UVec::zero());
+
+        for (&shape_id, &offset) in iter {
+            stack.push_back((shape_id, offset));
+            result.insert(shape_id, offset);
+        }
 
         while stack.len() > 0 {
             let (next_id, next_offset) = stack.pop_front().unwrap();
@@ -782,9 +806,19 @@ impl Universe {
         }
 
         TopRegion {
-            origin_id: shape.id,
+            origin_id: origin_id,
             top_shape_ids: result,
         }
+    }
+
+    pub fn region_of(&self, shape: &Shape) -> TopRegion {
+        let singleton = btreemap![shape.id => UVec::new(0, 0)];
+        self.explore_region(&singleton)
+    }
+
+    // This could be part of a HasShapes trait
+    pub fn region_of_chunk(&self, chunk: &TopChunk) -> TopRegion {
+        self.explore_region(&chunk.top_shape_ids)
     }
 }
 
