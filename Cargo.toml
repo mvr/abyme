@@ -19,7 +19,7 @@ toml = "*"
 num = "*"
 rug = "*"
 
-gfx = "0.17"
+gfx = "0.17.1"
 gfx_core = "*"
 gfx_window_glutin = "*"
 glutin = "*"
