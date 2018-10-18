@@ -75,6 +75,12 @@ impl PartialEq for Shape {
 
 impl Eq for Shape {}
 
+enum Neighbour {
+    OOB,
+    Unoccupied(Location),
+    Occupied(Location, Square),
+}
+
 trait HasSquares {
     // TODO: Would be nice if this could be impl Iterator
     #[inline]
@@ -130,11 +136,11 @@ trait HasSquares {
 
     #[inline]
     fn unblocked(&self, universe: &Universe, d: Direction) -> bool {
-        self.constituent_locations(universe)
-            .map(|l| l.nudge(universe, d))
-            .all(|o| match o {
-                None => false,
-                Some(a) => a.is_unoccupied(universe),
+        self.squares_with_fringe(universe, d)
+            .all(|(_, neighbour)| match neighbour {
+                Neighbour::OOB => false,
+                Neighbour::Unoccupied(_) => true,
+                Neighbour::Occupied(_, _) => false,
             })
     }
 
@@ -145,47 +151,19 @@ trait HasSquares {
         &'a self,
         universe: &'a Universe,
         d: Direction,
-    ) -> Box<Iterator<Item = (Square, Location)> + 'a> {
+    ) -> Box<Iterator<Item = (Square, Neighbour)> + 'a> {
         let self_squares: Vec<Square> = self.constituent_squares(universe).collect();
         Box::new(
             self.constituent_squares(universe).filter_map(move |s| {
                 match s.location(universe).nudge(universe, d) {
-                    None => None, // We hit out of bounds
+                    None => Some((s, Neighbour::OOB)), // We hit out of bounds
                     Some(n) => match n.inhabitant(universe) {
-                        None => Some((s, n)), // We are next to empty space
+                        None => Some((s, Neighbour::Unoccupied(n))), // We are next to empty space
                         Some(i) => {
                             if self_squares.contains(&i) {
                                 None // We are still in self
                             } else {
-                                Some((s, n)) // We are next to some other shape
-                            }
-                        }
-                    },
-                }
-            }),
-            // TODO: this is doing more calculation than necessary,
-            // for example, a polyomino knows which squares are on the
-            // edge
-        )
-    }
-
-    fn fringe_squares_with_neighbours<'a>(
-        &'a self,
-        universe: &'a Universe,
-        d: Direction,
-    ) -> Box<Iterator<Item = (Square, Square)> + 'a> {
-        let self_squares: Vec<Square> = self.constituent_squares(universe).collect();
-        Box::new(
-            self.constituent_squares(universe).filter_map(move |s| {
-                match s.location(universe).nudge(universe, d) {
-                    None => None, // We hit out of bounds
-                    Some(n) => match n.inhabitant(universe) {
-                        None => None, // We are next to empty space
-                        Some(i) => {
-                            if self_squares.contains(&i) {
-                                None // We are still in self
-                            } else {
-                                Some((s, i)) // We are next to some other shape
+                                Some((s, Neighbour::Occupied(n, i))) // We are next to some other shape
                             }
                         }
                     },
@@ -197,6 +175,8 @@ trait HasSquares {
         )
     }
 }
+
+trait HasShapes {}
 
 impl HasSquares for Shape {
     fn constituent_squares<'a>(
@@ -308,6 +288,11 @@ impl Universe {
     fn expand_parent_list(&mut self, shape_id: ShapeId, d: Direction) -> () {
         let fringe: Vec<(Square, Location)> = self.shapes[&shape_id]
             .squares_with_fringe(&self, d)
+            .filter_map(move |(square, neighbour)| match neighbour {
+                Neighbour::OOB => None,
+                Neighbour::Unoccupied(l) => Some((square, l)),
+                Neighbour::Occupied(l, _) => Some((square, l)),
+            })
             .collect();
         for (o, f) in fringe {
             let o_location = o.location(self);
@@ -765,13 +750,18 @@ impl Universe {
         d: Direction,
     ) -> impl Iterator<Item = (ShapeId, UVec)> + 'a {
         shape
-            .fringe_squares_with_neighbours(&self, d)
-            .map(move |(square, neighbour)|
+            .squares_with_fringe(&self, d)
+            .filter_map(move |(square, neighbour)| match neighbour {
+                Neighbour::OOB => None,
+                Neighbour::Unoccupied(_) => None,
+                Neighbour::Occupied(_, neighbour_square) => Some((square, neighbour_square)),
+            })
+            .map(move |(square, neighbour_square)|
 
                  // Reasoning:
                  // self_origin + square_position + direction.to_vect - neighbour_square_position = neighbour_shape_origin
 
-                 (neighbour.shape_id, square.position + d.to_vect() - neighbour.position))
+                 (neighbour_square.shape_id, square.position + d.to_vect() - neighbour_square.position))
             .unique()
         // TODO: could do unique by shape id first
     }
@@ -1153,6 +1143,7 @@ mod shape_tests {
             fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
+
         let shape2 = Shape {
             id: id2,
             parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
