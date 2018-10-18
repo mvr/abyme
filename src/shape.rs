@@ -3,7 +3,7 @@
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
-use euclid::{TypedRect, TypedVector2D};
+use euclid::{Point2D, TypedRect, TypedVector2D};
 use num::Integer as IntegerTrait;
 use rug::Integer;
 
@@ -153,11 +153,13 @@ trait HasSquares {
                     None => None, // We hit out of bounds
                     Some(n) => match n.inhabitant(universe) {
                         None => Some((s, n)), // We are next to empty space
-                        Some(i) => if self_squares.contains(&i) {
-                            None // We are still in self
-                        } else {
-                            Some((s, n)) // We are next to some other shape
-                        },
+                        Some(i) => {
+                            if self_squares.contains(&i) {
+                                None // We are still in self
+                            } else {
+                                Some((s, n)) // We are next to some other shape
+                            }
+                        }
                     },
                 }
             }),
@@ -179,11 +181,13 @@ trait HasSquares {
                     None => None, // We hit out of bounds
                     Some(n) => match n.inhabitant(universe) {
                         None => None, // We are next to empty space
-                        Some(i) => if self_squares.contains(&i) {
-                            None // We are still in self
-                        } else {
-                            Some((s, i)) // We are next to some other shape
-                        },
+                        Some(i) => {
+                            if self_squares.contains(&i) {
+                                None // We are still in self
+                            } else {
+                                Some((s, i)) // We are next to some other shape
+                            }
+                        }
                     },
                 }
             }),
@@ -957,13 +961,15 @@ impl MonotonePath {
             Up { distance } => Up {
                 distance: distance + 1,
             },
-            Down { ref path } => if path.len() == 1 {
-                Zero
-            } else {
-                let mut new_path = path.clone();
-                new_path.pop();
-                Down { path: new_path }
-            },
+            Down { ref path } => {
+                if path.len() == 1 {
+                    Zero
+                } else {
+                    let mut new_path = path.clone();
+                    new_path.pop();
+                    Down { path: new_path }
+                }
+            }
         }
     }
 
@@ -1134,5 +1140,53 @@ mod shape_tests {
                 ],
             }
         );
+    }
+
+    fn setup_3() -> LogicalState {
+        let id1 = ShapeId(1);
+        let id2 = ShapeId(2);
+        let id3 = ShapeId(3);
+        let shape1 = Shape {
+            id: id1,
+            parent_ids: hashmap!{ id2 => ChildPoint::new(0, 0) },
+            polyomino: Polyomino::new(vec![Point2D::new(0, 0), Point2D::new(1, 0)]),
+            fill_color: [0.5, 0.5, 1.0],
+            outline_color: [0.5, 0.5, 0.5],
+        };
+        let shape2 = Shape {
+            id: id2,
+            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
+            polyomino: Polyomino::monomino(),
+            fill_color: [1.0, 0.5, 0.5],
+            outline_color: [0.5, 0.25, 0.25],
+        };
+        let shape3 = Shape {
+            id: id3,
+            parent_ids: hashmap!{ id1 => ChildPoint::new(1, 0) },
+            polyomino: Polyomino::monomino(),
+            fill_color: [1.0, 0.5, 0.5],
+            outline_color: [0.5, 0.25, 0.25],
+        };
+
+        let mut shapes = BTreeMap::new();
+        shapes.insert(id1, shape1);
+        shapes.insert(id2, shape2);
+        shapes.insert(id3, shape3);
+
+        let u = Universe { shapes: shapes };
+
+        let player_chunk = u.top_chunk_of_id(ShapeId(1));
+
+        LogicalState {
+            universe: u,
+            player_chunk: player_chunk,
+        }
+    }
+
+    #[test]
+    fn can_move_1() {
+        let gs = setup_3();
+
+        assert!(gs.can_move(Direction::Right));
     }
 }
