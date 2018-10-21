@@ -320,12 +320,13 @@ impl<R: gfx::Resources> Director<R> {
             l = l.go_down(&self.game_state);
             l.filter_nonvisible();
             self.draw_level(encoder, target, &l, PolyMeshType::FillMesh);
-        }
-
-        for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
-            l = l.go_up(&self.game_state);
-            l.filter_nonvisible();
             self.draw_level(encoder, target, &l, PolyMeshType::GridMesh);
         }
+
+        // for _ in 0..(DRAW_DISTANCE_UP + DRAW_DISTANCE_DOWN) {
+        //     l = l.go_up(&self.game_state);
+        //     l.filter_nonvisible();
+        //     self.draw_level(encoder, target, &l, PolyMeshType::GridMesh);
+        // }
     }
 }

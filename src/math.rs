@@ -241,7 +241,7 @@ pub enum Direction {
 
 impl Direction {
     pub fn all() -> [Direction; 4] {
-        use Direction::*;
+        use self::Direction::*;
         [Up, Down, Left, Right]
     }
 
@@ -249,7 +249,7 @@ impl Direction {
     where
         F: From<i32>,
     {
-        use Direction::*;
+        use self::Direction::*;
         match self {
             Up => TypedVector2D::new(F::from(0), F::from(1)),
             Down => TypedVector2D::new(F::from(0), F::from(-1)),

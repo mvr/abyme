@@ -100,6 +100,7 @@ pub fn main() {
                     }
 
                     Resized(w, h) => {
+                        window.resize(w, h);
                         gfx_glutin::update_views(&window, &mut main_color_view, &mut main_depth);
                         director.resolution = TypedSize2D::new(w, h);
                         // TODO: recalculate camera
@@ -130,6 +131,7 @@ pub fn main() {
             }
         });
 
+        //encoder.clear_depth(&main_depth, -1.0);
         encoder.clear(&main_color_view, BLACK);
         director.draw(&mut encoder, &main_color_view);
         encoder.flush(&mut device);

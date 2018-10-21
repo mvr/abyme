@@ -1,6 +1,6 @@
 extern crate euclid;
 
-use euclid::{Rect, Point2D, Vector2D, Size2D};
+use euclid::{Point2D, Rect, Size2D, Vector2D};
 use rug::ops::DivRounding;
 
 use defs::*;
@@ -19,6 +19,10 @@ pub enum GridSegmentType {
 pub struct GridSegment(pub Point2D<i32>, pub Point2D<i32>, pub GridSegmentType);
 
 impl Polyomino {
+    pub fn new(squares: Vec<Point2D<i32>>) -> Polyomino {
+        Polyomino { squares }
+    }
+
     pub fn monomino() -> Polyomino {
         Polyomino {
             squares: vec![Point2D::new(0, 0)],
@@ -135,7 +139,7 @@ impl Polyomino {
 
     pub fn translate(&self, v: Vector2D<i32>) -> Polyomino {
         Polyomino {
-            squares: self.squares.iter().map(|s| *s + v).collect()
+            squares: self.squares.iter().map(|s| *s + v).collect(),
         }
     }
 }
