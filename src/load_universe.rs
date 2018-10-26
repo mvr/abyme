@@ -65,11 +65,8 @@ fn interpret_shape(
 }
 
 pub fn parse_universe(string: String) -> LogicalState {
-    let toml = string
-        .parse::<toml::Value>()
-        .expect("Couldn't parse TOML");
-    let toml_table = toml.as_table()
-        .expect("TOML wasn't a table");
+    let toml = string.parse::<toml::Value>().expect("Couldn't parse TOML");
+    let toml_table = toml.as_table().expect("TOML wasn't a table");
 
     let mut name_map: BTreeMap<String, ShapeId> = btreemap![];
     let mut player_name = "";

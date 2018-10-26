@@ -13,9 +13,15 @@ pub struct UniverseSpace;
 pub struct ChildSpace;
 pub struct ParentSpace;
 
-impl SpaceWithLevel for UniverseSpace { const LEVEL: i16 = 0; }
-impl SpaceWithLevel for ChildSpace { const LEVEL: i16 = -1; }
-impl SpaceWithLevel for ParentSpace { const LEVEL: i16 = 1; }
+impl SpaceWithLevel for UniverseSpace {
+    const LEVEL: i16 = 0;
+}
+impl SpaceWithLevel for ChildSpace {
+    const LEVEL: i16 = -1;
+}
+impl SpaceWithLevel for ParentSpace {
+    const LEVEL: i16 = 1;
+}
 
 pub type UVec = TypedVector2D<i32, UniverseSpace>;
 pub type UPoint = TypedPoint2D<i32, UniverseSpace>;
@@ -26,7 +32,6 @@ pub type ChildPoint = TypedPoint2D<i32, ChildSpace>;
 pub struct DrawSpace;
 pub struct ScreenSpace;
 pub struct GLSpace;
-
 
 ////////////////////////////////////////
 // Gameplay

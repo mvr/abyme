@@ -1,4 +1,4 @@
-use rug::ops::{Pow};
+use rug::ops::Pow;
 use rug::Integer;
 // use std::ops::{Add, Neg, Sub};
 
@@ -111,15 +111,18 @@ impl Delta {
     pub fn to_uvec(&self) -> Option<UVec> {
         assert!(self.zdelta == 0);
         assert!(self.scale >= 0);
-        Some( UVec::new(
-            self.coords.x.to_i32().unwrap(),
-            self.coords.y.to_i32().unwrap(),
-        ) * ZOOM_SCALE.pow(self.scale as u32) as i32)
+        Some(
+            UVec::new(
+                self.coords.x.to_i32().unwrap(),
+                self.coords.y.to_i32().unwrap(),
+            ) * ZOOM_SCALE.pow(self.scale as u32) as i32,
+        )
     }
 }
 
 impl<U> From<TypedVector2D<f32, U>> for Delta
-where U: SpaceWithLevel
+where
+    U: SpaceWithLevel,
 {
     fn from(c: TypedVector2D<f32, U>) -> Delta {
         let int_x = (c.x * (ZOOM_SCALE as f32).pow(FRACTIONAL_DELTA_SCALE as i32)) as i32;
@@ -134,7 +137,8 @@ where U: SpaceWithLevel
 }
 
 impl<U> From<TypedVector2D<i32, U>> for Delta
-where U: SpaceWithLevel
+where
+    U: SpaceWithLevel,
 {
     fn from(c: TypedVector2D<i32, U>) -> Delta {
         Delta {

@@ -4,9 +4,10 @@ use euclid::Rect;
 use lyon::math::vector;
 use lyon::path::builder::*;
 use lyon::path::default::Path;
-use lyon::tessellation::{FillOptions, FillVertex, LineCap, StrokeOptions, StrokeTessellator,
-                         StrokeVertex};
 use lyon::tessellation::geometry_builder::GeometryBuilder;
+use lyon::tessellation::{
+    FillOptions, FillVertex, LineCap, StrokeOptions, StrokeTessellator, StrokeVertex,
+};
 
 use defs::*;
 use polyomino::*;

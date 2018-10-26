@@ -36,8 +36,8 @@ mod delta;
 mod draw_delta;
 
 mod camera;
-mod gamestate;
 mod director;
+mod gamestate;
 mod polyomino;
 mod shape;
 
@@ -63,7 +63,7 @@ fn universe_filename() -> String {
 
     match first_argument {
         Some(name) => name,
-        None => "universe/minimal.toml".to_string()
+        None => "universe/minimal.toml".to_string(),
     }
 }
 

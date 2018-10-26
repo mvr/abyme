@@ -30,8 +30,8 @@ pub mod delta;
 pub mod draw_delta;
 
 pub mod camera;
-pub mod gamestate;
 pub mod director;
+pub mod gamestate;
 pub mod polyomino;
 pub mod shape;
 

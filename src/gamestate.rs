@@ -5,10 +5,10 @@ use euclid::{TypedSize2D, TypedVector2D};
 use camera::CameraState;
 use defs::*;
 use delta::*;
+use load_universe;
 use math;
 use math::*;
 use shape::*;
-use load_universe;
 
 #[derive(Clone, Debug)]
 pub enum MoveState {
@@ -81,7 +81,10 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new(logical_state: LogicalState, resolution: TypedSize2D<u32, ScreenSpace>) -> GameState {
+    pub fn new(
+        logical_state: LogicalState,
+        resolution: TypedSize2D<u32, ScreenSpace>,
+    ) -> GameState {
         let camera_state = CameraState::new(&resolution, &logical_state);
         GameState {
             logical_state,

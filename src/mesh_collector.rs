@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
+use gfx::{IndexBuffer, Resources, Slice};
 use lyon::tessellation::geometry_builder::*;
-use gfx::{Slice, IndexBuffer, Resources};
 
 #[derive(Debug)]
 pub struct MeshCollection<IdType, VertexType>
-where IdType: Eq + Hash + Clone
+where
+    IdType: Eq + Hash + Clone,
 {
     pub vertices: Vec<VertexType>,
     pub all_indices: Vec<Index>,
@@ -16,7 +17,8 @@ where IdType: Eq + Hash + Clone
 }
 
 impl<IdType, VertexType> MeshCollection<IdType, VertexType>
-where IdType: Eq + Hash + Clone
+where
+    IdType: Eq + Hash + Clone,
 {
     pub fn new() -> MeshCollection<IdType, VertexType> {
         MeshCollection {
@@ -44,14 +46,14 @@ where IdType: Eq + Hash + Clone
     {
         self.mesh_indices.contains_key(k)
     }
-
 }
 
 // TODO: This could avoid adding redundant vertices
 
 #[derive(Debug)]
 pub struct MeshAdder<'l, IdType: 'l, VertexType: 'l, Input, Ctor>
-where IdType: Eq + Hash + Clone
+where
+    IdType: Eq + Hash + Clone,
 {
     buffers: &'l mut MeshCollection<IdType, VertexType>,
     new_id: IdType,
@@ -93,7 +95,10 @@ where
     }
 
     pub fn finalise_add(self) -> () {
-        self.buffers.mesh_indices.insert(self.new_id, (self.index_offset, self.buffers.all_indices.len() as Index));
+        self.buffers.mesh_indices.insert(
+            self.new_id,
+            (self.index_offset, self.buffers.all_indices.len() as Index),
+        );
         let vertex_offset = self.buffers.vertices.len() as Index;
         let index_offset = self.buffers.all_indices.len() as Index;
     }
@@ -146,7 +151,9 @@ where
     }
 
     fn abort_geometry(&mut self) {
-        self.buffers.vertices.truncate(self.group_vertex_offset as usize);
+        self.buffers
+            .vertices
+            .truncate(self.group_vertex_offset as usize);
         self.buffers
             .all_indices
             .truncate(self.group_index_offset as usize);
