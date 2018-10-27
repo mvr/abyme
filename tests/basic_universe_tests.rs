@@ -2,11 +2,10 @@ extern crate abyme;
 #[macro_use]
 extern crate maplit;
 
-use std::collections::{BTreeMap};
+use std::collections::BTreeMap;
 
 use abyme::defs::*;
-use abyme::delta::*;
-use abyme::math;
+use abyme::load_universe;
 use abyme::math::Direction;
 use abyme::polyomino::*;
 use abyme::shape::*;
@@ -14,42 +13,10 @@ use abyme::shape::*;
 mod shape_tests {
     use super::*;
 
-    // TODO: replace this with loading from a toml
-    fn setup_1() -> LogicalState {
-        let id1 = ShapeId(1);
-        let id2 = ShapeId(2);
-        let shape1 = Shape {
-            id: id1,
-            parent_ids: hashmap!{ id2 => ChildPoint::new(1, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [0.5, 0.5, 1.0],
-            outline_color: [0.5, 0.5, 0.5],
-        };
-        let shape2 = Shape {
-            id: id2,
-            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 0.5, 0.5],
-            outline_color: [0.5, 0.25, 0.25],
-        };
-
-        let mut shapes = BTreeMap::new();
-        shapes.insert(id1, shape1);
-        shapes.insert(id2, shape2);
-
-        let u = Universe { shapes: shapes };
-
-        let player_chunk = u.top_chunk_of_id(ShapeId(1));
-
-        LogicalState {
-            universe: u,
-            player_chunk: player_chunk,
-        }
-    }
-
     #[test]
     fn inhabitant_1() {
-        let gs = setup_1();
+        let gs =
+            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string());
 
         let l = Location {
             square: Square {
@@ -64,62 +31,24 @@ mod shape_tests {
 
     #[test]
     fn is_blocked_1() {
-        let gs = setup_1();
+        let gs =
+            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string());
 
         assert!(!gs.can_move(Direction::Right));
     }
 
-    fn setup_2() -> LogicalState {
-        let id1 = ShapeId(1);
-        let id2 = ShapeId(2);
-        let id3 = ShapeId(3);
-        let shape1 = Shape {
-            id: id1,
-            parent_ids: hashmap!{ id2 => ChildPoint::new(0, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [0.5, 0.5, 1.0],
-            outline_color: [0.5, 0.5, 0.5],
-        };
-        let shape2 = Shape {
-            id: id2,
-            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 0.5, 0.5],
-            outline_color: [0.5, 0.25, 0.25],
-        };
-        let shape3 = Shape {
-            id: id3,
-            parent_ids: hashmap!{ id2 => ChildPoint::new(0, 1) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 0.5, 0.5],
-            outline_color: [0.5, 0.25, 0.25],
-        };
-
-        let mut shapes = BTreeMap::new();
-        shapes.insert(id1, shape1);
-        shapes.insert(id2, shape2);
-        shapes.insert(id3, shape3);
-
-        let u = Universe { shapes: shapes };
-
-        let player_chunk = u.top_chunk_of_id(ShapeId(1));
-
-        LogicalState {
-            universe: u,
-            player_chunk: player_chunk,
-        }
-    }
-
     #[test]
     fn is_blocked_2() {
-        let gs = setup_2();
+        let gs =
+            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string());
 
         assert!(!gs.can_move(Direction::Up));
     }
 
     #[test]
     fn region_1() {
-        let gs = setup_2();
+        let gs =
+            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string());
 
         let shape1 = &gs.universe.shapes[&ShapeId(1)];
         let shape2 = &gs.universe.shapes[&ShapeId(2)];
@@ -158,51 +87,10 @@ mod shape_tests {
         );
     }
 
-    fn setup_3() -> LogicalState {
-        let id1 = ShapeId(1);
-        let id2 = ShapeId(2);
-        let id3 = ShapeId(3);
-        let shape1 = Shape {
-            id: id1,
-            parent_ids: hashmap!{ id2 => ChildPoint::new(0, 0) },
-            polyomino: Polyomino::new(vec![Point2D::new(0, 0), Point2D::new(1, 0)]),
-            fill_color: [0.5, 0.5, 1.0],
-            outline_color: [0.5, 0.5, 0.5],
-        };
-
-        let shape2 = Shape {
-            id: id2,
-            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 0.5, 0.5],
-            outline_color: [0.5, 0.25, 0.25],
-        };
-        let shape3 = Shape {
-            id: id3,
-            parent_ids: hashmap!{ id1 => ChildPoint::new(1, 0) },
-            polyomino: Polyomino::monomino(),
-            fill_color: [1.0, 0.5, 0.5],
-            outline_color: [0.5, 0.25, 0.25],
-        };
-
-        let mut shapes = BTreeMap::new();
-        shapes.insert(id1, shape1);
-        shapes.insert(id2, shape2);
-        shapes.insert(id3, shape3);
-
-        let u = Universe { shapes: shapes };
-
-        let player_chunk = u.top_chunk_of_id(ShapeId(1));
-
-        LogicalState {
-            universe: u,
-            player_chunk: player_chunk,
-        }
-    }
-
     #[test]
     fn can_move_1() {
-        let gs = setup_3();
+        let gs =
+            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test3.toml").to_string());
 
         assert!(gs.can_move(Direction::Right));
     }
