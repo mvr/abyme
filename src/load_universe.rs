@@ -51,6 +51,16 @@ fn interpret_shape(
         .map(|v| interpret_ivec(v))
         .collect();
 
+    let fill_color = match table.get("fill_color") {
+        Some(entry) => interpret_color(entry),
+        None => [0.5, 0.5, 1.0], // Default
+    };
+
+    let outline_color = match table.get("outline_color") {
+        Some(entry) => interpret_color(entry),
+        None => [0.0, 0.0, 0.0], // Default
+    };
+
     Shape {
         id: new_id,
         parent_ids,
@@ -59,8 +69,8 @@ fn interpret_shape(
         },
 
         // Drawing:
-        fill_color: interpret_color(&table["fill_color"]),
-        outline_color: interpret_color(&table["outline_color"]),
+        fill_color,
+        outline_color,
     }
 }
 
