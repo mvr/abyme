@@ -75,6 +75,7 @@ impl PartialEq for Shape {
 
 impl Eq for Shape {}
 
+#[derive(PartialEq, Eq, Debug)]
 enum Neighbour {
     OOB,
     Unoccupied(Location),
@@ -348,9 +349,15 @@ pub struct Square {
 
 impl Square {
     fn location_on(&self, universe: &Universe, parent_id: ShapeId) -> Option<Location> {
-        let pos_on = universe.shapes[&self.shape_id].parent_ids.get(&parent_id)?;
+        let shape = &universe.shapes[&self.shape_id];
+        let parent = &universe.shapes[&parent_id];
+        let pos_on = shape.parent_ids.get(&parent_id)?;
         let offset = self.position.to_vector() + math::coerce_up(pos_on.to_vector());
         let (new_pos, new_subp) = math::split_up(math::coerce_down(offset));
+
+        if !parent.polyomino.has_position(new_pos.to_point().to_untyped()) {
+            return None
+        }
 
         Some(Location {
             square: Square {
@@ -849,7 +856,7 @@ impl LogicalState {
         self.universe.do_shove(self.player_chunk.clone(), d);
         self.player_chunk = self.universe.top_chunk_of_id(some_player_shape_id);
 
-        println!("{:#?}", self);
+        //println!("{:#?}", self);
     }
 }
 

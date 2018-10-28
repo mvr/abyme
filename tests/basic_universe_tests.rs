@@ -15,8 +15,9 @@ mod shape_tests {
 
     #[test]
     fn inhabitant_1() {
-        let gs =
-            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string());
+        let gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string(),
+        );
 
         let l = Location {
             square: Square {
@@ -31,24 +32,27 @@ mod shape_tests {
 
     #[test]
     fn is_blocked_1() {
-        let gs =
-            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string());
+        let gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test1.toml").to_string(),
+        );
 
         assert!(!gs.can_move(Direction::Right));
     }
 
     #[test]
     fn is_blocked_2() {
-        let gs =
-            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string());
+        let gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string(),
+        );
 
         assert!(!gs.can_move(Direction::Up));
     }
 
     #[test]
     fn region_1() {
-        let gs =
-            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string());
+        let gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test2.toml").to_string(),
+        );
 
         let shape1 = &gs.universe.shapes[&ShapeId(1)];
         let shape2 = &gs.universe.shapes[&ShapeId(2)];
@@ -89,9 +93,21 @@ mod shape_tests {
 
     #[test]
     fn can_move_1() {
-        let gs =
-            load_universe::load_universe(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test3.toml").to_string());
+        let gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/test3.toml").to_string(),
+        );
 
         assert!(gs.can_move(Direction::Right));
+    }
+
+    #[test]
+    fn can_move_2() {
+        let mut gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/joined.toml").to_string(),
+        );
+
+        assert!(gs.can_move(Direction::Right));
+        gs.do_move(Direction::Right);
+        assert!(gs.can_move(Direction::Left));
     }
 }
