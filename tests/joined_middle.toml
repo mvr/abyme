@@ -1,0 +1,13 @@
+player = "first"
+
+[first]    
+polyomino = [ [0, 0], [1, 0] ]
+parents = { second = [1, 0], second2 = [-1, 0] }
+
+[second]
+polyomino = [ [0, 0] ]
+parents = { first = [0, 0] }
+
+[second2]    
+polyomino = [ [0, 0] ]
+parents = { first = [1, 0] }

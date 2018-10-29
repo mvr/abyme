@@ -8,7 +8,7 @@ Imminent TODOs
 --------------
 
 * Fade out background layers -- DONE
-* Specialise zoom to work one layer at a time, for simplicity
+* Specialise zoom to work one layer at a time, for simplicity?
 * Draw grid lines with a constant screen width
 * Zoom in instead of out?
 * Add functions to recenter a chunk on a different origin and calculate the appropriate delta
@@ -29,6 +29,7 @@ Possible TODOs
 Code Cleanup
 ------------
 
+* Replace 'rug' with 'bigint'
 * Consistently use usize where we can?
 
 

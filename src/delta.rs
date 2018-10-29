@@ -1,3 +1,4 @@
+use std::ops::Div;
 use rug::ops::Pow;
 use rug::Integer;
 // use std::ops::{Add, Neg, Sub};
@@ -108,14 +109,38 @@ impl Delta {
             .post_translate(self.to_scaled_fvec())
     }
 
+    pub fn normalize(&self) -> Delta {
+        if self.coords.x == 0 && self.coords.y == 0 {
+            return Delta
+            {
+                coords: TypedVector2D::new(Integer::new(), Integer::new()),
+                scale: 0,
+                zdelta: self.zdelta,
+            }
+        }
+
+        let mut result = self.clone();
+
+        while result.coords.x.is_divisible_2pow(1) && result.coords.x.is_divisible_2pow(1) {
+            result.coords.x = result.coords.x.div(2);
+            result.coords.y = result.coords.y.div(2);
+            result.scale += 1;
+        }
+
+        return result;
+    }
+
     pub fn to_uvec(&self) -> Option<UVec> {
-        assert!(self.zdelta == 0);
-        assert!(self.scale >= 0);
+        let normalized = self.normalize();
+
+        assert!(normalized.zdelta == 0);
+        assert!(normalized.scale >= 0);
+
         Some(
             UVec::new(
-                self.coords.x.to_i32().unwrap(),
-                self.coords.y.to_i32().unwrap(),
-            ) * ZOOM_SCALE.pow(self.scale as u32) as i32,
+                normalized.coords.x.to_i32().unwrap(),
+                normalized.coords.y.to_i32().unwrap(),
+            ) * ZOOM_SCALE.pow(normalized.scale as u32) as i32,
         )
     }
 }

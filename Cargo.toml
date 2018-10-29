@@ -9,6 +9,7 @@ authors = ["Mitchell Riley <mitchell.v.riley@gmail.com>"]
 [[bin]]
 name = "abyme"
 path = "src/main.rs"
+doctest = false
 
 [dependencies]
 maplit = "*"

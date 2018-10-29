@@ -69,7 +69,7 @@ impl Shape {
 
 impl PartialEq for Shape {
     fn eq(&self, other: &Shape) -> bool {
-        self.id == other.id
+        self.id == other.id && self.parent_ids == other.parent_ids
     }
 }
 
@@ -193,7 +193,7 @@ impl HasSquares for Shape {
     // TODO: specialise some other methods? only if worth it
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct Universe {
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
 }
@@ -524,9 +524,7 @@ impl Location {
 
 // This stores offsets of each shape in the chunk
 
-// TODO: these offsets may be too small, need a vec of offsets, one
-// for each level (that can be converted to a normal form, if we want)
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TotalChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
@@ -567,7 +565,7 @@ impl Universe {
         }
     }
 
-    fn explore(&self, shape_id: ShapeId) -> TotalChunk {
+    pub fn explore(&self, shape_id: ShapeId) -> TotalChunk {
         let mut result = BTreeMap::new();
         let mut queue = VecDeque::new();
 
@@ -643,7 +641,7 @@ impl Universe {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct TopChunk {
     pub origin_id: ShapeId,
     pub top_shape_ids: BTreeMap<ShapeId, UVec>,
@@ -823,7 +821,7 @@ impl Universe {
     }
 }
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct LogicalState {
     pub universe: Universe,
     pub player_chunk: TopChunk,

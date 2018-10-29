@@ -109,5 +109,22 @@ mod shape_tests {
         assert!(gs.can_move(Direction::Right));
         gs.do_move(Direction::Right);
         assert!(gs.can_move(Direction::Left));
+
+
+        let mut gs2 = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/joined_middle.toml").to_string(),
+        );
+        assert_eq!(gs, gs2);
+    }
+
+    #[test]
+    fn find_parent() {
+        let mut gs = load_universe::load_universe(
+            concat!(env!("CARGO_MANIFEST_DIR"), "/tests/joined_middle.toml").to_string(),
+        );
+
+        println!("{:#?}", gs.universe.explore(ShapeId(2)));
+
+        gs.do_zoom();
     }
 }
