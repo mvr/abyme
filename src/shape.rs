@@ -637,11 +637,7 @@ impl Universe {
         let origin_parent_id = origin_shape.first_parent_id();
         let parent_to_origin = origin_shape.parent_ids[&origin_shape.first_parent_id()];
         let parent_position_in_chunk = parent_chunk.top_shape_ids[&origin_parent_id];
-        // PROBLEM IS HERE
-        println!("parent_chunk: {:?}", parent_chunk);
-        println!("parent_position_in_chunk: {:?}", parent_position_in_chunk);
-        println!("parent_to_origin: {:?}", parent_to_origin);
-        Delta::from(-parent_position_in_chunk).append(&Delta::from(parent_to_origin.to_vector()))
+        Delta::from(parent_position_in_chunk).append(&Delta::from(parent_to_origin.to_vector()))
     }
 }
 

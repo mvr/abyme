@@ -75,7 +75,7 @@ pub fn scaled_bigint_to_float(int: &rug::Integer, scale: i16) -> f32 {
         int.to_f32()
     } else {
         // self.zdelta > 0
-        let denom = rug::Integer::from(ZOOM_SCALE).pow(-scale as u32);
+        let denom = rug::Integer::from(ZOOM_SCALE).pow((-scale) as u32);
         rug::Rational::from((int, denom)).to_f32()
     }
 }
