@@ -120,6 +120,7 @@ impl CameraState {
         self.current_to_target_path
             .as_delta_from(&logical_state.universe, &self.current_chunk)
             .0
+            .invert()
             .to_scale_transform()
     }
 
@@ -170,7 +171,7 @@ impl CameraState {
 
             self.current_transform = self
                 .current_transform
-                .pre_mul(&adjustment.invert().to_scale_transform());
+                .pre_mul(&adjustment.to_scale_transform());
 
             self.current_to_target_path = self.current_to_target_path.drop(1);
         }
