@@ -19,7 +19,7 @@ use shape::*;
 
 // TODO: this works under the assumption that the shapes being drawn
 // on each level are all distinct. (which is true currently)
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct LevelTracker {
     level: i32,
     visual_level: f32,
@@ -57,7 +57,9 @@ impl LevelTracker {
 
                 result.insert(
                     parent.id,
-                    delta.revert(&gamestate.visual_delta_to_child(parent, shape)),
+                    delta
+                        .revert(&gamestate.visual_delta_to_child(parent, shape))
+                        .normalize(),
                 );
             }
         }
@@ -81,9 +83,12 @@ impl LevelTracker {
                     continue;
                 }
 
+
                 result.insert(
                     child.id,
-                    delta.append(&gamestate.visual_delta_to_child(shape, child)),
+                    delta
+                        .append(&gamestate.visual_delta_to_child(shape, child))
+                        .normalize(),
                 );
             }
         }

@@ -1,6 +1,6 @@
-use std::ops::Div;
 use rug::ops::Pow;
 use rug::Integer;
+use std::ops::Div;
 // use std::ops::{Add, Neg, Sub};
 
 use euclid::*;
@@ -111,12 +111,11 @@ impl Delta {
 
     pub fn normalize(&self) -> Delta {
         if self.coords.x == 0 && self.coords.y == 0 {
-            return Delta
-            {
+            return Delta {
                 coords: TypedVector2D::new(Integer::new(), Integer::new()),
                 scale: 0,
                 zdelta: self.zdelta,
-            }
+            };
         }
 
         let mut result = self.clone();

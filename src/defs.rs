@@ -27,6 +27,7 @@ pub type UVec = TypedVector2D<i32, UniverseSpace>;
 pub type UPoint = TypedPoint2D<i32, UniverseSpace>;
 pub type ChildVec = TypedVector2D<i32, ChildSpace>;
 pub type ChildPoint = TypedPoint2D<i32, ChildSpace>;
+pub type ParentVec = TypedVector2D<i32, ParentSpace>;
 
 // The intention is that the camera will be pointed at the origin of DrawSpace
 pub struct DrawSpace;

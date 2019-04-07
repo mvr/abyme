@@ -141,10 +141,9 @@ impl GameState {
                 direction,
             } => {
                 if chunk.top_shape_ids.contains_key(&child.id) {
-                    return Delta::from(
-                        child.position_on(&parent).to_f32().to_vector()
-                            + MoveState::progress_to_displacement(progress, direction),
-                    );
+                    return child.delta_from_parent(&parent).append(&Delta::from(
+                        MoveState::progress_to_displacement::<UniverseSpace>(progress, direction),
+                    ));
                 }
             }
             _ => (),
