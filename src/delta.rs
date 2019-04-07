@@ -120,7 +120,7 @@ impl Delta {
 
         let mut result = self.clone();
 
-        while result.coords.x.is_divisible_2pow(1) && result.coords.x.is_divisible_2pow(1) {
+        while result.coords.x.is_divisible_2pow(1) && result.coords.y.is_divisible_2pow(1) {
             result.coords.x = result.coords.x.div(2);
             result.coords.y = result.coords.y.div(2);
             result.scale += 1;
