@@ -119,10 +119,10 @@ impl Delta {
         }
 
         let mut result = self.clone();
-
-        while result.coords.x.is_divisible_2pow(1) && result.coords.y.is_divisible_2pow(1) {
-            result.coords.x = result.coords.x.div(2);
-            result.coords.y = result.coords.y.div(2);
+        let zoom_integer = Integer::from(ZOOM_SCALE);
+        while result.coords.x.is_divisible(&zoom_integer) && result.coords.y.is_divisible(&zoom_integer) {
+            result.coords.x = result.coords.x.div(&zoom_integer);
+            result.coords.y = result.coords.y.div(&zoom_integer);
             result.scale += 1;
         }
 
