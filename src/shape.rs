@@ -204,14 +204,14 @@ impl Universe {
         let id2 = ShapeId(2);
         let shape1 = Shape {
             id: id1,
-            parent_ids: hashmap!{ id2 => ChildPoint::new(1, 0) },
+            parent_ids: hashmap! { id2 => ChildPoint::new(1, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
         let shape2 = Shape {
             id: id2,
-            parent_ids: hashmap!{ id1 => ChildPoint::new(0, 0) },
+            parent_ids: hashmap! { id1 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
@@ -355,8 +355,11 @@ impl Square {
         let offset = self.position.to_vector() + math::coerce_up(pos_on.to_vector());
         let (new_pos, new_subp) = math::split_up(math::coerce_down(offset));
 
-        if !parent.polyomino.has_position(new_pos.to_point().to_untyped()) {
-            return None
+        if !parent
+            .polyomino
+            .has_position(new_pos.to_point().to_untyped())
+        {
+            return None;
         }
 
         Some(Location {
@@ -637,7 +640,9 @@ impl Universe {
         let origin_parent_id = origin_shape.first_parent_id();
         let parent_to_origin = origin_shape.parent_ids[&origin_shape.first_parent_id()];
         let parent_position_in_chunk = parent_chunk.top_shape_ids[&origin_parent_id];
-        Delta::from(parent_to_origin.to_vector()).invert().revert(&Delta::from(parent_position_in_chunk))
+        Delta::from(parent_to_origin.to_vector())
+            .invert()
+            .revert(&Delta::from(parent_position_in_chunk))
     }
 }
 
@@ -839,6 +844,7 @@ impl LogicalState {
     }
 
     pub fn do_zoom(&mut self) -> () {
+        // TODO NLEVELS: If there are more than two levels, this won't work.
         self.player_chunk = self.universe.parent_of(&self.player_chunk);
     }
 
@@ -966,6 +972,28 @@ impl MonotonePath {
                     new_path.pop();
                     Down { path: new_path }
                 }
+            }
+        }
+    }
+
+    pub fn down_target_to(&self, to: ShapeId) -> MonotonePath {
+        // TODO: the target is ignored if we are actually going down
+        use self::MonotonePath::*;
+        match *self {
+            Zero => Down { path: vec![to] },
+            Up { distance } => {
+                if distance == 1 {
+                    Zero
+                } else {
+                    Up {
+                        distance: distance - 1,
+                    }
+                }
+            }
+            Down { ref path } => {
+                let mut new_path = path.clone();
+                new_path.push(to);
+                Down { path: new_path }
             }
         }
     }

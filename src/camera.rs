@@ -93,12 +93,14 @@ impl CameraState {
     }
 
     pub fn do_zoom(&mut self, logical_state: &LogicalState) -> () {
+        // At this point, the logical state has already been zoomed.
+
         let new_target = CameraState::intended_target_chunk(logical_state);
         self.target_chunk = new_target.clone();
         self.target_neutral_transform =
             CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);
 
-        self.current_to_target_path = self.current_to_target_path.up_target();
+        self.current_to_target_path = self.current_to_target_path.down_target_to(new_target.origin_id);
     }
 
     pub fn scale_from_neutral(&self) -> f32 {
