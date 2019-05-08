@@ -618,6 +618,10 @@ impl Universe {
         }
     }
 
+    pub fn recalculate_chunk(&self, chunk: &TopChunk) -> TopChunk {
+        self.explore(chunk.origin_id).into()
+    }
+
     // fn explore_parent_of(&self, shape_ids: BTreeMap<ShapeId, IVec2>) -> Chunk {
     // }
 

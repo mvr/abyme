@@ -95,6 +95,8 @@ impl CameraState {
     pub fn do_zoom(&mut self, logical_state: &LogicalState) -> () {
         // At this point, the logical state has already been zoomed.
 
+        self.current_chunk = logical_state.universe.recalculate_chunk(&self.current_chunk);
+
         let new_target = CameraState::intended_target_chunk(logical_state);
         self.target_chunk = new_target.clone();
         self.target_neutral_transform =
