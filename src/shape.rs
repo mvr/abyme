@@ -644,6 +644,14 @@ impl Universe {
             .invert()
             .revert(&Delta::from(parent_position_in_chunk))
     }
+
+    pub fn delta_to_child_of(&self, chunk: &TopChunk, child: &TopChunk) -> Delta {
+        let child_origin_shape = &self.shapes[&child.origin_id];
+        let child_parent_id = child_origin_shape.first_parent_id();
+        let parent_to_origin = child_origin_shape.parent_ids[&child_origin_shape.first_parent_id()];
+        let parent_position_in_chunk = chunk.top_shape_ids[&child_parent_id];
+        Delta::from(parent_position_in_chunk).append(&Delta::from(parent_to_origin.to_vector()))
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -1014,7 +1022,17 @@ impl MonotonePath {
                 }
                 (result, current_chunk)
             }
-            Down { ref path } => unimplemented!(),
+            Down { ref path } => {
+                let mut result = Delta::zero();
+                let mut current_chunk = chunk.clone();
+                for next_id in path {
+                    let next_chunk = universe.explore(*next_id).into();
+                    result =
+                        result.append(&universe.delta_to_child_of(&current_chunk, &next_chunk));
+                    current_chunk = next_chunk;
+                }
+                (result, current_chunk)
+            }
         }
     }
 }
