@@ -95,14 +95,16 @@ impl CameraState {
     pub fn do_zoom(&mut self, logical_state: &LogicalState) -> () {
         // At this point, the logical state has already been zoomed.
 
-        self.current_chunk = logical_state.universe.recalculate_chunk(&self.current_chunk);
+        self.recenter(logical_state);
 
         let new_target = CameraState::intended_target_chunk(logical_state);
         self.target_chunk = new_target.clone();
         self.target_neutral_transform =
             CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);
 
-        self.current_to_target_path = self.current_to_target_path.down_target_to(new_target.origin_id);
+        self.current_to_target_path = self
+            .current_to_target_path
+            .down_target_to(new_target.origin_id);
     }
 
     pub fn scale_from_neutral(&self) -> f32 {
@@ -181,20 +183,42 @@ impl CameraState {
         }
     }
 
-    // MUST TODO: This will start to matter when chunks are made
+    // We need to pick the chunk in the region that actually contains
+    // the player
     pub fn recenter(&mut self, logical_state: &LogicalState) -> () {
-        // unimplemented!();
+        let old_current_chunk = &self.current_chunk;
+        let region = logical_state.universe.region_of_chunk(old_current_chunk);
 
-        // let old_target_chunk = &self.target_chunk;
-        // let new_target_chunk = CameraState::intended_target(logical_state);
+        let mut new_current_chunk_shape_id = logical_state.player_chunk.origin_id;
+        while !region
+            .top_shape_ids
+            .contains_key(&new_current_chunk_shape_id)
+        {
+            new_current_chunk_shape_id = *logical_state.universe.shapes[&new_current_chunk_shape_id]
+                .parent_ids
+                .keys()
+                .min()
+                .unwrap();
+        }
+        let new_current_chunk: TopChunk = logical_state
+            .universe
+            .explore(new_current_chunk_shape_id)
+            .into();
 
-        // self.target_chunk = new_target_chunk;
+        let adjustment = region.top_shape_ids[&new_current_chunk.origin_id]
+            - region.top_shape_ids[&old_current_chunk.origin_id];
 
-        // let old_current_chunk = &self.current_chunk;
-        // let new_current_chunk = CameraState::intended_target(logical_state);
+        self.current_transform = self.current_transform.pre_translate(adjustment.to_f32());
+        self.current_neutral_transform = CameraState::target_transform_for(
+            &new_current_chunk,
+            logical_state,
+            self.camera_bounds,
+        );
+        self.current_chunk = new_current_chunk;
 
-        // self.current_chunk = new_current_chunk;
-
-        //unimplemented!();
+        let new_target = CameraState::intended_target_chunk(logical_state);
+        self.target_chunk = new_target.clone();
+        self.target_neutral_transform =
+            CameraState::target_transform_for(&new_target, logical_state, self.camera_bounds);
     }
 }
