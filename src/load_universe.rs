@@ -51,6 +51,13 @@ fn interpret_shape(
         .map(|v| interpret_ivec(v))
         .collect();
 
+    let wall_squares = table["walls"]
+        .as_array()
+        .expect("walls value was not an array")
+        .iter()
+        .map(|v| interpret_ivec(v))
+        .collect();
+
     let fill_color = match table.get("fill_color") {
         Some(entry) => interpret_color(entry),
         None => [0.5, 0.5, 1.0], // Default
@@ -66,6 +73,9 @@ fn interpret_shape(
         parent_ids,
         polyomino: Polyomino {
             squares: polyomino_squares,
+        },
+        walls: Polyomino {
+            squares: wall_squares,
         },
 
         // Drawing:

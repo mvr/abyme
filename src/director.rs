@@ -10,8 +10,7 @@ use gfx::IndexBuffer;
 
 use defs::*;
 use delta::Delta;
-use gamestate::GameState;
-use load_universe;
+use gamestate::*;
 use math::*;
 use mesh_gen::*;
 use polyomino::*;
@@ -335,3 +334,171 @@ impl<R: gfx::Resources> Director<R> {
         // }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     #[test]
+//     fn wonky_updown_1() {
+//         let gs = GameState {
+//             logical_state: LogicalState {
+//                 universe: Universe {
+//                     shapes: btreemap! {
+//                         ShapeId(
+//                             1,
+//                         ) => Shape {
+//                             id: ShapeId(
+//                                 1,
+//                             ),
+//                             parent_ids: hashmap!{
+//                                 ShapeId(
+//                                     2,
+//                                 ) => TypedPoint2D::new(1,0),
+//                                 ShapeId(
+//                                     3,
+//                                 )=> TypedPoint2D::new(-1,0),
+//                             },
+//                             polyomino: Polyomino {
+//                                 squares: vec![
+//                                     Point2D::new(0,0),
+//                                     Point2D::new(1,0),
+//                                 ],
+//                             },
+//                             fill_color: [
+//                                 0.5,
+//                                 0.5,
+//                                 1.0,
+//                             ],
+//                             outline_color: [
+//                                 0.0,
+//                                 0.0,
+//                                 0.0,
+//                             ],
+//                         },
+//                         ShapeId(
+//                             2,
+//                         ) => Shape {
+//                             id: ShapeId(
+//                                 2,
+//                             ),
+//                             parent_ids: hashmap!{
+//                                 ShapeId(
+//                                     1,
+//                                 ) => TypedPoint2D::new(0,0),
+//                             },
+//                             polyomino: Polyomino {
+//                                 squares: vec![
+//                                     Point2D::new(0,0),
+//                                 ],
+//                             },
+//                             fill_color: [
+//                                 1.0,
+//                                 0.5,
+//                                 0.5,
+//                             ],
+//                             outline_color: [
+//                                 0.0,
+//                                 0.0,
+//                                 0.0,
+//                             ],
+//                         },
+//                         ShapeId(
+//                             3,
+//                         ) => Shape {
+//                             id: ShapeId(
+//                                 3,
+//                             ),
+//                             parent_ids: hashmap!{
+//                                 ShapeId(
+//                                     1,
+//                                 ) => TypedPoint2D::new(1,0),
+//                             },
+//                             polyomino: Polyomino {
+//                                 squares: vec![
+//                                     Point2D::new(0,0),
+//                                 ],
+//                             },
+//                             fill_color: [
+//                                 1.0,
+//                                 0.5,
+//                                 0.5,
+//                             ],
+//                             outline_color: [
+//                                 0.0,
+//                                 0.0,
+//                                 0.0,
+//                             ],
+//                         },
+//                     },
+//                 },
+//                 player_chunk: TopChunk {
+//                     origin_id: ShapeId(1),
+//                     top_shape_ids: btreemap! {
+//                         ShapeId(
+//                             1,
+//                         ) => TypedVector2D::new(0,0),
+//                     },
+//                 },
+//             },
+//             camera_state: CameraState {
+//                 camera_bounds: TypedRect::new(
+//                     TypedPoint2D::new(0.0, 0.0),
+//                     TypedSize2D::new(0.0, 0.0),
+//                 ),
+//                 current_chunk: TopChunk {
+//                     origin_id: ShapeId(2),
+//                     top_shape_ids: btreemap! {
+//                         ShapeId(
+//                             2,
+//                         ) => TypedVector2D::new(0,0),
+//                     },
+//                 },
+//                 current_neutral_transform: TypedTransform2D::identity(),
+//                 current_transform: TypedTransform2D::identity(),
+//                 target_chunk: TopChunk {
+//                     origin_id: ShapeId(2),
+//                     top_shape_ids: btreemap! {
+//                         ShapeId(
+//                             2,
+//                         ) => TypedVector2D::new(0,0),
+//                     },
+//                 },
+//                 target_neutral_transform: TypedTransform2D::identity(),
+//                 current_to_target_path: Zero,
+//             },
+//             move_state: Moving {
+//                 chunk: TopChunk {
+//                     origin_id: ShapeId(1),
+//                     top_shape_ids: btreemap! {
+//                         ShapeId(
+//                             1,
+//                         ) => TypedVector2D::new(0,0),
+//                     },
+//                 },
+//                 direction: Left,
+//                 progress: 0.054777056,
+//             },
+//         };
+//         let l = LevelTracker {
+//             level: 2,
+//             visual_level: 0.0,
+//             transforms: hashmap! {
+//                 ShapeId(3) => Delta {
+//                     zdelta: 2,
+//                     scale: 1,
+//                     coords: TypedVector2D::new(Integer::from(1),Integer::from(0)),
+//                 },
+//                 ShapeId(2) => Delta {
+//                     zdelta: 2,
+//                     scale: -9,
+//                     coords: TypedVector2D::new(Integer::from(-1023),Integer::from(0)),
+//                 },
+//             },
+//         };
+
+//         assert_eq!(
+//             l.go_up(&gs).go_down(&gs).transforms[&ShapeId(2)],
+//             l.transforms[&ShapeId(2)]
+//         );
+//     }
+// }

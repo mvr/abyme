@@ -23,6 +23,12 @@ impl Polyomino {
         Polyomino { squares }
     }
 
+    pub fn empty() -> Polyomino {
+        Polyomino {
+            squares: vec![],
+        }
+    }
+
     pub fn monomino() -> Polyomino {
         Polyomino {
             squares: vec![Point2D::new(0, 0)],

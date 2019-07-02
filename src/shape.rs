@@ -25,6 +25,7 @@ pub struct Shape {
     pub parent_ids: HashMap<ShapeId, ChildPoint>,
     // TODO: instead store a distinguished parent?
     pub polyomino: Polyomino,
+    pub walls: Polyomino,
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -206,6 +207,7 @@ impl Universe {
             id: id1,
             parent_ids: hashmap! { id2 => ChildPoint::new(1, 0) },
             polyomino: Polyomino::monomino(),
+            walls: Polyomino::empty(),
             fill_color: [0.5, 0.5, 1.0],
             outline_color: [0.5, 0.5, 0.5],
         };
@@ -213,6 +215,7 @@ impl Universe {
             id: id2,
             parent_ids: hashmap! { id1 => ChildPoint::new(0, 0) },
             polyomino: Polyomino::monomino(),
+            walls: Polyomino::empty(),
             fill_color: [1.0, 0.5, 0.5],
             outline_color: [0.5, 0.25, 0.25],
         };

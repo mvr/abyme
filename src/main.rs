@@ -40,10 +40,11 @@ mod director;
 mod gamestate;
 mod polyomino;
 mod shape;
+// mod chunk;
 
 mod load_universe;
 
-use std::env;
+// use std::env;
 
 use gfx_core::Device;
 use gfx_window_glutin as gfx_glutin;
@@ -54,7 +55,7 @@ use euclid::TypedSize2D;
 use defs::*;
 use director::*;
 use math::*;
-use shape::*;
+// use shape::*;
 
 const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 
