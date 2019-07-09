@@ -25,7 +25,7 @@ pub struct Shape {
     pub parent_ids: HashMap<ShapeId, ChildPoint>,
     // TODO: instead store a distinguished parent?
     pub polyomino: Polyomino,
-    pub walls: Polyomino,
+    pub walls: Polyomino, // Note these are squares are in ChildVec
 
     // Drawing:
     pub fill_color: [f32; 3],
@@ -80,6 +80,7 @@ impl Eq for Shape {}
 enum Neighbour {
     OOB,
     Unoccupied(Location),
+    Wall(Location),
     Occupied(Location, Square),
 }
 
@@ -142,6 +143,7 @@ trait HasSquares {
             .all(|(_, neighbour)| match neighbour {
                 Neighbour::OOB => false,
                 Neighbour::Unoccupied(_) => true,
+                Neighbour::Wall(_) => false,
                 Neighbour::Occupied(_, _) => false,
             })
     }
@@ -160,7 +162,13 @@ trait HasSquares {
                 match s.location(universe).nudge(universe, d) {
                     None => Some((s, Neighbour::OOB)), // We hit out of bounds
                     Some(n) => match n.inhabitant(universe) {
-                        None => Some((s, Neighbour::Unoccupied(n))), // We are next to empty space
+                        None => {
+                            if n.is_wall(universe) {
+                                Some((s, Neighbour::Wall(n))) // We are next to a wall
+                            } else {
+                                Some((s, Neighbour::Unoccupied(n))) // We are next to empty space
+                            }
+                        }
                         Some(i) => {
                             if self_squares.contains(&i) {
                                 None // We are still in self
@@ -295,6 +303,7 @@ impl Universe {
             .filter_map(move |(square, neighbour)| match neighbour {
                 Neighbour::OOB => None,
                 Neighbour::Unoccupied(l) => Some((square, l)),
+                Neighbour::Wall(l) => Some((square, l)),
                 Neighbour::Occupied(l, _) => Some((square, l)),
             })
             .collect();
@@ -441,6 +450,11 @@ impl Location {
 
     pub fn is_unoccupied(&self, universe: &Universe) -> bool {
         !self.inhabitant(universe).is_some()
+    }
+
+    pub fn is_wall(&self, universe: &Universe) -> bool {
+        let shape = &universe.shapes[&self.square.shape_id];
+        shape.walls.has_position(self.to_coordinate().to_point().to_untyped())
     }
 }
 
@@ -779,6 +793,7 @@ impl Universe {
             .filter_map(move |(square, neighbour)| match neighbour {
                 Neighbour::OOB => None,
                 Neighbour::Unoccupied(_) => None,
+                Neighbour::Wall(_) => None,
                 Neighbour::Occupied(_, neighbour_square) => Some((square, neighbour_square)),
             })
             .map(move |(square, neighbour_square)|
