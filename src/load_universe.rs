@@ -51,12 +51,15 @@ fn interpret_shape(
         .map(|v| interpret_ivec(v))
         .collect();
 
-    let wall_squares = table["walls"]
-        .as_array()
-        .expect("walls value was not an array")
-        .iter()
-        .map(|v| interpret_ivec(v))
-        .collect();
+    let wall_squares = match table.get("walls") {
+        Some(entry) => entry
+            .as_array()
+            .expect("walls value was not an array")
+            .iter()
+            .map(|v| interpret_ivec(v))
+            .collect(),
+        None => vec![],
+    };
 
     let fill_color = match table.get("fill_color") {
         Some(entry) => interpret_color(entry),

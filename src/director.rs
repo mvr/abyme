@@ -169,11 +169,13 @@ impl<R: gfx::Resources> Director<R> {
         let mut result = MeshStore::new();
 
         for s in gs.universe.shapes.values() {
-            if result.contains_poly(&s.polyomino) {
-                continue;
+            if !result.contains_poly(&s.polyomino) {
+                result.gen_polyomino_mesh(&s.polyomino);
             }
 
-            result.gen_polyomino_mesh(&s.polyomino);
+            if !result.contains_poly(&s.walls) {
+                result.gen_polyomino_mesh(&s.walls);
+            }
         }
 
         result
@@ -272,11 +274,19 @@ impl<R: gfx::Resources> Director<R> {
         for (shape_id, offset) in &level_tracker.transforms {
             let shape = &self.game_state.logical_state.universe.shapes[shape_id];
             let offset_transform = offset.to_scale_transform();
+            let wall_offset_transform = offset.append(&Delta::down_one()).to_scale_transform();
 
             let faded_fill = [
                 shape.fill_color[0] * fill_fade,
                 shape.fill_color[1] * fill_fade,
                 shape.fill_color[2] * fill_fade,
+                1.0,
+            ];
+
+            let faded_wall_fill = [ // TODO: set colour somewhere else
+                0.2 * fill_fade,
+                0.2 * fill_fade,
+                0.2 * fill_fade,
                 1.0,
             ];
 
@@ -295,13 +305,22 @@ impl<R: gfx::Resources> Director<R> {
                     &offset_transform.post_mul(&transform_to_gl),
                     faded_outline,
                 ),
-                PolyMeshType::FillMesh => self.execute_poly_fill_draw(
-                    encoder,
-                    target,
-                    &shape.polyomino,
-                    &offset_transform.post_mul(&transform_to_gl),
-                    faded_fill,
-                ),
+                PolyMeshType::FillMesh => {
+                    self.execute_poly_fill_draw(
+                        encoder,
+                        target,
+                        &shape.polyomino,
+                        &offset_transform.post_mul(&transform_to_gl),
+                        faded_fill,
+                    );
+                    self.execute_poly_fill_draw(
+                        encoder,
+                        target,
+                        &shape.walls,
+                        &wall_offset_transform.post_mul(&transform_to_gl),
+                        faded_wall_fill,
+                    );
+                },
             }
         }
     }

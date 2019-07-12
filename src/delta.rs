@@ -28,6 +28,14 @@ impl Delta {
         }
     }
 
+    pub fn down_one() -> Delta {
+        Delta {
+            zdelta: -1,
+            scale: 0,
+            coords: TypedVector2D::new(Integer::new(), Integer::new()),
+        }
+    }
+
     pub fn append(&self, other: &Delta) -> Delta {
         let zdelta = self.zdelta + other.zdelta;
         let other_relative_scale = self.zdelta + other.scale;
