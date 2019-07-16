@@ -93,9 +93,14 @@ impl GameState {
         }
     }
 
-    pub fn do_zoom(&mut self) -> () {
-        self.logical_state.do_zoom();
-        self.camera_state.do_zoom(&self.logical_state);
+    pub fn do_zoom_in(&mut self) -> () {
+        self.logical_state.do_zoom_in();
+        self.camera_state.do_zoom_in(&self.logical_state);
+    }
+
+    pub fn do_zoom_out(&mut self) -> () {
+        self.logical_state.do_zoom_out();
+        self.camera_state.do_zoom_out(&self.logical_state);
     }
 
     pub fn try_start_move(&mut self, d: Direction) -> () {

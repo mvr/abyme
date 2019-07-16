@@ -119,7 +119,9 @@ pub fn main() {
                         use glutin::VirtualKeyCode::*;
                         match key {
                             Escape => running = false,
-                            Space => director.game_state.do_zoom(),
+                            Space => director.game_state.do_zoom_in(),
+                            A => director.game_state.do_zoom_in(),
+                            Z => director.game_state.do_zoom_out(),
                             Up => director.game_state.try_start_move(Direction::Up),
                             Down => director.game_state.try_start_move(Direction::Down),
                             Left => director.game_state.try_start_move(Direction::Left),

@@ -873,8 +873,12 @@ impl LogicalState {
         }
     }
 
-    pub fn do_zoom(&mut self) -> () {
+    pub fn do_zoom_in(&mut self) -> () {
         // TODO NLEVELS: If there are more than two levels, this won't work.
+        self.player_chunk = self.universe.parent_of(&self.player_chunk);
+    }
+
+    pub fn do_zoom_out(&mut self) -> () {
         self.player_chunk = self.universe.parent_of(&self.player_chunk);
     }
 
@@ -980,8 +984,12 @@ impl MonotonePath {
             }
             Down { ref path } => {
                 assert!(n <= path.len() as u32);
-                Down {
-                    path: path[n as usize..].to_vec(),
+                if n == 1 {
+                    Zero
+                } else {
+                    Down {
+                        path: path[n as usize..].to_vec(),
+                    }
                 }
             }
         }
