@@ -204,6 +204,8 @@ impl HasSquares for Shape {
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Universe {
+    pub is_looping: bool,
+    pub level_scales: LevelScales,
     pub shapes: BTreeMap<ShapeId, Shape>, // Should probably just be a Vec
 }
 
@@ -454,7 +456,9 @@ impl Location {
 
     pub fn is_wall(&self, universe: &Universe) -> bool {
         let shape = &universe.shapes[&self.square.shape_id];
-        shape.walls.has_position(self.to_coordinate().to_point().to_untyped())
+        shape
+            .walls
+            .has_position(self.to_coordinate().to_point().to_untyped())
     }
 }
 

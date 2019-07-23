@@ -8,6 +8,11 @@ use euclid::*;
 use defs::*;
 use math;
 
+#[derive(PartialEq, Eq, Debug)]
+pub struct LevelScales {
+    pub scales: Vec<u32>,
+}
+
 // A "vector" in the world, possibly going up or down levels
 // TODO: Do we need a `Dyadic`?
 
